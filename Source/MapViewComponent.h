@@ -124,11 +124,11 @@ private:
     std::unique_ptr<Attributes> fAttributes;
     std::unique_ptr<Buffer> fBuffer;
 
-    float fBlocksPerPixel;
+    Atomic<float> fBlocksPerPixel;
     static float const kMaxScale;
     static float const kMinScale;
 
-    Point<float> fCenter;
+    Atomic<Point<float>> fCenter;
     Point<float> fCenterWhenDragStart;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
