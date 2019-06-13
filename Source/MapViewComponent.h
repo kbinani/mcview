@@ -28,6 +28,8 @@ private:
 
     Matrix3D<float> getProjectionMatrix() const;
 
+    void magnify(int x, int y, float rate);
+
     struct Uniforms
     {
         Uniforms (OpenGLContext& openGLContext, OpenGLShaderProgram& shader)
@@ -124,11 +126,16 @@ private:
     std::unique_ptr<Attributes> fAttributes;
     std::unique_ptr<Buffer> fBuffer;
 
-    Atomic<float> fBlocksPerPixel;
+    struct LookAt {
+        float fX;
+        float fY;
+        float fBlocksPerPixel;
+    };
+    Atomic<LookAt> fLookAt;
+
     static float const kMaxScale;
     static float const kMinScale;
 
-    Atomic<Point<float>> fCenter;
     Point<float> fCenterWhenDragStart;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)

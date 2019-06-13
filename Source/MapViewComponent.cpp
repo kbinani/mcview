@@ -8,8 +8,7 @@ float const MapViewComponent::kMaxScale = 5;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 MapViewComponent::MapViewComponent()
-    : fBlocksPerPixel(1.0f)
-    , fCenter(Point<float>(0, 0))
+    : fLookAt({0, 0, 1})
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -143,13 +142,12 @@ void MapViewComponent::renderOpenGL()
 
     fShader->use();
 
-    float blocksPerPixel = fBlocksPerPixel.get();
-    Point<float> center = fCenter.get();
+    LookAt const lookAt = fLookAt.get();
     
-    GLfloat scaleX = 2 / (blocksPerPixel * getWidth());
-    GLfloat scaleZ = 2 / (blocksPerPixel * getHeight());
-    GLfloat tX = center.x;
-    GLfloat tZ = center.y;
+    GLfloat scaleX = 2 / (lookAt.fBlocksPerPixel * getWidth());
+    GLfloat scaleZ = 2 / (lookAt.fBlocksPerPixel * getHeight());
+    GLfloat tX = lookAt.fX;
+    GLfloat tZ = lookAt.fY;
 
     for (auto it : fTextures) {
         auto cache = it.second;
@@ -256,28 +254,38 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fOpenGLContext.attachTo(*this);
 }
 
+void MapViewComponent::magnify(int x, int y, float rate)
+{
+    LookAt const current = fLookAt.get();
+    LookAt next = current;
+    next.fBlocksPerPixel = std::min(std::max(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
+    fLookAt.set(next);
+}
+
 void MapViewComponent::mouseMagnify(MouseEvent const& event, float scaleFactor)
 {
-    float const current = fBlocksPerPixel.get();
-    fBlocksPerPixel.set(std::min(std::max(current / scaleFactor, kMinScale), kMaxScale));
+    magnify(event.x, event.y, scaleFactor);
 }
 
 void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails const& wheel)
 {
     float factor = 1.0f + wheel.deltaY;
-    float const current = fBlocksPerPixel.get();
-    fBlocksPerPixel.set(std::min(std::max(current / factor, kMinScale), kMaxScale));
+    magnify(event.x, event.y, factor);
 }
 
 void MapViewComponent::mouseDrag(MouseEvent const& event)
 {
-    float const current = fBlocksPerPixel.get();
-    float const dx = event.getDistanceFromDragStartX() * current;
-    float const dy = event.getDistanceFromDragStartY() * current;
-    fCenter.set(Point<float>(fCenterWhenDragStart.x - dx, fCenterWhenDragStart.y - dy));
+    LookAt const current = fLookAt.get();
+    float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
+    float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
+    LookAt next = current;
+    next.fX = fCenterWhenDragStart.x - dx;
+    next.fY = fCenterWhenDragStart.y - dy;
+    fLookAt.set(next);
 }
 
 void MapViewComponent::mouseDown(MouseEvent const& event)
 {
-    fCenterWhenDragStart = fCenter.get();
+    LookAt const current = fLookAt.get();
+    fCenterWhenDragStart = Point<float>(current.fX, current.fY);
 }
