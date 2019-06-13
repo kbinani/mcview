@@ -175,7 +175,6 @@ void MapViewComponent::renderOpenGL()
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
         cache->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         if (fUniforms->texture.get() != nullptr) {
             fUniforms->texture->set(0);
         }
@@ -183,7 +182,6 @@ void MapViewComponent::renderOpenGL()
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE1);
         cache->fHeightmap->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         if (fUniforms->heightmap.get() != nullptr) {
             fUniforms->heightmap->set(1);
         }
