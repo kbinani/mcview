@@ -32,6 +32,11 @@ MapViewComponent::~MapViewComponent()
 
 void MapViewComponent::paint(Graphics& g)
 {
+    const int width = getWidth();
+    const int height = getHeight();
+    Point<float> block = getMapCoordinateFromView(fMouse);
+    g.setColour(Colours::white);
+    g.drawText(String::formatted("pixel:[%.2f, %.2f] block:[%.2f, %.2f]", fMouse.x, fMouse.y, block.x, block.y), 0, 0, width, height, Justification::topLeft);
 }
 
 void MapViewComponent::newOpenGLContextCreated()
@@ -41,10 +46,10 @@ void MapViewComponent::newOpenGLContextCreated()
     fOpenGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
 	fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
     std::vector<Vertex> vertices = {
-        {{0, 0}, {0.0, 0.0}},
-        {{1, 0}, {1.0, 0.0}},
-        {{1, 1}, {1.0, 1.0}},
-        {{0, 1}, {0.0, 1.0}},
+        {{0, 0}, {0.0, 1.0}},
+        {{1, 0}, {1.0, 1.0}},
+        {{1, 1}, {1.0, 0.0}},
+        {{0, 1}, {0.0, 0.0}},
     };
 	fOpenGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 
@@ -63,20 +68,27 @@ void MapViewComponent::updateShader()
     newShader->addVertexShader(R"#(
         attribute vec2 textureCoordIn;
         attribute vec4 position;
-        uniform float scaleX;
-        uniform float scaleZ;
-        uniform float tX;
-        uniform float tZ;
-        uniform float texX;
-        uniform float texZ;
+        uniform float blocksPerPixel;
+        uniform float Xr;
+        uniform float Zr;
+        uniform float width;
+        uniform float height;
+        uniform float Cx;
+        uniform float Cz;
         varying vec2 textureCoordOut;
         void main() {
             textureCoordOut = textureCoordIn;
-            float blockX = position.x * 512.0 + texX;
-            float blockZ = -position.y * 512.0 + texZ;
-            float x = (blockX - tX) * scaleX;
-            float y = (blockZ - tZ) * scaleZ;
-            gl_Position = vec4(x, -y, position.z, position.w);
+
+            float Xp = position.x;
+            float Yp = position.y;
+            float Xm = Xr + Xp * 512.0;
+            float Zm = Zr + Yp * 512.0;
+            float Xw = (Xm - Cx) / blocksPerPixel + width / 2.0;
+            float Yw = (Zm - Cz) / blocksPerPixel + height / 2.0;
+            float Xg = 2.0 * Xw / width - 1.0;
+            float Yg = 1.0 - 2.0 * Yw / height;
+
+            gl_Position = vec4(Xg, Yg, position.z, position.w);
         }
     )#");
 
@@ -103,14 +115,6 @@ void MapViewComponent::updateShader()
     fShader.reset(newShader.release());
 }
 
-Matrix3D<float> MapViewComponent::getProjectionMatrix() const
-{
-    auto w = 1.0f;
-    auto h = w * getLocalBounds().toFloat().getAspectRatio(false);
-
-    return Matrix3D<float>::fromFrustum(-w, w, -h, h, 4.0f, 30.0f);
-}
-
 void MapViewComponent::renderOpenGL()
 {
     OpenGLHelpers::clear(Colours::black);
@@ -121,7 +125,7 @@ void MapViewComponent::renderOpenGL()
     glViewport(0, 0, roundToInt(desktopScale * width), roundToInt(desktopScale * height));
 
     {
-        std::vector<Region> positions = { MakeRegion(0, 0) }; //, MakeRegion(-1, 0), MakeRegion(-1, -1), MakeRegion(0, -1)};
+        std::vector<Region> positions = { MakeRegion(0, 0), MakeRegion(-1, 0), MakeRegion(-1, -1), MakeRegion(0, -1)};
         for (auto pos : positions) {
             auto texture = fTextures.find(pos);
             if (texture == fTextures.end()) {
@@ -143,31 +147,29 @@ void MapViewComponent::renderOpenGL()
     fShader->use();
 
     LookAt const lookAt = fLookAt.get();
-    
-    GLfloat scaleX = 2 / (lookAt.fBlocksPerPixel * getWidth());
-    GLfloat scaleZ = 2 / (lookAt.fBlocksPerPixel * getHeight());
-    GLfloat tX = lookAt.fX;
-    GLfloat tZ = lookAt.fY;
 
     for (auto it : fTextures) {
         auto cache = it.second;
-        if (fUniforms->scaleX.get() != nullptr) {
-            fUniforms->scaleX->set(scaleX);
+        if (fUniforms->blocksPerPixel.get() != nullptr) {
+            fUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
         }
-        if (fUniforms->scaleZ.get() != nullptr) {
-            fUniforms->scaleZ->set(scaleZ);
+        if (fUniforms->Xr.get() != nullptr) {
+            fUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
         }
-        if (fUniforms->tX.get() != nullptr) {
-            fUniforms->tX->set(tX);
+        if (fUniforms->Zr.get() != nullptr) {
+            fUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
         }
-        if (fUniforms->tZ.get() != nullptr) {
-            fUniforms->tZ->set(tZ);
+        if (fUniforms->width.get() != nullptr) {
+            fUniforms->width->set((GLfloat)width);
         }
-        if (fUniforms->texX.get() != nullptr) {
-            fUniforms->texX->set((GLfloat)cache->fRegion.first * 512);
+        if (fUniforms->height.get() != nullptr) {
+            fUniforms->height->set((GLfloat)height);
         }
-        if (fUniforms->texZ.get() != nullptr) {
-            fUniforms->texZ->set((GLfloat)cache->fRegion.second * 512);
+        if (fUniforms->Cx.get() != nullptr) {
+            fUniforms->Cx->set((GLfloat)lookAt.fX);
+        }
+        if (fUniforms->Cz.get() != nullptr) {
+            fUniforms->Cz->set((GLfloat)lookAt.fZ);
         }
 
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
@@ -254,23 +256,43 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fOpenGLContext.attachTo(*this);
 }
 
-void MapViewComponent::magnify(int x, int y, float rate)
+Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
+{
+    LookAt const current = fLookAt.get();
+    float const width = getWidth();
+    float const height = getHeight();
+    float const bx = current.fX + (p.x - width / 2) * current.fBlocksPerPixel;
+    float const bz = current.fZ + (p.y - height / 2) * current.fBlocksPerPixel;
+    return Point<float>(bx, bz);
+}
+
+void MapViewComponent::magnify(Point<float> p, float rate)
 {
     LookAt const current = fLookAt.get();
     LookAt next = current;
+
     next.fBlocksPerPixel = std::min(std::max(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
+
+    float const width = getWidth();
+    float const height = getHeight();
+    Point<float> const pivot = getMapCoordinateFromView(p);
+    float const dx = (p.x - width / 2);
+    float const dz = (p.y - height / 2);
+    next.fX = pivot.x - dx * next.fBlocksPerPixel;
+    next.fZ = pivot.y - dz * next.fBlocksPerPixel;
+
     fLookAt.set(next);
 }
 
 void MapViewComponent::mouseMagnify(MouseEvent const& event, float scaleFactor)
 {
-    magnify(event.x, event.y, scaleFactor);
+    magnify(event.position, scaleFactor);
 }
 
 void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails const& wheel)
 {
     float factor = 1.0f + wheel.deltaY;
-    magnify(event.x, event.y, factor);
+    magnify(event.position, factor);
 }
 
 void MapViewComponent::mouseDrag(MouseEvent const& event)
@@ -280,12 +302,18 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
     LookAt next = current;
     next.fX = fCenterWhenDragStart.x - dx;
-    next.fY = fCenterWhenDragStart.y - dy;
+    next.fZ = fCenterWhenDragStart.y - dy;
     fLookAt.set(next);
 }
 
 void MapViewComponent::mouseDown(MouseEvent const& event)
 {
     LookAt const current = fLookAt.get();
-    fCenterWhenDragStart = Point<float>(current.fX, current.fY);
+    fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
+}
+
+void MapViewComponent::mouseMove(MouseEvent const& event)
+{
+    fMouse = event.position;
+    repaint();
 }

@@ -20,15 +20,16 @@ public:
     void mouseWheelMove(MouseEvent const& event, MouseWheelDetails const& wheel) override;
     void mouseDrag(MouseEvent const& event) override;
     void mouseDown(MouseEvent const& event) override;
+    void mouseMove(MouseEvent const& event) override;
 
     void setRegionsDirectory(File directory);
 
 private:
     void updateShader();
 
-    Matrix3D<float> getProjectionMatrix() const;
-
-    void magnify(int x, int y, float rate);
+    Point<float> getMapCoordinateFromView(Point<float> p) const;
+    
+    void magnify(Point<float> p, float rate);
 
     struct Uniforms
     {
@@ -37,15 +38,16 @@ private:
             texture.reset(createUniform(openGLContext, shader, "texture"));
             fade.reset(createUniform(openGLContext, shader, "fade"));
             heightmap.reset(createUniform(openGLContext, shader, "heightmap"));
-            scaleX.reset(createUniform(openGLContext, shader, "scaleX"));
-            scaleZ.reset(createUniform(openGLContext, shader, "scaleZ"));
-            tX.reset(createUniform(openGLContext, shader, "tX"));
-            tZ.reset(createUniform(openGLContext, shader, "tZ"));
-            texX.reset(createUniform(openGLContext, shader, "texX"));
-            texZ.reset(createUniform(openGLContext, shader, "texZ"));
+            blocksPerPixel.reset(createUniform(openGLContext, shader, "blocksPerPixel"));
+            width.reset(createUniform(openGLContext, shader, "width"));
+            height.reset(createUniform(openGLContext, shader, "height"));
+            Xr.reset(createUniform(openGLContext, shader, "Xr"));
+            Zr.reset(createUniform(openGLContext, shader, "Zr"));
+            Cx.reset(createUniform(openGLContext, shader, "Cx"));
+            Cz.reset(createUniform(openGLContext, shader, "Cz"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, scaleX, scaleZ, tX, tZ, texX, texZ;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
@@ -128,7 +130,7 @@ private:
 
     struct LookAt {
         float fX;
-        float fY;
+        float fZ;
         float fBlocksPerPixel;
     };
     Atomic<LookAt> fLookAt;
@@ -138,5 +140,7 @@ private:
 
     Point<float> fCenterWhenDragStart;
 
+    Point<float> fMouse;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
