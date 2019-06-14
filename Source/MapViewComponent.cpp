@@ -233,7 +233,6 @@ void MapViewComponent::setRegionsDirectory(File directory)
         if (!r) {
             continue;
         }
-        std::cout << r->fX << "\t" << r->fZ << std::endl;
         RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ));
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
@@ -304,6 +303,6 @@ void MapViewComponent::mouseMove(MouseEvent const& event)
 
 ThreadPool* MapViewComponent::CreateThreadPool()
 {
-    auto const threads = std::max(1, (int)std::thread::hardware_concurrency() / 2);
+    auto const threads = std::max(1, (int)std::thread::hardware_concurrency() - 1);
     return new ThreadPool(threads);
 }
