@@ -2,7 +2,9 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "RegionTextureCache.h"
+#include "RegionToTexture.h"
 #include <map>
+#include <vector>
 
 class MapViewComponent : public Component, private OpenGLRenderer
 {
@@ -31,6 +33,8 @@ private:
     
     void magnify(Point<float> p, float rate);
 
+    static ThreadPool* CreateThreadPool();
+    
     struct Uniforms
     {
         Uniforms (OpenGLContext& openGLContext, OpenGLShaderProgram& shader)
@@ -141,6 +145,9 @@ private:
     Point<float> fCenterWhenDragStart;
 
     Point<float> fMouse;
+    
+    ScopedPointer<ThreadPool> fPool;
+    std::vector<std::unique_ptr<RegionToTexture>> fJobs;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

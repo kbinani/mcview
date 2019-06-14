@@ -1,14 +1,18 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MapViewComponent.h"
+#include "RegionToTexture.h"
+#include "RegionTextureCache.h"
 #include <set>
 #include <cassert>
 #include <minecraft-file.hpp>
+#include <thread>
 
 float const MapViewComponent::kMaxScale = 5;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 1})
+    , fPool(CreateThreadPool())
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -20,9 +24,6 @@ MapViewComponent::MapViewComponent()
     fOpenGLContext.setContinuousRepainting(true);
 
     setSize (600, 400);
-    
-    //TODO:
-    setRegionsDirectory(File("/Users/kbinani/Library/Application Support/minecraft/saves/2434/region"));
 }
 
 MapViewComponent::~MapViewComponent()
@@ -125,19 +126,23 @@ void MapViewComponent::renderOpenGL()
     glViewport(0, 0, roundToInt(desktopScale * width), roundToInt(desktopScale * height));
 
     {
-        std::vector<Region> positions = { MakeRegion(0, 0), MakeRegion(-1, 0), MakeRegion(-1, -1), MakeRegion(0, -1)};
-        for (auto pos : positions) {
-            auto texture = fTextures.find(pos);
-            if (texture == fTextures.end()) {
-                File f = fRegionsDirectory.getChildFile(String::formatted("r.%d.%d.mca", pos.first, pos.second));
-                auto cache = std::make_shared<RegionTextureCache>(pos, f.getFullPathName());
-                cache->loadIfNeeded();
-                fTextures.insert(std::make_pair(pos, cache));
+        for (long i = (long)fJobs.size() - 1; i > 0; i--) {
+            auto& job = fJobs[i];
+            if (fPool->contains(job.get())) {
+                continue;
             }
+            fPool->removeJob(job.get(), false, 0);
+            RegionToTexture* j = job.release();
+            fJobs.erase(fJobs.begin() + i);
+            auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
+            cache->load(j->fPixels, j->fHeightmap);
+            fTextures.insert(std::make_pair(j->fRegion, cache));
+            delete j;
+            break;
         }
     }
     Time const now = Time::getCurrentTime();
-
+    
     if (fShader.get() == nullptr) {
         updateShader();
     }
@@ -200,42 +205,6 @@ void MapViewComponent::renderOpenGL()
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
         fAttributes->disable(fOpenGLContext);
     }
-
-#if 0
-    DirectoryIterator it(fRegionsDirectory, false, "*.mca");
-    std::set<String> existing;
-
-    int minX = 1, maxX = 0, minZ = 1, maxZ = 0;
-    for (auto it = fTextures.begin(); it != fTextures.end(); it++) {
-        Region region = it->first;
-        String name = RegionFileName(region);
-        existing.insert(name);
-        minX = std::min(minX, region.first);
-        maxX = std::max(maxX, region.first);
-        minZ = std::min(minZ, region.second);
-        maxZ = std::max(maxZ, region.second);
-    }
-
-    while (it.next()) {
-        File f = it.getFile();
-        if (existing.find(f.getFileName()) != existing.end()) {
-            continue;
-        }
-        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
-        if (!r) {
-            continue;
-        }
-        auto region = MakeRegion(r->fX, r->fZ);
-        auto cache = std::make_shared<RegionTextureCache>(region, f.getFullPathName());
-        cache->loadIfNeeded();
-        fTextures.insert(std::make_pair(region, cache));
-
-        minX = std::min(minX, region.first);
-        maxX = std::max(maxX, region.first);
-        minZ = std::min(minZ, region.second);
-        maxZ = std::max(maxZ, region.second);
-    }
-#endif
 }
 
 void MapViewComponent::openGLContextClosing()
@@ -250,10 +219,24 @@ void MapViewComponent::setRegionsDirectory(File directory)
     if (fRegionsDirectory.getFullPathName() == directory.getFullPathName()) {
         return;
     }
-    fOpenGLContext.detach();
+
     fTextures.clear();
     fRegionsDirectory = directory;
-    fOpenGLContext.attachTo(*this);
+    fPool = CreateThreadPool();
+
+    DirectoryIterator it(fRegionsDirectory, false, "*.mca");
+    
+    while (it.next()) {
+        File f = it.getFile();
+        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+        if (!r) {
+            continue;
+        }
+        std::cout << r->fX << "\t" << r->fZ << std::endl;
+        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ));
+        fJobs.emplace_back(job);
+        fPool->addJob(job, false);
+    }
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
@@ -316,4 +299,10 @@ void MapViewComponent::mouseMove(MouseEvent const& event)
 {
     fMouse = event.position;
     repaint();
+}
+
+ThreadPool* MapViewComponent::CreateThreadPool()
+{
+    auto const threads = std::max(1, (int)std::thread::hardware_concurrency() / 2);
+    return new ThreadPool(threads);
 }

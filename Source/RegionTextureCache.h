@@ -21,7 +21,7 @@ public:
     {
     }
     
-    void loadIfNeeded();
+    void load(PixelARGB *pixels, uint8* heightmap);
 
 public:
     Region const fRegion;
