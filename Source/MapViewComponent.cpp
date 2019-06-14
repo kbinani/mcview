@@ -29,6 +29,7 @@ MapViewComponent::MapViewComponent()
 MapViewComponent::~MapViewComponent()
 {
     fOpenGLContext.detach();
+    fPool->removeAllJobs(true, -1);
 }
 
 void MapViewComponent::paint(Graphics& g)

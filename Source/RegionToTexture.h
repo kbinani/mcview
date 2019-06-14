@@ -10,7 +10,7 @@ public:
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
-    static void Load(mcfile::Region const& region, std::function<void(PixelARGB *, uint8 *)> completion);
+    static void Load(mcfile::Region const& region, ThreadPoolJob* job, std::function<void(PixelARGB *, uint8 *)> completion);
     
 public:
     File const fRegionFile;

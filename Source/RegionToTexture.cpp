@@ -142,7 +142,7 @@ static Colour Add(Colour a, Colour b) {
                  1.f);
 }
 
-void RegionToTexture::Load(mcfile::Region const& region, std::function<void(PixelARGB *, uint8 *)> completion) {
+void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *, uint8 *)> completion) {
     int const width = 512;
     int const height = 512;
 
@@ -156,7 +156,7 @@ void RegionToTexture::Load(mcfile::Region const& region, std::function<void(Pixe
     int const minZ = region.minBlockZ();
 
     bool error = false;
-    region.loadAllChunks(error, [pixelsPtr, heightMapPtr, minX, minZ, width, height](mcfile::Chunk const& chunk) {
+    region.loadAllChunks(error, [pixelsPtr, heightMapPtr, minX, minZ, width, height, job](mcfile::Chunk const& chunk) {
         Colour waterColor(69, 91, 211);
         float const waterDiffusion = 0.02;
         colormap::kbinani::Altitude altitude;
@@ -166,6 +166,9 @@ void RegionToTexture::Load(mcfile::Region const& region, std::function<void(Pixe
         int const eX = chunk.maxBlockX();
         for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
+                if (job->shouldExit()) {
+                    return false;
+                }
                 int waterDepth = 0;
                 int airDepth = 0;
                 Colour translucentBlock = Colour::fromRGBA(0, 0, 0, 0);
@@ -232,7 +235,6 @@ RegionToTexture::RegionToTexture(File const& mcaFile, Region region)
 
 RegionToTexture::~RegionToTexture()
 {
-    
 }
 
 ThreadPoolJob::JobStatus RegionToTexture::runJob()
@@ -241,7 +243,7 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
     if (!region) {
         return ThreadPoolJob::jobHasFinished;
     }
-    Load(*region, [this](PixelARGB *pixels, uint8* heightmap) {
+    Load(*region, this, [this](PixelARGB *pixels, uint8* heightmap) {
         fPixels.reset(pixels);
         fHeightmap.reset(heightmap);
     });
