@@ -2,7 +2,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "minecraft-file.hpp"
 #include "RegionToTexture.h"
-#include "RegionTextureCache.h"
+#include "Region.h"
 
 class RegionToTexture : public ThreadPoolJob {
 public:

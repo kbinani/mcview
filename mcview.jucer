@@ -4,20 +4,21 @@
               headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;C:\JUCE\modules\juce_core\zip\zlib">
   <MAINGROUP id="IT5WFJ" name="mcview">
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
-      <FILE id="vT5DQg" name="RegionToTexture.cpp" compile="1" resource="0"
-            file="Source/RegionToTexture.cpp"/>
-      <FILE id="SQSRbc" name="RegionToTexture.h" compile="0" resource="0"
-            file="Source/RegionToTexture.h"/>
-      <FILE id="Ga0NBo" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="xZVGLL" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="Ga0NBo" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="wECAun" name="MapViewComponent.cpp" compile="1" resource="0"
             file="Source/MapViewComponent.cpp"/>
       <FILE id="JwisrF" name="MapViewComponent.h" compile="0" resource="0"
             file="Source/MapViewComponent.h"/>
+      <FILE id="gaqahe" name="Region.h" compile="0" resource="0" file="Source/Region.h"/>
       <FILE id="Q2TQ9P" name="RegionTextureCache.cpp" compile="1" resource="0"
             file="Source/RegionTextureCache.cpp"/>
       <FILE id="pdJFhG" name="RegionTextureCache.h" compile="0" resource="0"
             file="Source/RegionTextureCache.h"/>
+      <FILE id="vT5DQg" name="RegionToTexture.cpp" compile="1" resource="0"
+            file="Source/RegionToTexture.cpp"/>
+      <FILE id="SQSRbc" name="RegionToTexture.h" compile="0" resource="0"
+            file="Source/RegionToTexture.h"/>
       <FILE id="WcR7oH" name="zlib.cpp" compile="1" resource="0" file="Source/zlib.cpp"/>
     </GROUP>
   </MAINGROUP>
