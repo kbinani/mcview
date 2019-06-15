@@ -36,6 +36,11 @@ public:
 #endif
 
         browser = new Browser();
+        browser->addDirectory(DefaultMinecraftSaveDirectory());
+        browser->onSelect = [this](File dir) {
+            mapView->setRegionsDirectory(dir.getChildFile("region"));
+        };
+        browser->setSize(300, 400);
         addAndMakeVisible(browser);
 
         setApplicationCommandManagerToWatch (&commandManager);
@@ -58,6 +63,15 @@ public:
         g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
     }
 
+    static File DefaultMinecraftSaveDirectory()
+    {
+#if JUCE_WINDOWS
+        return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(".minecraft").getChildFile("saves");
+#else
+        return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+#endif
+    }
+    
     void resized() override
     {
         // This is called when the MainComponent is resized.
@@ -154,7 +168,7 @@ public:
                 return false;
         }
     }
-
+    
 private:
     ScopedPointer<MapViewComponent> mapView;
     ScopedPointer<MenuBarComponent> menuBar;

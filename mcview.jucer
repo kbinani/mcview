@@ -6,6 +6,10 @@
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
       <FILE id="D9uNQU" name="Browser.cpp" compile="1" resource="0" file="Source/Browser.cpp"/>
       <FILE id="mzRNGl" name="Browser.h" compile="0" resource="0" file="Source/Browser.h"/>
+      <FILE id="wruocI" name="DirectoryBrowser.cpp" compile="1" resource="0"
+            file="Source/DirectoryBrowser.cpp"/>
+      <FILE id="fLyAMF" name="DirectoryBrowser.h" compile="0" resource="0"
+            file="Source/DirectoryBrowser.h"/>
       <FILE id="xZVGLL" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="Ga0NBo" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="wECAun" name="MapViewComponent.cpp" compile="1" resource="0"
