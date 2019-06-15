@@ -13,6 +13,7 @@ float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 1})
     , fPool(CreateThreadPool())
+    , fMouseDragAmount({0, 0})
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -37,7 +38,7 @@ void MapViewComponent::paint(Graphics& g)
     const int width = getWidth();
     const int height = getHeight();
     Point<float> block = getMapCoordinateFromView(fMouse);
-    g.setColour(Colours::white);
+    g.setColour(Colours::black);
     g.drawText(String::formatted("pixel:[%.2f, %.2f] block:[%.2f, %.2f]", fMouse.x, fMouse.y, block.x, block.y), 0, 0, width, height, Justification::topLeft);
 }
 
@@ -119,7 +120,7 @@ void MapViewComponent::updateShader()
 
 void MapViewComponent::renderOpenGL()
 {
-    OpenGLHelpers::clear(Colours::black);
+    OpenGLHelpers::clear(Colours::white);
 
     float const width = getWidth();
     float const height = getHeight();
@@ -142,12 +143,19 @@ void MapViewComponent::renderOpenGL()
             break;
         }
     }
+    
+    drawBackground();
+    
     Time const now = Time::getCurrentTime();
     
     if (fShader.get() == nullptr) {
         updateShader();
     }
 
+    glEnable (GL_DEPTH_TEST);
+    glDepthFunc (GL_LESS);
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_TEXTURE_2D);
 
     fShader->use();
@@ -205,6 +213,45 @@ void MapViewComponent::renderOpenGL()
         fAttributes->enable(fOpenGLContext);
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
         fAttributes->disable(fOpenGLContext);
+    }
+}
+
+void MapViewComponent::drawBackground()
+{
+    const int width = getWidth();
+    const int height = getHeight();
+    const float desktopScale = (float)fOpenGLContext.getRenderingScale();
+
+    std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fOpenGLContext,
+                                                                                    roundToInt(desktopScale * width),
+                                                                                    roundToInt(desktopScale * height)));
+
+    if (glRenderer.get() == nullptr) {
+        return;
+    }
+
+    Graphics g(*glRenderer);
+    g.setColour(Colour::fromRGB(236, 236, 236));
+    int const xoffset = fMouseDragAmount.x % (2 * kCheckeredPatternSize);
+    int const yoffset = fMouseDragAmount.y % (2 * kCheckeredPatternSize);
+
+    const int w = width / kCheckeredPatternSize + 5;
+    const int h = height / kCheckeredPatternSize + 5;
+    for (int j = 0; j < h; j++) {
+        const int y = (j - 2) * kCheckeredPatternSize + yoffset;
+        for (int i = (j % 2 == 0 ? 0 : 1); i < w; i += 2) {
+            const int x = (i - 2) * kCheckeredPatternSize + xoffset;
+            g.fillRect(x, y, kCheckeredPatternSize, kCheckeredPatternSize);
+        }
+    }
+    g.setColour(Colour::fromRGB(245, 245, 245));
+    for (int i = 0; i < w; i++) {
+        const int x = (i - 2) * kCheckeredPatternSize + xoffset;
+        g.drawVerticalLine(x, 0, height);
+    }
+    for (int j = 0; j < h; j++) {
+        const int y = (j - 2) * kCheckeredPatternSize + yoffset;
+        g.drawHorizontalLine(y, 0, width);
     }
 }
 
@@ -287,12 +334,16 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     next.fX = fCenterWhenDragStart.x - dx;
     next.fZ = fCenterWhenDragStart.y - dy;
     fLookAt.set(next);
+    
+    fMouseDragAmount.x = (fMouseDragAmountWhenDragStart.x + event.getDistanceFromDragStartX()) % (2 * kCheckeredPatternSize);
+    fMouseDragAmount.y = (fMouseDragAmountWhenDragStart.y + event.getDistanceFromDragStartY()) % (2 * kCheckeredPatternSize);
 }
 
 void MapViewComponent::mouseDown(MouseEvent const& event)
 {
     LookAt const current = fLookAt.get();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
+    fMouseDragAmountWhenDragStart = fMouseDragAmount;
 }
 
 void MapViewComponent::mouseMove(MouseEvent const& event)

@@ -28,10 +28,9 @@ public:
 
 private:
     void updateShader();
-
     Point<float> getMapCoordinateFromView(Point<float> p) const;
-    
     void magnify(Point<float> p, float rate);
+    void drawBackground();
 
     static ThreadPool* CreateThreadPool();
     
@@ -71,7 +70,6 @@ private:
         float position[2];
         float texCoord[2];
     };
-
 
     struct Attributes
     {
@@ -148,6 +146,10 @@ private:
     
     ScopedPointer<ThreadPool> fPool;
     std::vector<std::unique_ptr<RegionToTexture>> fJobs;
+
+    static int constexpr kCheckeredPatternSize = 16;
+    Point<int> fMouseDragAmount;
+    Point<int> fMouseDragAmountWhenDragStart;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
