@@ -12,7 +12,7 @@ float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 MapViewComponent::MapViewComponent()
-    : fLookAt({0, 0, 1})
+    : fLookAt({0, 0, 5})
     , fPool(CreateThreadPool())
     , fMouseDragAmount({0, 0})
 {
