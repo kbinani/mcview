@@ -242,7 +242,7 @@ void MapViewComponent::renderOpenGL()
     glViewport(0, 0, roundToInt(desktopScale * width), roundToInt(desktopScale * height));
 
     {
-        for (long i = (long)fJobs.size() - 1; i > 0; i--) {
+        for (long i = (long)fJobs.size() - 1; i >= 0; i--) {
             auto& job = fJobs[i];
             if (fPool->contains(job.get())) {
                 continue;
