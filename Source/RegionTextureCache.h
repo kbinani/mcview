@@ -21,12 +21,11 @@ public:
     {
     }
     
-    void load(PixelARGB *pixels, uint8* heightmap);
+    void load(PixelARGB *pixels);
 
 public:
     Region const fRegion;
     String const fFile;
     ScopedPointer<OpenGLTexture> fTexture;
-    ScopedPointer<OpenGLTexture> fHeightmap;
     Time fLoadTime;
 };

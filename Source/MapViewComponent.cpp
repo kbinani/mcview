@@ -4,10 +4,11 @@
 #include "RegionTextureCache.h"
 #include <set>
 #include <cassert>
-#include <minecraft-file.hpp>
 #include <thread>
+#include <minecraft-file.hpp>
+#include <colormap/colormap.h>
 
-float const MapViewComponent::kMaxScale = 5;
+float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 MapViewComponent::MapViewComponent()
@@ -94,19 +95,71 @@ void MapViewComponent::updateShader()
         }
     )#");
 
-    newShader->addFragmentShader(R"#(
-        varying vec2 textureCoordOut;
-        uniform sampler2D texture;
-        uniform sampler2D heightmap;
-        uniform float fade;
-        void main() {
-            vec4 color = texture2D(texture, textureCoordOut);
-            float height = texture2D(heightmap, textureCoordOut).a;
-//            float alpha = height * fade;
-            float alpha = fade;
-            gl_FragColor = vec4(color.r * alpha, color.g * alpha, color.b * alpha, 1.0);
+    colormap::kbinani::Altitude altitude;
+
+	std::ostringstream fragment;
+	fragment << "varying vec2 textureCoordOut;" << std::endl;
+	fragment << "uniform sampler2D texture;" << std::endl;
+	fragment << "uniform float fade;" << std::endl;
+	fragment << "uniform int grassBlockId;" << std::endl;
+
+	fragment << altitude.getSource() << std::endl;
+
+    fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
+    for (auto it : RegionToTexture::kBlockToColor) {
+        auto id = it.first;
+        Colour c = it.second;
+        GLfloat r = c.getRed() / 255.0f;
+        GLfloat g = c.getGreen() / 255.0f;
+        GLfloat b = c.getBlue() / 255.0f;
+        fragment << "    if (blockId == " << id << ") {" << std::endl;
+        fragment << "        return vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0);" << std::endl;
+        fragment << "    } else" << std::endl;
+    }
+    fragment << "    { " << std::endl;
+    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
+    fragment << "    }" << std::endl;
+    fragment << "}" << std::endl;
+    
+	fragment << "void main() {" << std::endl;
+
+	fragment << R"#(
+        vec4 waterColor = vec4(69.0 / 255.0, 91.0 / 255.0, 211.0 / 255.0, 1.0);
+        float waterDiffusion = 0.02;
+
+        float alpha = fade;
+
+        vec4 color = texture2D(texture, textureCoordOut);
+
+        float height = color.a * 255.0;
+        float waterDepth = color.r * 255.0;
+        int hi = int(color.g * 255.0);
+        int lo = int(color.b * 255.0);
+        int blockId = hi * 256 + lo;
+
+        vec4 c;
+        if (waterDepth > 0.0) {
+            float intensity = pow(10.0, -waterDiffusion * waterDepth);
+            c = vec4(waterColor.r * intensity, waterColor.g * intensity, waterColor.b * intensity, alpha);
+        } else if (blockId == grassBlockId) {
+            float v = (height - 63.0) / 193.0;
+            vec4 g = colormap(v);
+            c = vec4(g.r, g.g, g.b, alpha);
+        } else if (blockId == 0) {
+            c = vec4(0.0, 0.0, 0.0, 0.0);
+        } else {
+            vec4 cc = colorFromBlockId(blockId);
+            if (cc.a == 0.0) {
+                c = cc;
+            } else {
+                c = vec4(cc.r, cc.g, cc.b, alpha);
+            }
         }
-    )#");
+
+        gl_FragColor = c;
+    }
+    )#";
+	newShader->addFragmentShader(fragment.str());
 
     newShader->link();
     newShader->use();
@@ -136,7 +189,7 @@ void MapViewComponent::renderOpenGL()
             RegionToTexture* j = job.release();
             fJobs.erase(fJobs.begin() + i);
             auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
-            cache->load(j->fPixels, j->fHeightmap);
+            cache->load(j->fPixels);
             fTextures.insert(std::make_pair(j->fRegion, cache));
             delete j;
             break;
@@ -188,24 +241,21 @@ void MapViewComponent::renderOpenGL()
         if (fUniforms->Cz.get() != nullptr) {
             fUniforms->Cz->set((GLfloat)lookAt.fZ);
         }
-
+        if (fUniforms->grassBlockId.get() != nullptr) {
+            fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
+        }
+        
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
         cache->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         if (fUniforms->texture.get() != nullptr) {
             fUniforms->texture->set(0);
         }
 
-        fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE1);
-        cache->fHeightmap->bind();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        if (fUniforms->heightmap.get() != nullptr) {
-            fUniforms->heightmap->set(1);
-        }
-
         if (fUniforms->fade.get() != nullptr) {
             double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
-            GLfloat const fadeSeconds = 0.6f;
+            GLfloat const fadeSeconds = 0.3f;
             GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
             fUniforms->fade->set(a);
         }
@@ -308,7 +358,7 @@ void MapViewComponent::magnify(Point<float> p, float rate)
     LookAt const current = fLookAt.get();
     LookAt next = current;
 
-    next.fBlocksPerPixel = std::min(std::max(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
+    next.fBlocksPerPixel = (std::min)((std::max)(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
 
     float const width = getWidth();
     float const height = getHeight();
@@ -365,7 +415,7 @@ void MapViewComponent::mouseMove(MouseEvent const& event)
 
 ThreadPool* MapViewComponent::CreateThreadPool()
 {
-    auto const threads = std::max(1, (int)std::thread::hardware_concurrency() - 1);
+    auto const threads = (std::max)(1, (int)std::thread::hardware_concurrency() - 1);
     return new ThreadPool(threads);
 }
 

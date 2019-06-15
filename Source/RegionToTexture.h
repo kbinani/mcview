@@ -10,11 +10,12 @@ public:
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
-    static void Load(mcfile::Region const& region, ThreadPoolJob* job, std::function<void(PixelARGB *, uint8 *)> completion);
+    static void Load(mcfile::Region const& region, ThreadPoolJob* job, std::function<void(PixelARGB *)> completion);
     
 public:
     File const fRegionFile;
     Region const fRegion;
     ScopedPointer<PixelARGB> fPixels;
-    ScopedPointer<uint8> fHeightmap;
+    
+    static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
 };

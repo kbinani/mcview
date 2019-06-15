@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 
-static std::map<mcfile::blocks::BlockId, Colour> const blockToColor {
+std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::stone, Colour(111, 111, 111)},
     {mcfile::blocks::minecraft::granite, Colour(149, 108, 76)},
     {mcfile::blocks::minecraft::diorite, Colour(252, 249, 242)},
@@ -130,35 +130,19 @@ static std::set<mcfile::blocks::BlockId> transparentBlocks = {
     mcfile::blocks::minecraft::ladder, // Colour(255, 255, 255)},
 };
 
-static Colour Diffuse(Colour base, float diffusion, float distance) {
-    float intensity = pow(10., -diffusion * distance);
-    return Colour::fromFloatRGBA(base.getFloatRed(), base.getFloatGreen(), base.getFloatBlue(), base.getFloatAlpha() * intensity);
-}
-
-static Colour Add(Colour a, Colour b) {
-    return Colour::fromFloatRGBA(a.getFloatRed() * a.getFloatAlpha() + b.getFloatRed() * b.getFloatAlpha(),
-                 a.getFloatGreen() * a.getFloatAlpha() + b.getFloatGreen() * b.getFloatAlpha(),
-                 a.getFloatBlue() * a.getFloatAlpha() + b.getFloatBlue() * b.getFloatAlpha(),
-                 1.f);
-}
-
-void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *, uint8 *)> completion) {
+void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
 
     std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
     PixelARGB * const pixelsPtr = pixels.get();
-    std::fill_n(pixelsPtr, width * height, PixelARGB(255, 0, 0, 0));
-    std::unique_ptr<uint8[]> heightMap(new uint8[width * height]);
-    uint8 * const heightMapPtr = heightMap.get();
+    std::fill_n(pixelsPtr, width * height, PixelARGB(0, 0, 0, 0));
 
     int const minX = region.minBlockX();
     int const minZ = region.minBlockZ();
 
     bool error = false;
-    region.loadAllChunks(error, [pixelsPtr, heightMapPtr, minX, minZ, width, height, job](mcfile::Chunk const& chunk) {
-        Colour waterColor(69, 91, 211);
-        float const waterDiffusion = 0.02;
+    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job](mcfile::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -169,13 +153,10 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                 if (job->shouldExit()) {
                     return false;
                 }
-                int waterDepth = 0;
-                int airDepth = 0;
-                Colour translucentBlock = Colour::fromRGBA(0, 0, 0, 0);
+                uint8 waterDepth = 0;
                 for (int y = 255; y >= 0; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
                     if (!block) {
-                        airDepth++;
                         continue;
                     }
                     if (block == mcfile::blocks::minecraft::water || block == mcfile::blocks::minecraft::bubble_column) {
@@ -183,36 +164,20 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                         continue;
                     }
                     if (transparentBlocks.find(block) != transparentBlocks.end()) {
-                        airDepth++;
                         continue;
                     }
                     if (plantBlocks.find(block) != plantBlocks.end()) {
-                        airDepth++;
                         continue;
                     }
-                    auto it = blockToColor.find(block);
-                    if (it == blockToColor.end()) {
+                    auto it = kBlockToColor.find(block);
+                    if (it == kBlockToColor.end()) {
 
                     } else {
                         int const idx = (z - minZ) * width + (x - minX);
                         assert(0 <= idx && idx < width * height);
                         uint8 const h = (uint8)std::min(std::max(y, 0), 255);
-
-                        Colour const opaqeBlockColor = it->second;
-                        Colour colour = Colour::fromRGBA(0, 0, 0, 0);
-                        if (waterDepth > 0) {
-                            colour = Diffuse(waterColor, waterDiffusion, waterDepth);
-                            translucentBlock = Colour::fromRGBA(0, 0, 0, 0);
-                        } else if (block == mcfile::blocks::minecraft::grass_block) {
-                            float const v = std::min(std::max((y - 63.0) / 193.0, 0.0), 1.0);
-                            auto c = altitude.getColor(v);
-                            colour = Colour::fromFloatRGBA(c.r, c.g, c.b, 1);
-                            heightMapPtr[idx] = h;
-                        } else {
-                            colour = opaqeBlockColor;
-                            heightMapPtr[idx] = h;
-                        }
-                        PixelARGB p = Add(colour, translucentBlock.withAlpha(0.2f)).getPixelARGB();
+                        PixelARGB p;
+                        p.setARGB(h, waterDepth, 0xFF & (block >> 8), 0xFF & block);
                         pixelsPtr[idx] = p;
                         break;
                     }
@@ -222,7 +187,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
         return true;
     });
 
-    completion(pixels.release(), heightMap.release());
+    completion(pixels.release());
 }
 
 RegionToTexture::RegionToTexture(File const& mcaFile, Region region)
@@ -243,9 +208,8 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
     if (!region) {
         return ThreadPoolJob::jobHasFinished;
     }
-    Load(*region, this, [this](PixelARGB *pixels, uint8* heightmap) {
+    Load(*region, this, [this](PixelARGB *pixels) {
         fPixels.reset(pixels);
-        fHeightmap.reset(heightmap);
     });
     return ThreadPoolJob::jobHasFinished;
 }
