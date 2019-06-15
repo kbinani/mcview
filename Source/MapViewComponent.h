@@ -60,9 +60,11 @@ private:
             Cx.reset(createUniform(openGLContext, shader, "Cx"));
             Cz.reset(createUniform(openGLContext, shader, "Cz"));
             grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
+            north.reset(createUniform(openGLContext, shader, "north"));
+            west.reset(createUniform(openGLContext, shader, "west"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, north, west;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,

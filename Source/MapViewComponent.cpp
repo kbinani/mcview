@@ -102,9 +102,12 @@ void MapViewComponent::updateShader()
 	fragment << "uniform sampler2D texture;" << std::endl;
 	fragment << "uniform float fade;" << std::endl;
 	fragment << "uniform int grassBlockId;" << std::endl;
+    
+    fragment << "uniform sampler2D north;" << std::endl;
+    fragment << "uniform sampler2D west;" << std::endl;
 
 	fragment << altitude.getSource() << std::endl;
-
+    
     fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
     for (auto it : RegionToTexture::kBlockToColor) {
         auto id = it.first;
@@ -120,6 +123,26 @@ void MapViewComponent::updateShader()
     fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
     fragment << "    }" << std::endl;
     fragment << "}" << std::endl;
+
+    fragment << R"#(
+        vec3 rgb2hsv(vec3 c)
+        {
+            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+            
+            float d = q.x - min(q.w, q.y);
+            float e = 1.0e-10;
+            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+        }
+
+        vec3 hsv2rgb(vec3 c)
+        {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+        }
+    )#";
     
 	fragment << "void main() {" << std::endl;
 
@@ -156,6 +179,45 @@ void MapViewComponent::updateShader()
             }
         }
 
+        float heightScore = 0.0; // +: bright, -: dark
+        float d = 1.0 / 512.0;
+        float tx = textureCoordOut.x;
+        float ty = textureCoordOut.y;
+        vec4 northC;
+        if (ty - d < 0.0) {
+            northC = texture2D(north, vec2(tx, ty - d + 1.0));
+        } else {
+            northC = texture2D(texture, vec2(tx, ty - d));
+        }
+        vec4 westC;
+        if (tx - d < 0.0) {
+            westC = texture2D(west, vec2(tx - d + 1.0, ty));
+        } else {
+            westC = texture2D(texture, vec2(tx - d, ty));
+        }
+        float northH = northC.a * 255.0;
+        float westH = westC.a * 255.0;
+        if (northH > 0.0) {
+            if (northH > height) heightScore--;
+            if (northH < height) heightScore++;
+        }
+        if (westH > 0.0) {
+            if (westH > height) heightScore--;
+            if (westH < height) heightScore++;
+        }
+    
+        if (heightScore > 0.0) {
+            float coeff = 1.2;
+            vec3 hsv = rgb2hsv(c.rgb);
+            hsv.b = hsv.b * coeff;
+            c = vec4(hsv2rgb(hsv).rgb, c.a);
+        } else if (heightScore < 0.0) {
+            float coeff = 0.8;
+            vec3 hsv = rgb2hsv(c.rgb);
+            hsv.b = hsv.b * coeff;
+            c = vec4(hsv2rgb(hsv).rgb, c.a);
+        }
+    
         gl_FragColor = c;
     }
     )#";
@@ -249,7 +311,14 @@ void MapViewComponent::renderOpenGL()
         if (fUniforms->grassBlockId.get() != nullptr) {
             fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
         }
-        
+
+        if (fUniforms->fade.get() != nullptr) {
+            double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
+            GLfloat const fadeSeconds = 0.3f;
+            GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
+            fUniforms->fade->set(a);
+        }
+
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
         cache->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -258,11 +327,29 @@ void MapViewComponent::renderOpenGL()
             fUniforms->texture->set(0);
         }
 
-        if (fUniforms->fade.get() != nullptr) {
-            double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
-            GLfloat const fadeSeconds = 0.3f;
-            GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
-            fUniforms->fade->set(a);
+        int const x = it.first.first;
+        int const z = it.first.second;
+
+        auto north = fTextures.find(MakeRegion(x, z - 1));
+        if (north != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE1);
+            north->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->north.get() != nullptr) {
+                fUniforms->north->set(1);
+            }
+        }
+
+        auto west = fTextures.find(MakeRegion(x - 1, z));
+        if (west != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE2);
+            west->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->west.get() != nullptr) {
+                fUniforms->west->set(2);
+            }
         }
 
 		fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fBuffer->vBuffer);
