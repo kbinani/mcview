@@ -10,6 +10,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MapViewComponent.h"
+#include "Browser.h"
 #include <iostream>
 
 //==============================================================================
@@ -25,15 +26,18 @@ public:
     {
         mapView = new MapViewComponent();
         mapView->setSize(600, 400);
-		menuBar.reset(new MenuBarComponent(this));
+        addAndMakeVisible(mapView);
+
+        menuBar.reset(new MenuBarComponent(this));
 		menuBar->setSize(600, kMenuHeight);
-		
-		addAndMakeVisible(mapView);
-        
-#if JUCE_MAC
-        MenuBarModel::setMacMainMenu (this);
-#endif
         addAndMakeVisible(menuBar);
+#if JUCE_MAC
+        MenuBarModel::setMacMainMenu(this);
+#endif
+
+        browser = new Browser();
+        addAndMakeVisible(browser);
+
         setApplicationCommandManagerToWatch (&commandManager);
         commandManager.registerAllCommandsForTarget(this);
 
@@ -59,7 +63,7 @@ public:
         // This is called when the MainComponent is resized.
         // If you add any child components, this is where you should
         // update their positions.
-		if (!menuBar || !mapView) {
+        if (!menuBar || !mapView || !browser) {
 			return;
 		}
 		auto bounds = getBounds();
@@ -69,9 +73,17 @@ public:
 		menuBar->setBounds(0, 0, bounds.getWidth(), kMenuHeight);
 #endif
 		const auto menuHeight = menuBar->getHeight();
-        mapView->setBounds(Rectangle<int>(0, menuHeight, bounds.getWidth(), bounds.getHeight() - menuHeight));
+        const auto browserWidth = browser->getWidth();
+    
+        browser->setBounds(0, menuHeight, browserWidth, bounds.getHeight() - menuHeight);
+        mapView->setBounds(browserWidth, menuHeight, bounds.getWidth() - browserWidth, bounds.getHeight() - menuHeight);
     }
 
+    void childBoundsChanged (Component *child) override
+    {
+        resized();
+    }
+    
     enum CommandIDs
     {
         fileSelectRootDir = 1,
@@ -146,6 +158,8 @@ public:
 private:
     ScopedPointer<MapViewComponent> mapView;
     ScopedPointer<MenuBarComponent> menuBar;
+    ScopedPointer<Browser> browser;
+
     ApplicationCommandManager commandManager;
 
 	static int constexpr kMenuHeight = 24;
