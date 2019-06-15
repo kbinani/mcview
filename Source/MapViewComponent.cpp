@@ -49,10 +49,10 @@ void MapViewComponent::newOpenGLContextCreated()
     fOpenGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
 	fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
     std::vector<Vertex> vertices = {
-        {{0, 0}, {0.0, 1.0}},
-        {{1, 0}, {1.0, 1.0}},
-        {{1, 1}, {1.0, 0.0}},
-        {{0, 1}, {0.0, 0.0}},
+        {{0, 0}, {0.0, 0.0}},
+        {{1, 0}, {1.0, 0.0}},
+        {{1, 1}, {1.0, 1.0}},
+        {{0, 1}, {0.0, 1.0}},
     };
 	fOpenGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 

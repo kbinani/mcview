@@ -6,7 +6,7 @@
 void RegionTextureCache::load(PixelARGB* pixels)
 {
     ScopedPointer<OpenGLTexture> p = new OpenGLTexture();
-    p->loadARGBFlipped(pixels, 512, 512);
+    p->loadARGB(pixels, 512, 512);
     fTexture.reset(p.release());
 
     fLoadTime = Time::getCurrentTime();
