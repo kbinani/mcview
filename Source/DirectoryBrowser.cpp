@@ -50,12 +50,6 @@ DirectoryBrowser::DirectoryBrowser(File directory)
 {
     fModel = new DirectoryBrowserModel(this, directory, getLookAndFeel());
     setModel(fModel);
-    triggerAsyncUpdate();
-}
-
-void DirectoryBrowser::handleAsyncUpdate()
-{
-    updateContent();
 }
 
 void DirectoryBrowser::lookAndFeelChanged()

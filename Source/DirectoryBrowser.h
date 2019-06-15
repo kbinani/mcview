@@ -25,15 +25,12 @@ private:
 };
 
 
-class DirectoryBrowser : public ListBox, private AsyncUpdater {
+class DirectoryBrowser : public ListBox {
 public:
     DirectoryBrowser(File directory);
     void lookAndFeelChanged() override;
 
     std::function<void(File)> onSelect;
-    
-private:
-    void handleAsyncUpdate();
     
 private :
     File fDirectory;
