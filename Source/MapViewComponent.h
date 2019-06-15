@@ -23,7 +23,7 @@ public:
     void mouseDrag(MouseEvent const& event) override;
     void mouseDown(MouseEvent const& event) override;
     void mouseMove(MouseEvent const& event) override;
-
+    
     void setRegionsDirectory(File directory);
 
 private:
@@ -31,6 +31,7 @@ private:
     Point<float> getMapCoordinateFromView(Point<float> p) const;
     void magnify(Point<float> p, float rate);
     void drawBackground();
+    void triggerRepaint();
 
     static ThreadPool* CreateThreadPool();
     

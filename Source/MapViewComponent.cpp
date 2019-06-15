@@ -22,7 +22,6 @@ MapViewComponent::MapViewComponent()
     setOpaque(true);
     fOpenGLContext.setRenderer(this);
     fOpenGLContext.attachTo(*this);
-    fOpenGLContext.setContinuousRepainting(true);
 
     setSize (600, 400);
 }
@@ -141,6 +140,10 @@ void MapViewComponent::renderOpenGL()
             fTextures.insert(std::make_pair(j->fRegion, cache));
             delete j;
             break;
+        }
+        
+        if (fPool->getNumJobs() == 0) {
+            fOpenGLContext.setContinuousRepainting(false);
         }
     }
     
@@ -284,6 +287,10 @@ void MapViewComponent::setRegionsDirectory(File directory)
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
     }
+    
+    if (fPool->getNumJobs() > 0) {
+        fOpenGLContext.setContinuousRepainting(true);
+    }
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
@@ -312,6 +319,8 @@ void MapViewComponent::magnify(Point<float> p, float rate)
     next.fZ = pivot.y - dz * next.fBlocksPerPixel;
 
     fLookAt.set(next);
+
+    triggerRepaint();
 }
 
 void MapViewComponent::mouseMagnify(MouseEvent const& event, float scaleFactor)
@@ -337,6 +346,8 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     
     fMouseDragAmount.x = (fMouseDragAmountWhenDragStart.x + event.getDistanceFromDragStartX()) % (2 * kCheckeredPatternSize);
     fMouseDragAmount.y = (fMouseDragAmountWhenDragStart.y + event.getDistanceFromDragStartY()) % (2 * kCheckeredPatternSize);
+
+    triggerRepaint();
 }
 
 void MapViewComponent::mouseDown(MouseEvent const& event)
@@ -349,11 +360,17 @@ void MapViewComponent::mouseDown(MouseEvent const& event)
 void MapViewComponent::mouseMove(MouseEvent const& event)
 {
     fMouse = event.position;
-    repaint();
+    triggerRepaint();
 }
 
 ThreadPool* MapViewComponent::CreateThreadPool()
 {
     auto const threads = std::max(1, (int)std::thread::hardware_concurrency() - 1);
     return new ThreadPool(threads);
+}
+
+void MapViewComponent::triggerRepaint()
+{
+    repaint();
+    fOpenGLContext.triggerRepaint();
 }
