@@ -192,7 +192,12 @@ void MapViewComponent::renderOpenGL()
             cache->load(j->fPixels);
             fTextures.insert(std::make_pair(j->fRegion, cache));
             delete j;
-            break;
+            
+            fLoadingRegionsLock.enter();
+            fLoadingRegions.erase(j->fRegion);
+            fLoadingRegionsLock.exit();
+
+            break; // load only one textrue per frame
         }
         
         if (fPool->getNumJobs() == 0) {
@@ -306,6 +311,20 @@ void MapViewComponent::drawBackground()
         const int y = (j - 2) * kCheckeredPatternSize + yoffset;
         g.drawHorizontalLine(y, 0, width);
     }
+    
+    LookAt current = fLookAt.get();
+    
+    fLoadingRegionsLock.enter();
+    std::set<Region> loadingRegions(fLoadingRegions);
+    fLoadingRegionsLock.exit();
+    g.setColour(Colour::fromRGBA(0, 0, 0, 37));
+    for (Region region : loadingRegions) {
+        int const x = region.first * 512;
+        int const z = region.second * 512;
+        Point<float> topLeft = getViewCoordinateFromMap(Point<float>(x, z), current);
+        float const regionSize = 512.0f / current.fBlocksPerPixel;
+        g.fillRect(topLeft.x, topLeft.y, regionSize, regionSize);
+    }
 }
 
 void MapViewComponent::openGLContextClosing()
@@ -321,7 +340,10 @@ void MapViewComponent::setRegionsDirectory(File directory)
         return;
     }
 
+    fLoadingRegionsLock.enter();
+
     fTextures.clear();
+    fLoadingRegions.clear();
     fRegionsDirectory = directory;
     fPool = CreateThreadPool();
 
@@ -336,21 +358,44 @@ void MapViewComponent::setRegionsDirectory(File directory)
         RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ));
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
+        fLoadingRegions.insert(job->fRegion);
     }
+    
+    fLoadingRegionsLock.exit();
     
     if (fPool->getNumJobs() > 0) {
         fOpenGLContext.setContinuousRepainting(true);
     }
 }
 
+Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
+{
+    float const width = getWidth();
+    float const height = getHeight();
+    float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
+    float const bz = lookAt.fZ + (p.y - height / 2) * lookAt.fBlocksPerPixel;
+    return Point<float>(bx, bz);
+}
+
+Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const
+{
+    float const width = getWidth();
+    float const height = getHeight();
+    float const x = (p.x - lookAt.fX) / lookAt.fBlocksPerPixel + width / 2;
+    float const y = (p.y - lookAt.fZ) / lookAt.fBlocksPerPixel + height / 2;
+    return Point<float>(x, y);
+}
+
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
 {
     LookAt const current = fLookAt.get();
-    float const width = getWidth();
-    float const height = getHeight();
-    float const bx = current.fX + (p.x - width / 2) * current.fBlocksPerPixel;
-    float const bz = current.fZ + (p.y - height / 2) * current.fBlocksPerPixel;
-    return Point<float>(bx, bz);
+    return getMapCoordinateFromView(p, current);
+}
+
+Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p) const
+{
+    LookAt const current = fLookAt.get();
+    return getViewCoordinateFromMap(p, current);
 }
 
 void MapViewComponent::magnify(Point<float> p, float rate)

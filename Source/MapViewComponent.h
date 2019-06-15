@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "RegionTextureCache.h"
 #include "RegionToTexture.h"
+#include "RegionTextureCache.h"
 #include <map>
 #include <vector>
+#include <set>
 
 class MapViewComponent : public Component, private OpenGLRenderer
 {
@@ -27,8 +28,17 @@ public:
     void setRegionsDirectory(File directory);
 
 private:
+    struct LookAt {
+        float fX;
+        float fZ;
+        float fBlocksPerPixel;
+    };
+
     void updateShader();
     Point<float> getMapCoordinateFromView(Point<float> p) const;
+    Point<float> getViewCoordinateFromMap(Point<float> p) const;
+    Point<float> getMapCoordinateFromView(Point<float> p, LookAt lookAt) const;
+    Point<float> getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const;
     void magnify(Point<float> p, float rate);
     void drawBackground();
     void triggerRepaint();
@@ -132,11 +142,6 @@ private:
     std::unique_ptr<Attributes> fAttributes;
     std::unique_ptr<Buffer> fBuffer;
 
-    struct LookAt {
-        float fX;
-        float fZ;
-        float fBlocksPerPixel;
-    };
     Atomic<LookAt> fLookAt;
 
     static float const kMaxScale;
@@ -152,6 +157,9 @@ private:
     static int constexpr kCheckeredPatternSize = 16;
     Point<int> fMouseDragAmount;
     Point<int> fMouseDragAmountWhenDragStart;
+    
+    std::set<Region> fLoadingRegions;
+    CriticalSection fLoadingRegionsLock;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
