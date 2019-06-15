@@ -32,6 +32,7 @@ public:
         browser->addDirectory(DefaultMinecraftSaveDirectory());
         browser->onSelect = [this](File dir) {
             mapView->setRegionsDirectory(dir.getChildFile("region"));
+            getTopLevelComponent()->setName(dir.getFileName());
         };
         browser->setSize(300, 400);
         addAndMakeVisible(browser);
