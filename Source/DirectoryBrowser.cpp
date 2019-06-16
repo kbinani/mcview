@@ -54,5 +54,5 @@ DirectoryBrowser::DirectoryBrowser(File directory)
 
 void DirectoryBrowser::lookAndFeelChanged()
 {
-    
+    fModel->applyLookAndFeel(getLookAndFeel());
 }
