@@ -421,6 +421,15 @@ void MapViewComponent::openGLContextClosing()
 	fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->iBuffer);
 }
 
+float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region)
+{
+    float const regionCenterX = region.fX * 512 - 256;
+    float const regionCenterZ = region.fZ * 512 - 256;
+    float const dx = regionCenterX - lookAt.fX;
+    float const dz = regionCenterZ - lookAt.fZ;
+    return dx * dx + dz * dz;
+}
+
 void MapViewComponent::setRegionsDirectory(File directory)
 {
     if (fRegionsDirectory.getFullPathName() == directory.getFullPathName()) {
@@ -435,13 +444,27 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fPool = CreateThreadPool();
 
     DirectoryIterator it(fRegionsDirectory, false, "*.mca");
-    
+    std::vector<File> files;
     while (it.next()) {
         File f = it.getFile();
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
         if (!r) {
             continue;
         }
+        files.push_back(f);
+    }
+    
+    LookAt lookAt = fLookAt.get();
+    std::sort(files.begin(), files.end(), [lookAt](File const& a, File const& b) {
+        auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
+        auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
+        auto distanceA = DistanceSqBetweenRegionAndLookAt(lookAt, *rA);
+        auto distanceB = DistanceSqBetweenRegionAndLookAt(lookAt, *rB);
+        return distanceA < distanceB;
+    });
+    
+    for (File const& f : files) {
+        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
         RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ));
         fJobs.emplace_back(job);
         fPool->addJob(job, false);

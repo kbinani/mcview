@@ -44,7 +44,8 @@ private:
     void triggerRepaint();
 
     static ThreadPool* CreateThreadPool();
-    
+    static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
+
     struct Uniforms
     {
         Uniforms (OpenGLContext& openGLContext, OpenGLShaderProgram& shader)
