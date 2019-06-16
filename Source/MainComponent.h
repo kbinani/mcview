@@ -39,6 +39,9 @@ public:
         browser->onSelect = [this](File dir) {
             mapView->setRegionsDirectory(dir.getChildFile("region"));
             getTopLevelComponent()->setName(dir.getFileName());
+            fBrowserOpened = false;
+            resized();
+            mapView->setBrowserOpened(fBrowserOpened);
         };
         addAndMakeVisible(browser);
 

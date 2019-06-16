@@ -7,7 +7,7 @@
 #include <vector>
 #include <set>
 
-class MapViewComponent : public Component, private OpenGLRenderer
+class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater
 {
 public:
     std::function<void()> onOpenButtonClicked;
@@ -32,6 +32,8 @@ public:
     void setRegionsDirectory(File directory);
     void setBrowserOpened(bool opened);
 
+    void handleAsyncUpdate() override;
+    
 private:
     struct LookAt {
         float fX;
@@ -48,6 +50,10 @@ private:
     void drawBackground();
     void triggerRepaint();
 
+    void captureToImage();
+    
+    void render(int const width, int const height, LookAt const lookAt, bool enableUI);
+    
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
 
@@ -169,7 +175,10 @@ private:
     std::set<Region> fLoadingRegions;
     CriticalSection fLoadingRegionsLock;
 
-    ScopedPointer<TextButton> fBrowserOpenButton;
+    ScopedPointer<DrawableButton> fBrowserOpenButton;
+    ScopedPointer<DrawableButton> fCaptureButton;
+    
+    Atomic<bool> fLoadingFinished;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

@@ -3,6 +3,14 @@
 <JUCERPROJECT id="wXW1rF" name="mcview" projectType="guiapp" jucerVersion="5.4.3"
               headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;C:\JUCE\modules\juce_core\zip\zlib">
   <MAINGROUP id="IT5WFJ" name="mcview">
+    <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
+      <FILE id="IDq8vE" name="baseline_camera_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_camera_white_18dp.png"/>
+      <FILE id="XVgsYT" name="baseline_keyboard_arrow_left_white_18dp.png"
+            compile="0" resource="1" file="Resource/baseline_keyboard_arrow_left_white_18dp.png"/>
+      <FILE id="MUfGxb" name="baseline_keyboard_arrow_right_white_18dp.png"
+            compile="0" resource="1" file="Resource/baseline_keyboard_arrow_right_white_18dp.png"/>
+    </GROUP>
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
       <FILE id="D9uNQU" name="Browser.cpp" compile="1" resource="0" file="Source/Browser.cpp"/>
       <FILE id="mzRNGl" name="Browser.h" compile="0" resource="0" file="Source/Browser.h"/>

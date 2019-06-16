@@ -22,6 +22,8 @@ private:
     Colour fBackgroundColorOff;
     Colour fBackgroundColorOn;
     DirectoryBrowser *const fParent;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserModel);
 };
 
 
@@ -35,4 +37,6 @@ public:
 private :
     File fDirectory;
     ScopedPointer<DirectoryBrowserModel> fModel;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowser);
 };

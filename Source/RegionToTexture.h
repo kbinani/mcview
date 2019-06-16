@@ -18,4 +18,6 @@ public:
     ScopedPointer<PixelARGB> fPixels;
     
     static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture);
 };

@@ -11,23 +11,55 @@
 float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
+static int const kButtonSize = 40;
+
+static DrawableButton* CreateCaptureButton()
+{
+    DrawableButton *button = new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+
+    Drawable *normal = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
+                                                     BinaryData::baseline_camera_white_18dp_pngSize);
+    button->setImages(normal);
+
+    return button;
+}
+
+static void OpenBrowserButtonStatus(DrawableButton *button, bool enable)
+{
+    if (enable) {
+        button->setImages(Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_left_white_18dp_png,
+                                                        BinaryData::baseline_keyboard_arrow_left_white_18dp_pngSize));
+    } else {
+        button->setImages(Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
+                                                        BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize));
+    }
+}
+
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
     , fPool(CreateThreadPool())
     , fMouseDragAmount({0, 0})
+    , fLoadingFinished(true)
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
     }
 
-    fBrowserOpenButton = new TextButton();
-    fBrowserOpenButton->setButtonText(">");
-    fBrowserOpenButton->setSize(40, 40);
+    fBrowserOpenButton = new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    OpenBrowserButtonStatus(fBrowserOpenButton, true);
+    fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
     fBrowserOpenButton->onClick = [this]() {
         onOpenButtonClicked();
     };
     addAndMakeVisible(fBrowserOpenButton);
-    
+
+    fCaptureButton = CreateCaptureButton();
+    fCaptureButton->onClick = [this]() {
+        captureToImage();
+    };
+    addAndMakeVisible(fCaptureButton);
+    fCaptureButton->setEnabled(false);
+
     setOpaque(true);
     fOpenGLContext.setRenderer(this);
     fOpenGLContext.attachTo(*this);
@@ -237,10 +269,18 @@ void MapViewComponent::updateShader()
 
 void MapViewComponent::renderOpenGL()
 {
-    OpenGLHelpers::clear(Colours::white);
+    LookAt lookAt = fLookAt.get();
+    int const width = getWidth();
+    int const height = getHeight();
+    render(width, height, lookAt, true);
+}
 
-    float const width = getWidth();
-    float const height = getHeight();
+void MapViewComponent::render(int const width, int const height, LookAt const lookAt, bool enableUI)
+{
+    if (enableUI) {
+        OpenGLHelpers::clear(Colours::white);
+    }
+
     auto desktopScale = (float)fOpenGLContext.getRenderingScale();
     glViewport(0, 0, roundToInt(desktopScale * width), roundToInt(desktopScale * height));
 
@@ -265,12 +305,16 @@ void MapViewComponent::renderOpenGL()
             break; // load only one textrue per frame
         }
         
-        if (fPool->getNumJobs() == 0) {
+        if (fPool->getNumJobs() == 0 && !fLoadingFinished.get()) {
             fOpenGLContext.setContinuousRepainting(false);
+            fLoadingFinished = true;
+            triggerAsyncUpdate();
         }
     }
     
-    drawBackground();
+    if (enableUI) {
+        drawBackground();
+    }
     
     Time const now = Time::getCurrentTime();
     
@@ -285,8 +329,6 @@ void MapViewComponent::renderOpenGL()
     glEnable(GL_TEXTURE_2D);
 
     fShader->use();
-
-    LookAt const lookAt = fLookAt.get();
 
     for (auto it : fTextures) {
         auto cache = it.second;
@@ -319,7 +361,7 @@ void MapViewComponent::renderOpenGL()
             double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
             GLfloat const fadeSeconds = 0.3f;
             GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
-            fUniforms->fade->set(a);
+            fUniforms->fade->set(enableUI ? a : 1.0f);
         }
 
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
@@ -420,8 +462,8 @@ void MapViewComponent::drawBackground()
 void MapViewComponent::openGLContextClosing()
 {
     fTextures.clear();
-	fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->vBuffer);
-	fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->iBuffer);
+    fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->vBuffer);
+    fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->iBuffer);
 }
 
 float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region)
@@ -439,6 +481,9 @@ void MapViewComponent::setRegionsDirectory(File directory)
         return;
     }
 
+    fLoadingFinished = false;
+    fCaptureButton->setEnabled(false);
+    
     fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
         fTextures.clear();
     }, true);
@@ -588,14 +633,96 @@ void MapViewComponent::triggerRepaint()
 
 void MapViewComponent::resized()
 {
+    int const margin = 10;
+    int const width = getWidth();
+    
     if (fBrowserOpenButton) {
-        int const margin = 10;
-        int const size = fBrowserOpenButton->getWidth();
-        fBrowserOpenButton->setBounds(margin, margin, size, size);
+        fBrowserOpenButton->setBounds(margin, margin, kButtonSize, kButtonSize);
+    }
+    if (fCaptureButton) {
+        fCaptureButton->setBounds(width - kButtonSize - margin, margin, kButtonSize, kButtonSize);
     }
 }
 
 void MapViewComponent::setBrowserOpened(bool opened)
 {
-    fBrowserOpenButton->setButtonText(opened ? "<" : ">");
+    OpenBrowserButtonStatus(fBrowserOpenButton, opened);
+}
+
+void MapViewComponent::captureToImage()
+{
+    FileChooser dialog("Choose file name", File(), "*.png", true);
+    if (!dialog.browseForFileToSave(true)) {
+        return;
+    }
+    File file = dialog.getResult();
+    
+    fOpenGLContext.executeOnGLThread([this, file](OpenGLContext& ctx) {
+        if (fTextures.empty()) {
+            return;
+        }
+        
+        int minX, maxX, minZ, maxZ;
+        minX = maxX = fTextures.begin()->first.first;
+        minZ = maxZ = fTextures.begin()->first.second;
+        for (auto const& it : fTextures) {
+            auto region = it.first;
+            int const x = region.first;
+            int const z = region.second;
+            minX = std::min(minX, x);
+            maxX = std::max(maxX, x);
+            minZ = std::min(minZ, z);
+            maxZ = std::max(maxZ, z);
+        }
+        
+        int const minBlockX = minX * 512;
+        int const minBlockZ = minZ * 512;
+        int const maxBlockX = (maxX + 1) * 512 - 1;
+        int const maxBlockZ = (maxZ + 1) * 512 - 1;
+
+        int const width = maxBlockX - minBlockX + 1;
+        int const height = maxBlockZ - minBlockZ + 1;
+
+        std::vector<PixelARGB> pixels(width * height);
+
+        ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
+        buffer->initialise(ctx, width, height);
+        buffer->makeCurrentRenderingTarget();
+        
+        LookAt lookAt;
+        lookAt.fX = minBlockX + width / 2.0f;
+        lookAt.fZ = minBlockZ + height / 2.0f;
+        lookAt.fBlocksPerPixel = 1;
+        render(width, height, lookAt, false);
+
+        buffer->readPixels(pixels.data(), Rectangle<int>(0, 0, width, height));
+        buffer->releaseAsRenderingTarget();
+        
+        buffer->release();
+        buffer.reset();
+        
+        Image img(Image::PixelFormat::ARGB, width, height, true);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                PixelARGB px = pixels[y * width + x];
+                Colour c = Colour::fromRGBA(px.getRed(), px.getGreen(), px.getBlue(), px.getAlpha());
+                img.setPixelAt(x, height - y + 1, c);
+            }
+        }
+        std::vector<PixelARGB>().swap(pixels);
+    
+        {
+            PNGImageFormat png;
+            FileOutputStream stream(file);
+            stream.truncate();
+            stream.setPosition(0);
+            png.writeImageToStream(img, stream);
+        }
+
+    }, false);
+}
+
+void MapViewComponent::handleAsyncUpdate()
+{
+    fCaptureButton->setEnabled(fLoadingFinished.get());
 }
