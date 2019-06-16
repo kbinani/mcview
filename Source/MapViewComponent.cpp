@@ -13,28 +13,6 @@ float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 static int const kButtonSize = 40;
 
-static DrawableButton* CreateCaptureButton()
-{
-    DrawableButton *button = new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-
-    Drawable *normal = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
-                                                     BinaryData::baseline_camera_white_18dp_pngSize);
-    button->setImages(normal);
-
-    return button;
-}
-
-static void OpenBrowserButtonStatus(DrawableButton *button, bool enable)
-{
-    if (enable) {
-        button->setImages(Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_left_white_18dp_png,
-                                                        BinaryData::baseline_keyboard_arrow_left_white_18dp_pngSize));
-    } else {
-        button->setImages(Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
-                                                        BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize));
-    }
-}
-
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
     , fPool(CreateThreadPool())
@@ -45,15 +23,23 @@ MapViewComponent::MapViewComponent()
         peer->setCurrentRenderingEngine (0);
     }
 
+    fBrowserOpenButtonImageClose = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_left_white_18dp_png,
+                                                                 BinaryData::baseline_keyboard_arrow_left_white_18dp_pngSize);
+    fBrowserOpenButtonImageOpen = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
+                                                                BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize);
+    
     fBrowserOpenButton = new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    OpenBrowserButtonStatus(fBrowserOpenButton, true);
+    setBrowserOpened(true);
     fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
     fBrowserOpenButton->onClick = [this]() {
         onOpenButtonClicked();
     };
     addAndMakeVisible(fBrowserOpenButton);
 
-    fCaptureButton = CreateCaptureButton();
+    fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
+                                                        BinaryData::baseline_camera_white_18dp_pngSize);
+    fCaptureButton = new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fCaptureButton->setImages(fCaptureButtonImage);
     fCaptureButton->onClick = [this]() {
         captureToImage();
     };
@@ -646,7 +632,11 @@ void MapViewComponent::resized()
 
 void MapViewComponent::setBrowserOpened(bool opened)
 {
-    OpenBrowserButtonStatus(fBrowserOpenButton, opened);
+    if (opened) {
+        fBrowserOpenButton->setImages(fBrowserOpenButtonImageClose);
+    } else {
+        fBrowserOpenButton->setImages(fBrowserOpenButtonImageOpen);
+    }
 }
 
 void MapViewComponent::captureToImage()

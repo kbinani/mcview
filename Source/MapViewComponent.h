@@ -176,7 +176,11 @@ private:
     CriticalSection fLoadingRegionsLock;
 
     ScopedPointer<DrawableButton> fBrowserOpenButton;
+    ScopedPointer<Drawable> fBrowserOpenButtonImageOpen;
+    ScopedPointer<Drawable> fBrowserOpenButtonImageClose;
+
     ScopedPointer<DrawableButton> fCaptureButton;
+    ScopedPointer<Drawable> fCaptureButtonImage;
     
     Atomic<bool> fLoadingFinished;
     
