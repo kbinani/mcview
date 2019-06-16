@@ -284,10 +284,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fTextures.insert(std::make_pair(j->fRegion, cache));
             delete j;
             
-            fLoadingRegionsLock.enter();
-            fLoadingRegions.erase(j->fRegion);
-            fLoadingRegionsLock.exit();
-
             break; // load only one textrue per frame
         }
         
@@ -316,6 +312,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
     fShader->use();
 
+    std::set<Region> fadeFinishedRegions;
+    
     for (auto it : fTextures) {
         auto cache = it.second;
         if (fUniforms->blocksPerPixel.get() != nullptr) {
@@ -347,6 +345,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
             GLfloat const fadeSeconds = 0.3f;
             GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
+            if (seconds > fadeSeconds) {
+                fadeFinishedRegions.insert(it.first);
+            }
             fUniforms->fade->set(enableUI ? a : 1.0f);
         }
 
@@ -389,6 +390,19 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         fAttributes->enable(fOpenGLContext);
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
         fAttributes->disable(fOpenGLContext);
+    }
+    
+    if (!fadeFinishedRegions.empty()) {
+        fLoadingRegionsLock.enter();
+        if (!fLoadingRegions.empty()) {
+            for (auto region : fadeFinishedRegions) {
+                auto it = fLoadingRegions.find(region);
+                if (it != fLoadingRegions.end()) {
+                    fLoadingRegions.erase(it);
+                }
+            }
+        }
+        fLoadingRegionsLock.exit();
     }
 }
 
