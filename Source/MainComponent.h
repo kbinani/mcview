@@ -23,9 +23,15 @@ class MainComponent   : public Component
 public:
     //==============================================================================
     MainComponent()
+        : fBrowserOpened(true)
     {
         mapView = new MapViewComponent();
         mapView->setSize(600, 400);
+        mapView->onOpenButtonClicked = [this]() {
+            fBrowserOpened = !fBrowserOpened;
+            resized();
+            mapView->setBrowserOpened(fBrowserOpened);
+        };
         addAndMakeVisible(mapView);
 
         browser = new Browser();
@@ -67,8 +73,13 @@ public:
 		auto bounds = getBounds();
         const auto browserWidth = browser->getWidth();
     
-        browser->setBounds(0, 0, browserWidth, bounds.getHeight());
-        mapView->setBounds(browserWidth, 0, bounds.getWidth() - browserWidth, bounds.getHeight());
+        browser->setVisible(fBrowserOpened);
+        if (fBrowserOpened) {
+            browser->setBounds(0, 0, browserWidth, bounds.getHeight());
+            mapView->setBounds(browserWidth, 0, bounds.getWidth() - browserWidth, bounds.getHeight());
+        } else {
+            mapView->setBounds(0, 0, bounds.getWidth(), bounds.getHeight());
+        }
     }
 
     void childBoundsChanged (Component *child) override
@@ -79,6 +90,7 @@ public:
 private:
     ScopedPointer<MapViewComponent> mapView;
     ScopedPointer<Browser> browser;
+    bool fBrowserOpened;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

@@ -18,6 +18,7 @@ public:
 
 private:
     ScopedPointer<ResizableEdgeComponent> fResizer;
+    ScopedPointer<ComponentBoundsConstrainer> fConstrainer;
 
     Array<DirectoryBrowser*> fBrowsers;
     

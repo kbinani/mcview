@@ -10,10 +10,14 @@
 class MapViewComponent : public Component, private OpenGLRenderer
 {
 public:
+    std::function<void()> onOpenButtonClicked;
+    
+public:
     MapViewComponent();
     ~MapViewComponent();
 
     void paint(Graphics &g) override;
+    void resized() override;
     
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
@@ -26,6 +30,7 @@ public:
     void mouseMove(MouseEvent const& event) override;
     
     void setRegionsDirectory(File directory);
+    void setBrowserOpened(bool opened);
 
 private:
     struct LookAt {
@@ -163,6 +168,8 @@ private:
     
     std::set<Region> fLoadingRegions;
     CriticalSection fLoadingRegionsLock;
+
+    ScopedPointer<TextButton> fBrowserOpenButton;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

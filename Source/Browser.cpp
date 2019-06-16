@@ -2,7 +2,9 @@
 
 Browser::Browser()
 {
-    fResizer = new ResizableEdgeComponent(this, nullptr, ResizableEdgeComponent::Edge::rightEdge);
+    fConstrainer = new ComponentBoundsConstrainer();
+    fConstrainer->setMinimumWidth(100);
+    fResizer = new ResizableEdgeComponent(this, fConstrainer, ResizableEdgeComponent::Edge::rightEdge);
     addAndMakeVisible(fResizer);
     
     setSize(kDefaultWidth, 400);

@@ -20,6 +20,14 @@ MapViewComponent::MapViewComponent()
         peer->setCurrentRenderingEngine (0);
     }
 
+    fBrowserOpenButton = new TextButton();
+    fBrowserOpenButton->setButtonText(">");
+    fBrowserOpenButton->setSize(40, 40);
+    fBrowserOpenButton->onClick = [this]() {
+        onOpenButtonClicked();
+    };
+    addAndMakeVisible(fBrowserOpenButton);
+    
     setOpaque(true);
     fOpenGLContext.setRenderer(this);
     fOpenGLContext.attachTo(*this);
@@ -35,11 +43,6 @@ MapViewComponent::~MapViewComponent()
 
 void MapViewComponent::paint(Graphics& g)
 {
-    const int width = getWidth();
-    const int height = getHeight();
-    Point<float> block = getMapCoordinateFromView(fMouse);
-    g.setColour(Colours::black);
-    g.drawText(String::formatted("pixel:[%.2f, %.2f] block:[%.2f, %.2f]", fMouse.x, fMouse.y, block.x, block.y), 0, 0, width, height, Justification::topLeft);
 }
 
 void MapViewComponent::newOpenGLContextCreated()
@@ -581,4 +584,18 @@ void MapViewComponent::triggerRepaint()
 {
     repaint();
     fOpenGLContext.triggerRepaint();
+}
+
+void MapViewComponent::resized()
+{
+    if (fBrowserOpenButton) {
+        int const margin = 10;
+        int const size = fBrowserOpenButton->getWidth();
+        fBrowserOpenButton->setBounds(margin, margin, size, size);
+    }
+}
+
+void MapViewComponent::setBrowserOpened(bool opened)
+{
+    fBrowserOpenButton->setButtonText(opened ? "<" : ">");
 }
