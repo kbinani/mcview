@@ -25,6 +25,7 @@ void Browser::addDirectory(File directory)
     };
     addAndMakeVisible(browser);
     fBrowsers.add(browser);
+    resized();
 }
 
 void Browser::resized()

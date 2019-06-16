@@ -34,10 +34,9 @@ public:
             mapView->setRegionsDirectory(dir.getChildFile("region"));
             getTopLevelComponent()->setName(dir.getFileName());
         };
-        browser->setSize(300, 400);
         addAndMakeVisible(browser);
 
-		setSize(600, 400);
+		setSize(1280, 720);
 	}
 
     ~MainComponent()

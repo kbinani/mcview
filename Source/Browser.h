@@ -13,13 +13,14 @@ public:
     void addDirectory(File directory);
 
     std::function<void(File)> onSelect;
-    
+
+    static int constexpr kDefaultWidth = 214;
+
 private:
     ScopedPointer<ResizableEdgeComponent> fResizer;
 
     Array<DirectoryBrowser*> fBrowsers;
     
-    static int constexpr kDefaultWidth = 214;
     static int constexpr kResizerWidth = 8;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Browser)
