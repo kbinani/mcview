@@ -436,9 +436,12 @@ void MapViewComponent::setRegionsDirectory(File directory)
         return;
     }
 
+    fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
+        fTextures.clear();
+    }, true);
+
     fLoadingRegionsLock.enter();
 
-    fTextures.clear();
     fLoadingRegions.clear();
     fRegionsDirectory = directory;
     fPool = CreateThreadPool();
