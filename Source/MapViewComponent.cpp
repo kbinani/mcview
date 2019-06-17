@@ -485,6 +485,10 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fCaptureButton->setEnabled(false);
     
     fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
+        ScopedPointer<ThreadPool> prev(fPool.release());
+        fPool = CreateThreadPool();
+        prev->removeAllJobs(true, -1);
+        fJobs.clear();
         fTextures.clear();
     }, true);
 
@@ -492,7 +496,6 @@ void MapViewComponent::setRegionsDirectory(File directory)
 
     fLoadingRegions.clear();
     fRegionsDirectory = directory;
-    fPool = CreateThreadPool();
 
     DirectoryIterator it(fRegionsDirectory, false, "*.mca");
     std::vector<File> files;
