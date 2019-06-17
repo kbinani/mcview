@@ -12,6 +12,7 @@ float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
 static int const kButtonSize = 40;
+static int const kFadeDurationMS = 300;
 
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
@@ -163,6 +164,14 @@ void MapViewComponent::updateShader()
             vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
             return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
         }
+
+    vec4 blend(vec4 bg, vec4 fg) {
+        float a = fg.a + bg.a * (1.0 - fg.a);
+        float r = (fg.r * fg.a + bg.r * bg.a * (1.0 - fg.a)) / a;
+        float g = (fg.g * fg.a + bg.g * bg.a * (1.0 - fg.a)) / a;
+        float b = (fg.b * fg.a + bg.b * bg.a * (1.0 - fg.a)) / a;
+        return vec4(r, g, b, a);
+    }
     )#";
     
 	fragment << "void main() {" << std::endl;
@@ -239,7 +248,15 @@ void MapViewComponent::updateShader()
             c = vec4(hsv2rgb(hsv).rgb, c.a);
         }
     
-        gl_FragColor = c;
+        if (c.a == 0.0 && fade < 1.0) {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 37.0 / 255.0 * (1.0 - fade));
+        } else {
+            if (fade < 1.0) {
+                gl_FragColor = blend(c, vec4(0.0, 0.0, 0.0, 37.0 / 255.0 * (1.0 - fade)));
+            } else {
+                gl_FragColor = c;
+            }
+        }
     }
     )#";
 	newShader->addFragmentShader(fragment.str());
@@ -284,11 +301,18 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fTextures.insert(std::make_pair(j->fRegion, cache));
             delete j;
             
+            fLoadingRegionsLock.enter();
+            auto it = fLoadingRegions.find(j->fRegion);
+            if (it != fLoadingRegions.end()) {
+                fLoadingRegions.erase(it);
+            }
+            fLoadingRegionsLock.exit();
+            
             break; // load only one textrue per frame
         }
         
         if (fPool->getNumJobs() == 0 && !fLoadingFinished.get()) {
-            fOpenGLContext.setContinuousRepainting(false);
+            startTimer(kFadeDurationMS);
             fLoadingFinished = true;
             triggerAsyncUpdate();
         }
@@ -312,8 +336,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
     fShader->use();
 
-    std::set<Region> fadeFinishedRegions;
-    
     for (auto it : fTextures) {
         auto cache = it.second;
         if (fUniforms->blocksPerPixel.get() != nullptr) {
@@ -343,11 +365,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
         if (fUniforms->fade.get() != nullptr) {
             double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
-            GLfloat const fadeSeconds = 0.3f;
+            GLfloat const fadeSeconds = kFadeDurationMS / 1000.0f;
             GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
-            if (seconds > fadeSeconds) {
-                fadeFinishedRegions.insert(it.first);
-            }
             fUniforms->fade->set(enableUI ? a : 1.0f);
         }
 
@@ -390,19 +409,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         fAttributes->enable(fOpenGLContext);
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
         fAttributes->disable(fOpenGLContext);
-    }
-    
-    if (!fadeFinishedRegions.empty()) {
-        fLoadingRegionsLock.enter();
-        if (!fLoadingRegions.empty()) {
-            for (auto region : fadeFinishedRegions) {
-                auto it = fLoadingRegions.find(region);
-                if (it != fLoadingRegions.end()) {
-                    fLoadingRegions.erase(it);
-                }
-            }
-        }
-        fLoadingRegionsLock.exit();
     }
 }
 
@@ -732,4 +738,10 @@ void MapViewComponent::captureToImage()
 void MapViewComponent::handleAsyncUpdate()
 {
     fCaptureButton->setEnabled(fLoadingFinished.get());
+}
+
+void MapViewComponent::timerCallback()
+{
+    fOpenGLContext.setContinuousRepainting(false);
+    stopTimer();
 }

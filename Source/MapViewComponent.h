@@ -7,7 +7,7 @@
 #include <vector>
 #include <set>
 
-class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater
+class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer
 {
 public:
     std::function<void()> onOpenButtonClicked;
@@ -33,6 +33,7 @@ public:
     void setBrowserOpened(bool opened);
 
     void handleAsyncUpdate() override;
+    void timerCallback() override;
     
 private:
     struct LookAt {
