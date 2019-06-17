@@ -24,6 +24,8 @@
             file="Source/MapViewComponent.cpp"/>
       <FILE id="JwisrF" name="MapViewComponent.h" compile="0" resource="0"
             file="Source/MapViewComponent.h"/>
+      <FILE id="lK838W" name="OverScroller.hpp" compile="0" resource="0"
+            file="Source/OverScroller.hpp"/>
       <FILE id="gaqahe" name="Region.h" compile="0" resource="0" file="Source/Region.h"/>
       <FILE id="Q2TQ9P" name="RegionTextureCache.cpp" compile="1" resource="0"
             file="Source/RegionTextureCache.cpp"/>
