@@ -28,9 +28,7 @@ public:
         mapView = new MapViewComponent();
         mapView->setSize(600, 400);
         mapView->onOpenButtonClicked = [this]() {
-            fBrowserOpened = !fBrowserOpened;
-            resized();
-            mapView->setBrowserOpened(fBrowserOpened);
+            setBrowserOpened(!fBrowserOpened);
         };
         addAndMakeVisible(mapView);
 
@@ -39,9 +37,7 @@ public:
         browser->onSelect = [this](File dir) {
             mapView->setRegionsDirectory(dir.getChildFile("region"));
             getTopLevelComponent()->setName(dir.getFileName());
-            fBrowserOpened = false;
-            resized();
-            mapView->setBrowserOpened(fBrowserOpened);
+            setBrowserOpened(false);
         };
         addAndMakeVisible(browser);
 
@@ -75,13 +71,19 @@ public:
 		}
 		auto bounds = getBounds();
         const auto browserWidth = browser->getWidth();
-    
-        browser->setVisible(fBrowserOpened);
+
+        auto& animator = Desktop::getInstance().getAnimator();
         if (fBrowserOpened) {
-            browser->setBounds(0, 0, browserWidth, bounds.getHeight());
-            mapView->setBounds(browserWidth, 0, bounds.getWidth() - browserWidth, bounds.getHeight());
+            if (!animator.isAnimating(browser)) {
+                browser->setBounds(0, 0, browserWidth, bounds.getHeight());
+            }
+            if (!animator.isAnimating(mapView)) {
+                mapView->setBounds(browserWidth, 0, bounds.getWidth() - browserWidth, bounds.getHeight());
+            }
         } else {
-            mapView->setBounds(0, 0, bounds.getWidth(), bounds.getHeight());
+            if (!animator.isAnimating(mapView)) {
+                mapView->setBounds(0, 0, bounds.getWidth(), bounds.getHeight());
+            }
         }
     }
 
@@ -90,6 +92,35 @@ public:
         resized();
     }
 
+    void setBrowserOpened(bool opened) {
+        if (fBrowserOpened == opened) {
+            return;
+        }
+        fBrowserOpened = opened;
+
+        auto& animator = Desktop::getInstance().getAnimator();
+        int const width = getWidth();
+        int const height = getHeight();
+
+        browser->setVisible(opened);
+        int const duration = 300;
+
+        if (opened) {
+            int const w = browser->getWidth();
+            browser->setBounds({ -w, 0, w, height });
+            animator.animateComponent(browser, { 0, 0, w, height }, 1.0f, duration, false, 0.0, 0.0);
+            mapView->setBounds({ 0, 0, width, height });
+            animator.animateComponent(mapView, { w, 0, width - w, height }, 1.0f, duration, false, 0.0, 0.0);
+        } else {
+            int const w = browser->getWidth();
+            browser->setBounds({ 0, 0, w, height });
+            animator.animateComponent(browser, { -w, 0, w, height }, 1.0f, duration, false, 0.0, 0.0);
+            mapView->setBounds({ w, 0, width - w, height });
+            animator.animateComponent(mapView, { 0, 0, width, height }, 1.0f, duration, false, 0.0, 0.0);
+        }
+        mapView->setBrowserOpened(opened);
+    }
+    
 private:
     ScopedPointer<MapViewComponent> mapView;
     ScopedPointer<Browser> browser;
