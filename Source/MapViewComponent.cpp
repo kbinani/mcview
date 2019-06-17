@@ -155,6 +155,7 @@ void MapViewComponent::updateShader()
             
             float d = q.x - min(q.w, q.y);
             float e = 1.0e-10;
+           
             return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
         }
 
@@ -165,13 +166,13 @@ void MapViewComponent::updateShader()
             return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
         }
 
-    vec4 blend(vec4 bg, vec4 fg) {
-        float a = fg.a + bg.a * (1.0 - fg.a);
-        float r = (fg.r * fg.a + bg.r * bg.a * (1.0 - fg.a)) / a;
-        float g = (fg.g * fg.a + bg.g * bg.a * (1.0 - fg.a)) / a;
-        float b = (fg.b * fg.a + bg.b * bg.a * (1.0 - fg.a)) / a;
-        return vec4(r, g, b, a);
-    }
+        vec4 blend(vec4 bg, vec4 fg) {
+            float a = fg.a + bg.a * (1.0 - fg.a);
+            float r = (fg.r * fg.a + bg.r * bg.a * (1.0 - fg.a)) / a;
+            float g = (fg.g * fg.a + bg.g * bg.a * (1.0 - fg.a)) / a;
+            float b = (fg.b * fg.a + bg.b * bg.a * (1.0 - fg.a)) / a;
+            return vec4(r, g, b, a);
+        }
     )#";
     
 	fragment << "void main() {" << std::endl;
@@ -278,6 +279,18 @@ void MapViewComponent::renderOpenGL()
     render(width, height, lookAt, true);
 }
 
+static float CubicEaseInOut(float t, float start, float end, float duration) {
+    float b = start;
+    float c = end - start;
+    t  /= duration / 2.0;
+    if (t < 1.0) {
+        return c / 2.0 * t * t * t + b;
+    } else {
+        t = t - 2.0;
+        return c / 2.0 * (t* t * t + 2.0) + b;
+    }
+}
+
 void MapViewComponent::render(int const width, int const height, LookAt const lookAt, bool enableUI)
 {
     if (enableUI) {
@@ -364,10 +377,14 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
 
         if (fUniforms->fade.get() != nullptr) {
-            double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
-            GLfloat const fadeSeconds = kFadeDurationMS / 1000.0f;
-            GLfloat a = seconds > fadeSeconds ? 1.0f : seconds / fadeSeconds;
-            fUniforms->fade->set(enableUI ? a : 1.0f);
+            if (enableUI) {
+                double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
+                GLfloat const fadeSeconds = kFadeDurationMS / 1000.0f;
+                GLfloat const a = seconds > fadeSeconds ? 1.0f : CubicEaseInOut(seconds / fadeSeconds, 0.0f, 1.0f, 1.0f);
+                fUniforms->fade->set(a);
+            } else {
+                fUniforms->fade->set(1.0f);
+            }
         }
 
         fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
