@@ -2,6 +2,7 @@
 #include "MapViewComponent.h"
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
+#include "OverScroller.hpp"
 #include <set>
 #include <cassert>
 #include <thread>
@@ -51,6 +52,17 @@ MapViewComponent::MapViewComponent()
     fOpenGLContext.setRenderer(this);
     fOpenGLContext.attachTo(*this);
 
+    fScrollerTimer.fTimerCallback = [this](TimerInstance &timer) {
+        if (!fScroller.computeScrollOffset()) {
+            timer.stopTimer();
+        }
+        LookAt next = fLookAt.get();
+        next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
+        next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
+        fLookAt = next;
+        fOpenGLContext.triggerRepaint();
+    };
+    
     setSize (600, 400);
 }
 
@@ -630,6 +642,11 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     fMouseDragAmount.y = (fMouseDragAmountWhenDragStart.y + event.getDistanceFromDragStartY()) % (2 * kCheckeredPatternSize);
 
     triggerRepaint();
+    
+    fLastDragPosition.push_back(event);
+    if (fLastDragPosition.size() > 2) {
+        fLastDragPosition.pop_front();
+    }
 }
 
 void MapViewComponent::mouseDown(MouseEvent const& event)
@@ -637,12 +654,43 @@ void MapViewComponent::mouseDown(MouseEvent const& event)
     LookAt const current = fLookAt.get();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
     fMouseDragAmountWhenDragStart = fMouseDragAmount;
+    
+    fScrollerTimer.stopTimer();
 }
 
 void MapViewComponent::mouseMove(MouseEvent const& event)
 {
     fMouse = event.position;
     triggerRepaint();
+}
+
+void MapViewComponent::mouseUp(MouseEvent const& event)
+{
+    if (fLastDragPosition.size() != 2) {
+        return;
+    }
+    LookAt current = fLookAt.get();
+
+    MouseEvent p0 = fLastDragPosition.front();
+    MouseEvent p1 = fLastDragPosition.back();
+    fLastDragPosition.clear();
+    
+    float const dt = (p1.eventTime.toMilliseconds() - p0.eventTime.toMilliseconds()) / 1000.0f;
+    if (dt <= 0.0f) {
+        return;
+    }
+    float const dx = p1.x - p0.x;
+    float const dz = p1.y - p0.y;
+    float const vx = -dx / dt;
+    float const vz = -dz / dt;
+    
+    int const minX = current.fX / current.fBlocksPerPixel - getWidth();
+    int const maxX = current.fX / current.fBlocksPerPixel + getWidth();
+    int const minZ = current.fZ / current.fBlocksPerPixel - getHeight();
+    int const maxZ = current.fZ / current.fBlocksPerPixel + getHeight();
+    fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel, vx, vz, minX, maxX, minZ, maxZ);
+    fScrollerTimer.stopTimer();
+    fScrollerTimer.startTimerHz(50);
 }
 
 ThreadPool* MapViewComponent::CreateThreadPool()

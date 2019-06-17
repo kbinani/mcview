@@ -3,9 +3,27 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
+#include "OverScroller.hpp"
 #include <map>
 #include <vector>
 #include <set>
+#include <deque>
+
+class TimerInstance : public Timer
+{
+public:
+    TimerInstance() = default;
+    
+    std::function<void(TimerInstance &timer)> fTimerCallback;
+
+private:
+    void timerCallback() override {
+        if (!fTimerCallback) {
+            return;
+        }
+        fTimerCallback(*this);
+    }
+};
 
 class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer
 {
@@ -28,7 +46,8 @@ public:
     void mouseDrag(MouseEvent const& event) override;
     void mouseDown(MouseEvent const& event) override;
     void mouseMove(MouseEvent const& event) override;
-    
+    void mouseUp(MouseEvent const& event) override;
+
     void setRegionsDirectory(File directory);
     void setBrowserOpened(bool opened);
 
@@ -184,6 +203,10 @@ private:
     ScopedPointer<Drawable> fCaptureButtonImage;
     
     Atomic<bool> fLoadingFinished;
+    
+    OverScroller fScroller;
+    std::deque<MouseEvent> fLastDragPosition;
+    TimerInstance fScrollerTimer;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
