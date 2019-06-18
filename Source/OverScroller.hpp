@@ -21,7 +21,8 @@
 class AnimationUtils {
 public:
     static long currentAnimationTimeMillis() {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count();
     }
 };
 
@@ -72,7 +73,8 @@ protected:
     int mOver;
 
     // Fling friction
-    float mFlingFriction = 0.015f; // ViewConfiguration.getScrollFriction();
+    // ViewConfiguration.getScrollFriction();
+    float mFlingFriction = 0.015f;
 
     // Current state of the animation.
     int mState = SPLINE;
@@ -83,7 +85,7 @@ protected:
     // A context-specific coefficient adjusted to physical values.
     float mPhysicalCoeff;
 
-    float DECELERATION_RATE;// = (float) (log(0.78) / log(0.9));
+    float DECELERATION_RATE;
     static float constexpr INFLEXION = 0.35f; // Tension lines cross at (INFLEXION, 1)
     static float constexpr START_TENSION = 0.5f;
     static float constexpr END_TENSION = 1.0f;
@@ -99,20 +101,16 @@ protected:
     static int constexpr BALLISTIC = 2;
 
 public:
-//    void setFriction(float friction) {
-//        mFlingFriction = friction;
-//    }
+    void setFriction(float friction) {
+        mFlingFriction = friction;
+    }
 
-    SplineOverScroller(/*Context context*/) {
+    SplineOverScroller() {
         mFinished = true;
-        const float ppi = 160.0f; // context.getResources().getDisplayMetrics().density * 160.0f;
-//        mPhysicalCoeff = SensorManager.GRAVITY_EARTH // g (m/s^2)
-//                * 39.37f // inch/meter
-//                * ppi
-//                * 0.84f; // look and feel tuning
-        const float gravityEarth = 9.80665;
-        const float inchPerMeter = 39.37f;//
-        const float friction = 0.84f;
+        const float ppi = 160.0f;
+        const float gravityEarth = 9.80665; // GRAVITY_EARTH (m/s^2)
+        const float inchPerMeter = 39.37f; // inch/meter
+        const float friction = 0.84f; // look and feel tuning
         mPhysicalCoeff = gravityEarth * inchPerMeter * ppi * friction;
         DECELERATION_RATE = (float) (log(0.78) / log(0.9));
 
@@ -324,7 +322,6 @@ private:
 
     void startAfterEdge(int start, int min, int max, int velocity) {
         if (start > min && start < max) {
-//            Log.e("OverScroller", "startAfterEdge called from a valid position");
             mFinished = true;
             return;
         }
@@ -479,14 +476,6 @@ private:
     // account for very small floating-point error
     float VISCOUS_FLUID_OFFSET;
 
-//    static {
-//
-//        // must be set to 1.0 (used in viscousFluid())
-//        VISCOUS_FLUID_NORMALIZE = 1.0f / viscousFluid(1.0f);
-//        // account for very small floating-point error
-//        VISCOUS_FLUID_OFFSET = 1.0f - VISCOUS_FLUID_NORMALIZE * viscousFluid(1.0f);
-//    }
-
     static float viscousFluid(float x) {
         x *= VISCOUS_FLUID_SCALE;
         if (x < 1.0f) {
@@ -501,8 +490,8 @@ private:
 
 public:
     ViscousFluidInterpolator()
-    : VISCOUS_FLUID_NORMALIZE(1.0f / viscousFluid(1.0f))
-    , VISCOUS_FLUID_OFFSET(1.0f - VISCOUS_FLUID_NORMALIZE * viscousFluid(1.0f))
+        : VISCOUS_FLUID_NORMALIZE(1.0f / viscousFluid(1.0f))
+        , VISCOUS_FLUID_OFFSET(1.0f - VISCOUS_FLUID_NORMALIZE * viscousFluid(1.0f))
     {
     
     }
@@ -544,10 +533,10 @@ public:
      * @param friction A scalar dimension-less value representing the coefficient of
      *         friction.
      */
-//    void setFriction(float friction) {
-//        mScrollerX.setFriction(friction);
-//        mScrollerY.setFriction(friction);
-//    }
+    void setFriction(float friction) {
+        mScrollerX.setFriction(friction);
+        mScrollerY.setFriction(friction);
+    }
 
     /**
      *
