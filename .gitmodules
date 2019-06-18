@@ -4,3 +4,6 @@
 [submodule "ext/colormap-shaders"]
 	path = ext/colormap-shaders
 	url = git@github.com:kbinani/colormap-shaders.git
+[submodule "ext/JUCE"]
+	path = ext/JUCE
+	url = git@github.com:WeAreROLI/JUCE.git
