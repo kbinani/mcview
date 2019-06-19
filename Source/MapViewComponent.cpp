@@ -286,8 +286,10 @@ void MapViewComponent::updateShader()
 void MapViewComponent::renderOpenGL()
 {
     LookAt lookAt = fLookAt.get();
-    int const width = getWidth();
-    int const height = getHeight();
+    auto desktopScale = (float)fOpenGLContext.getRenderingScale();
+    int const width = getWidth() * desktopScale;
+    int const height = getHeight() * desktopScale;
+    lookAt.fBlocksPerPixel /= desktopScale;
     render(width, height, lookAt, true);
 }
 
@@ -309,8 +311,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         OpenGLHelpers::clear(Colours::white);
     }
 
-    auto desktopScale = (float)fOpenGLContext.getRenderingScale();
-    glViewport(0, 0, roundToInt(desktopScale * width), roundToInt(desktopScale * height));
+    glViewport(0, 0, width, height);
 
     {
         for (long i = (long)fJobs.size() - 1; i >= 0; i--) {
@@ -456,6 +457,8 @@ void MapViewComponent::drawBackground()
     }
 
     Graphics g(*glRenderer);
+    g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
+
     g.setColour(Colour::fromRGB(236, 236, 236));
     int const xoffset = fMouseDragAmount.x % (2 * kCheckeredPatternSize);
     int const yoffset = fMouseDragAmount.y % (2 * kCheckeredPatternSize);
