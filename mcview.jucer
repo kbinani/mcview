@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="wXW1rF" name="mcview" projectType="guiapp" jucerVersion="5.4.3"
-              headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;../../ext/JUCE/modules/juce_core/zip/zlib"
+              headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;../../ext/JUCE/modules/juce_core/zip/zlib&#10;../../ext/JUCE/modules/juce_graphics/image_formats"
               bundleIdentifier="com.github.kbinani.mcview">
   <MAINGROUP id="IT5WFJ" name="mcview">
     <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
@@ -27,6 +27,8 @@
             file="Source/MapViewComponent.h"/>
       <FILE id="lK838W" name="OverScroller.hpp" compile="0" resource="0"
             file="Source/OverScroller.hpp"/>
+      <FILE id="AQJMO6" name="PNGWriter.cpp" compile="1" resource="0" file="Source/PNGWriter.cpp"/>
+      <FILE id="yTsaWN" name="PNGWriter.h" compile="0" resource="0" file="Source/PNGWriter.h"/>
       <FILE id="gaqahe" name="Region.h" compile="0" resource="0" file="Source/Region.h"/>
       <FILE id="Q2TQ9P" name="RegionTextureCache.cpp" compile="1" resource="0"
             file="Source/RegionTextureCache.cpp"/>

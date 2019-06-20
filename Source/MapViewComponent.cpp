@@ -3,8 +3,10 @@
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
 #include "OverScroller.hpp"
+#include "PNGWriter.h"
 #include <set>
 #include <cassert>
+#include <cmath>
 #include <thread>
 #include <minecraft-file.hpp>
 #include <colormap/colormap.h>
@@ -309,6 +311,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 {
     if (enableUI) {
         OpenGLHelpers::clear(Colours::white);
+    } else {
+        OpenGLHelpers::clear(Colours::transparentBlack);
     }
 
     glViewport(0, 0, width, height);
@@ -730,77 +734,122 @@ void MapViewComponent::setBrowserOpened(bool opened)
     }
 }
 
-void MapViewComponent::captureToImage()
+Rectangle<int> MapViewComponent::regionBoundingBox()
 {
-    FileChooser dialog("Choose file name", File(), "*.png", true);
-    if (!dialog.browseForFileToSave(true)) {
-        return;
+    int minX, maxX, minZ, maxZ;
+    minX = maxX = fTextures.begin()->first.first;
+    minZ = maxZ = fTextures.begin()->first.second;
+    for (auto const& it : fTextures) {
+        auto region = it.first;
+        int const x = region.first;
+        int const z = region.second;
+        minX = std::min(minX, x);
+        maxX = std::max(maxX, x);
+        minZ = std::min(minZ, z);
+        maxZ = std::max(maxZ, z);
     }
-    File file = dialog.getResult();
+    return Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
+}
+
+class SavePNGProgressWindow : public ThreadWithProgressWindow {
+public:
+    SavePNGProgressWindow(MapViewComponent *component, OpenGLContext &openGLContext, File file)
+        : ThreadWithProgressWindow("Writing image file", true, false)
+        , fComponent(component)
+        , fOpenGLContext(openGLContext)
+        , fFile(file)
+    {
+    }
     
-    fOpenGLContext.executeOnGLThread([this, file](OpenGLContext& ctx) {
-        if (fTextures.empty()) {
+    void run()
+    {
+        Rectangle<int> bounds;
+        fOpenGLContext.executeOnGLThread([this, &bounds](OpenGLContext& ctx) {
+            bounds = fComponent->regionBoundingBox();
+        }, true);
+        
+        if (bounds.getWidth() == 0 || bounds.getHeight() == 0) {
             return;
         }
         
-        int minX, maxX, minZ, maxZ;
-        minX = maxX = fTextures.begin()->first.first;
-        minZ = maxZ = fTextures.begin()->first.second;
-        for (auto const& it : fTextures) {
-            auto region = it.first;
-            int const x = region.first;
-            int const z = region.second;
-            minX = std::min(minX, x);
-            maxX = std::max(maxX, x);
-            minZ = std::min(minZ, z);
-            maxZ = std::max(maxZ, z);
-        }
+        int const minBlockX = bounds.getX() * 512;
+        int const minBlockZ = bounds.getY() * 512;
+        int const maxBlockX = (bounds.getRight() + 1) * 512 - 1;
+        int const maxBlockZ = (bounds.getBottom() + 1) * 512 - 1;
         
-        int const minBlockX = minX * 512;
-        int const minBlockZ = minZ * 512;
-        int const maxBlockX = (maxX + 1) * 512 - 1;
-        int const maxBlockZ = (maxZ + 1) * 512 - 1;
-
         int const width = maxBlockX - minBlockX + 1;
         int const height = maxBlockZ - minBlockZ + 1;
 
-        std::vector<PixelARGB> pixels(width * height);
+        int const kMaxMemoryUsage = 32 * 1024 * 1024;
+        int const row = std::max(kMaxMemoryUsage / ((int)sizeof(PixelARGB) * width), 128);
+        
+        std::vector<PixelARGB> pixels(width * row);
+        PixelARGB *pixelsPtr = pixels.data();
+        int const numFrames = (int)ceil(height / float(row));
 
-        ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
-        buffer->initialise(ctx, width, height);
-        buffer->makeCurrentRenderingTarget();
-        
-        LookAt lookAt;
-        lookAt.fX = minBlockX + width / 2.0f;
-        lookAt.fZ = minBlockZ + height / 2.0f;
-        lookAt.fBlocksPerPixel = 1;
-        render(width, height, lookAt, false);
+        FileOutputStream stream(fFile);
+        stream.truncate();
+        stream.setPosition(0);
+        PNGWriter writer(width, height, stream);
 
-        buffer->readPixels(pixels.data(), Rectangle<int>(0, 0, width, height));
-        buffer->releaseAsRenderingTarget();
-        
-        buffer->release();
-        buffer.reset();
-        
-        Image img(Image::PixelFormat::ARGB, width, height, true);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                PixelARGB px = pixels[y * width + x];
-                Colour c = Colour::fromRGBA(px.getRed(), px.getGreen(), px.getBlue(), px.getAlpha());
-                img.setPixelAt(x, height - y + 1, c);
+        fOpenGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext& ctx) {
+            int y = 0;
+            for (int i = 0; i < numFrames; i++) {
+                std::fill_n(pixelsPtr, width, PixelARGB());
+                
+                ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
+                buffer->initialise(ctx, width, row);
+                buffer->makeCurrentRenderingTarget();
+                
+                MapViewComponent::LookAt lookAt;
+                lookAt.fX = minBlockX + width / 2.0f;
+                lookAt.fZ = minBlockZ + i * row + row / 2.0f;
+                lookAt.fBlocksPerPixel = 1;
+                fComponent->render(width, row, lookAt, false);
+                
+                buffer->readPixels(pixelsPtr, Rectangle<int>(0, 0, width, row));
+                buffer->releaseAsRenderingTarget();
+                
+                buffer->release();
+                buffer.reset();
+                
+                for (int i = row; --i >= 0;) {
+                    writer.writeRow(pixelsPtr + width * i);
+                    y++;
+                    setProgress(y / float(height));
+                    if (y >= height) {
+                        break;
+                    }
+                }
             }
-        }
-        std::vector<PixelARGB>().swap(pixels);
+        }, true);
+        
+        setProgress(1);
+    }
     
-        {
-            PNGImageFormat png;
-            FileOutputStream stream(file);
-            stream.truncate();
-            stream.setPosition(0);
-            png.writeImageToStream(img, stream);
-        }
+private:
+    MapViewComponent *fComponent;
+    OpenGLContext &fOpenGLContext;
+    File fFile;
+};
 
-    }, false);
+void MapViewComponent::captureToImage()
+{
+    fCaptureButton->setEnabled(false);
+
+    File file;
+    {
+        FileChooser dialog("Choose file name", File(), "*.png", true);
+        if (!dialog.browseForFileToSave(true)) {
+            return;
+        }
+        file = dialog.getResult();
+    }
+    
+    SavePNGProgressWindow wnd(this, fOpenGLContext, file);
+    wnd.runThread();
+    
+    fCaptureButton->setEnabled(true);
 }
 
 void MapViewComponent::handleAsyncUpdate()

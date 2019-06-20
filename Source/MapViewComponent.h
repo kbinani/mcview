@@ -51,16 +51,19 @@ public:
     void setRegionsDirectory(File directory);
     void setBrowserOpened(bool opened);
 
-    void handleAsyncUpdate() override;
-    void timerCallback() override;
-    
-private:
     struct LookAt {
         float fX;
         float fZ;
         float fBlocksPerPixel;
     };
+    
+    void render(int const width, int const height, LookAt const lookAt, bool enableUI);
+    Rectangle<int> regionBoundingBox();
 
+    void handleAsyncUpdate() override;
+    void timerCallback() override;
+    
+private:
     void updateShader();
     Point<float> getMapCoordinateFromView(Point<float> p) const;
     Point<float> getViewCoordinateFromMap(Point<float> p) const;
@@ -71,8 +74,6 @@ private:
     void triggerRepaint();
 
     void captureToImage();
-    
-    void render(int const width, int const height, LookAt const lookAt, bool enableUI);
     
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
