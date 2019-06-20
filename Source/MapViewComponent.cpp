@@ -309,8 +309,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 {
     if (enableUI) {
         OpenGLHelpers::clear(Colours::white);
-    } else {
-        OpenGLHelpers::clear(Colours::transparentBlack);
     }
 
     glViewport(0, 0, width, height);
@@ -483,9 +481,9 @@ void MapViewComponent::drawBackground()
         const int y = (j - 2) * kCheckeredPatternSize + yoffset;
         g.drawHorizontalLine(y, 0, width);
     }
-
+    
     LookAt current = fLookAt.get();
-
+    
     fLoadingRegionsLock.enter();
     std::set<Region> loadingRegions(fLoadingRegions);
     fLoadingRegionsLock.exit();
@@ -757,7 +755,7 @@ void MapViewComponent::captureToImage()
             minZ = std::min(minZ, z);
             maxZ = std::max(maxZ, z);
         }
-
+        
         int const minBlockX = minX * 512;
         int const minBlockZ = minZ * 512;
         int const maxBlockX = (maxX + 1) * 512 - 1;
@@ -766,39 +764,34 @@ void MapViewComponent::captureToImage()
         int const width = maxBlockX - minBlockX + 1;
         int const height = maxBlockZ - minBlockZ + 1;
 
+        std::vector<PixelARGB> pixels(width * height);
+
+        ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
+        buffer->initialise(ctx, width, height);
+        buffer->makeCurrentRenderingTarget();
+        
+        LookAt lookAt;
+        lookAt.fX = minBlockX + width / 2.0f;
+        lookAt.fZ = minBlockZ + height / 2.0f;
+        lookAt.fBlocksPerPixel = 1;
+        render(width, height, lookAt, false);
+
+        buffer->readPixels(pixels.data(), Rectangle<int>(0, 0, width, height));
+        buffer->releaseAsRenderingTarget();
+        
+        buffer->release();
+        buffer.reset();
+        
         Image img(Image::PixelFormat::ARGB, width, height, true);
-        std::vector<PixelARGB> pixels(512 * 512);
-
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
-                buffer->initialise(ctx, 512, 512);
-                buffer->makeCurrentRenderingTarget();
-
-                LookAt lookAt;
-                lookAt.fX = x * 512 + 256;
-                lookAt.fZ = z * 512 + 256;
-                lookAt.fBlocksPerPixel = 1;
-                render(512, 512, lookAt, false);
-
-                buffer->readPixels(pixels.data(), Rectangle<int>(0, 0, 512, 512));
-
-                buffer->releaseAsRenderingTarget();
-                buffer->release();
-
-                int xOffset = (x - minX) * 512;
-                int yOffset = (z - minZ) * 512;
-                
-                for (int py = 0; py < 512; py++) {
-                    for (int px = 0; px < 512; px++) {
-                        PixelARGB pixel = pixels[(512 - py - 1) * 512 + px];
-                        Colour c = Colour::fromRGBA(pixel.getRed(), pixel.getGreen(), pixel.getBlue(), pixel.getAlpha());
-                        img.setPixelAt(px + xOffset, py + yOffset, c);
-                    }
-                }
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                PixelARGB px = pixels[y * width + x];
+                Colour c = Colour::fromRGBA(px.getRed(), px.getGreen(), px.getBlue(), px.getAlpha());
+                img.setPixelAt(x, height - y + 1, c);
             }
         }
-
+        std::vector<PixelARGB>().swap(pixels);
+    
         {
             PNGImageFormat png;
             FileOutputStream stream(file);
