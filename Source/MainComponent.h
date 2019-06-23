@@ -50,6 +50,9 @@ public:
         fSettings->onWaterAbsorptionCoefficientChanged = [this](float coeff) {
             fMapView->setWaterAbsorptionCoefficient(coeff);
         };
+        fSettings->onWaterTranslucentChanged = [this](bool translucent) {
+            fMapView->setWaterTranslucent(translucent);
+        };
         addAndMakeVisible(fSettings);
         
 		setSize(1280, 720);

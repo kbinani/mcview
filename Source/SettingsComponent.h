@@ -5,6 +5,7 @@
 class SettingsComponent : public Component {
 public:
     std::function<void(float)> onWaterAbsorptionCoefficientChanged;
+    std::function<void(bool)> onWaterTranslucentChanged;
 
     static float constexpr kDefaultWaterAbsorptionCoefficient = 0.02f;
     
@@ -17,4 +18,6 @@ public:
 private:
     ScopedPointer<Slider> fWaterAbsorptionCoefficient;
     ScopedPointer<Label> fWaterAbsorptionCoefficientLabel;
+
+    ScopedPointer<ToggleButton> fTranslucentWater;
 };

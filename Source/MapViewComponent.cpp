@@ -24,6 +24,7 @@ MapViewComponent::MapViewComponent()
     , fMouseDragAmount({0, 0})
     , fLoadingFinished(true)
     , fWaterAbsorptionCoefficient(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
+    , fWaterTranslucent(true)
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -151,6 +152,7 @@ void MapViewComponent::updateShader()
         uniform float fade;
         uniform int grassBlockId;
         uniform float waterAbsorptionCoefficient;
+        uniform bool waterTranslucent;
     
         uniform sampler2D north;
         uniform sampler2D west;
@@ -220,8 +222,12 @@ void MapViewComponent::updateShader()
 
         vec4 c;
         if (waterDepth > 0.0) {
-            float intensity = pow(10.0, -waterAbsorptionCoefficient * waterDepth);
-            c = vec4(waterColor.r * intensity, waterColor.g * intensity, waterColor.b * intensity, alpha);
+            if (waterTranslucent) {
+                float intensity = pow(10.0, -waterAbsorptionCoefficient * waterDepth);
+                c = vec4(waterColor.r * intensity, waterColor.g * intensity, waterColor.b * intensity, alpha);
+            } else {
+                c = waterColor;
+            }
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
             vec4 g = colormap(v);
@@ -237,43 +243,45 @@ void MapViewComponent::updateShader()
             }
         }
 
-        float heightScore = 0.0; // +: bright, -: dark
-        float d = 1.0 / 512.0;
-        float tx = textureCoordOut.x;
-        float ty = textureCoordOut.y;
-        vec4 northC;
-        if (ty - d < 0.0) {
-            northC = texture2D(north, vec2(tx, ty - d + 1.0));
-        } else {
-            northC = texture2D(texture, vec2(tx, ty - d));
-        }
-        vec4 westC;
-        if (tx - d < 0.0) {
-            westC = texture2D(west, vec2(tx - d + 1.0, ty));
-        } else {
-            westC = texture2D(texture, vec2(tx - d, ty));
-        }
-        float northH = northC.a * 255.0;
-        float westH = westC.a * 255.0;
-        if (northH > 0.0) {
-            if (northH > height) heightScore--;
-            if (northH < height) heightScore++;
-        }
-        if (westH > 0.0) {
-            if (westH > height) heightScore--;
-            if (westH < height) heightScore++;
-        }
-    
-        if (heightScore > 0.0) {
-            float coeff = 1.2;
-            vec3 hsv = rgb2hsv(c.rgb);
-            hsv.b = hsv.b * coeff;
-            c = vec4(hsv2rgb(hsv).rgb, c.a);
-        } else if (heightScore < 0.0) {
-            float coeff = 0.8;
-            vec3 hsv = rgb2hsv(c.rgb);
-            hsv.b = hsv.b * coeff;
-            c = vec4(hsv2rgb(hsv).rgb, c.a);
+        if (waterDepth == 0.0 || (waterDepth > 0.0 && waterTranslucent)) {
+            float heightScore = 0.0; // +: bright, -: dark
+            float d = 1.0 / 512.0;
+            float tx = textureCoordOut.x;
+            float ty = textureCoordOut.y;
+            vec4 northC;
+            if (ty - d < 0.0) {
+                northC = texture2D(north, vec2(tx, ty - d + 1.0));
+            } else {
+                northC = texture2D(texture, vec2(tx, ty - d));
+            }
+            vec4 westC;
+            if (tx - d < 0.0) {
+                westC = texture2D(west, vec2(tx - d + 1.0, ty));
+            } else {
+                westC = texture2D(texture, vec2(tx - d, ty));
+            }
+            float northH = northC.a * 255.0;
+            float westH = westC.a * 255.0;
+            if (northH > 0.0) {
+                if (northH > height) heightScore--;
+                if (northH < height) heightScore++;
+            }
+            if (westH > 0.0) {
+                if (westH > height) heightScore--;
+                if (westH < height) heightScore++;
+            }
+        
+            if (heightScore > 0.0) {
+                float coeff = 1.2;
+                vec3 hsv = rgb2hsv(c.rgb);
+                hsv.b = hsv.b * coeff;
+                c = vec4(hsv2rgb(hsv).rgb, c.a);
+            } else if (heightScore < 0.0) {
+                float coeff = 0.8;
+                vec3 hsv = rgb2hsv(c.rgb);
+                hsv.b = hsv.b * coeff;
+                c = vec4(hsv2rgb(hsv).rgb, c.a);
+            }
         }
     
         if (c.a == 0.0 && fade < 1.0) {
@@ -407,6 +415,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
         if (fUniforms->waterAbsorptionCoefficient) {
             fUniforms->waterAbsorptionCoefficient->set((GLfloat)fWaterAbsorptionCoefficient.get());
+        }
+        if (fUniforms->waterTranslucent) {
+            fUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
         }
 
         if (fUniforms->fade.get() != nullptr) {
@@ -885,5 +896,11 @@ void MapViewComponent::timerCallback()
 void MapViewComponent::setWaterAbsorptionCoefficient(float v)
 {
     fWaterAbsorptionCoefficient = v;
+    triggerRepaint();
+}
+
+void MapViewComponent::setWaterTranslucent(bool translucent)
+{
+    fWaterTranslucent = translucent;
     triggerRepaint();
 }

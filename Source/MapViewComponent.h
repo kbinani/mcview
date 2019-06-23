@@ -65,6 +65,7 @@ public:
     void timerCallback() override;
     
     void setWaterAbsorptionCoefficient(float v);
+    void setWaterTranslucent(bool translucent);
     
 private:
     void updateShader();
@@ -99,9 +100,11 @@ private:
             north.reset(createUniform(openGLContext, shader, "north"));
             west.reset(createUniform(openGLContext, shader, "west"));
             waterAbsorptionCoefficient.reset(createUniform(openGLContext, shader, "waterAbsorptionCoefficient"));
+            waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, north, west, waterAbsorptionCoefficient;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz,
+            grassBlockId, north, west, waterAbsorptionCoefficient, waterTranslucent;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
@@ -217,6 +220,7 @@ private:
     TimerInstance fScrollerTimer;
     
     Atomic<float> fWaterAbsorptionCoefficient;
+    Atomic<bool> fWaterTranslucent;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
