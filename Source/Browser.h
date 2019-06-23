@@ -22,7 +22,9 @@ private:
     ScopedPointer<ConcertinaPanel> fPanel;
     ScopedPointer<DrawableButton> fAddButton;
     ScopedPointer<Drawable> fAddButtonImage;
-        
+    
+    Array<DirectoryBrowser *> fBrowsers;
+    
     static int constexpr kResizerWidth = 8;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Browser)

@@ -15,7 +15,7 @@ public:
     void listBoxItemDoubleClicked (int row, const MouseEvent &) override;
     
 private:
-    File fDirectory;
+    File const fDirectory;
     Array<File> fItems;
     Colour fTextColorOff;
     Colour fTextColorOn;
@@ -34,8 +34,10 @@ public:
 
     std::function<void(File)> onSelect;
     
-private :
-    File fDirectory;
+public:
+    File const fDirectory;
+
+private:
     ScopedPointer<DirectoryBrowserModel> fModel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowser);

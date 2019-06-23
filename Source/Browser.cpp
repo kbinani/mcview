@@ -24,6 +24,12 @@ Browser::Browser()
         if (directory.getChildFile("region").exists() && directory.getChildFile("level.dat").exists()) {
             directory = directory.getParentDirectory();
         }
+        for (int i = 0; i < fBrowsers.size(); i++) {
+            auto b = fBrowsers[i];
+            if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+                return;
+            }
+        }
         addDirectory(directory);
     };
 
@@ -44,6 +50,7 @@ void Browser::addDirectory(File directory, String title)
     fPanel->addPanel(fPanel->getNumPanels(), browser, true);
     fPanel->setPanelHeaderSize(browser, 32);
     fPanel->expandPanelFully(browser, true);
+    fBrowsers.add(browser);
     resized();
 }
 
