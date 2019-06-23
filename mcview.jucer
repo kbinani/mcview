@@ -11,6 +11,8 @@
             compile="0" resource="1" file="Resource/baseline_keyboard_arrow_left_white_18dp.png"/>
       <FILE id="MUfGxb" name="baseline_keyboard_arrow_right_white_18dp.png"
             compile="0" resource="1" file="Resource/baseline_keyboard_arrow_right_white_18dp.png"/>
+      <FILE id="IanvsB" name="baseline_settings_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_settings_white_18dp.png"/>
     </GROUP>
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
       <FILE id="D9uNQU" name="Browser.cpp" compile="1" resource="0" file="Source/Browser.cpp"/>

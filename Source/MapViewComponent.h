@@ -203,6 +203,9 @@ private:
     ScopedPointer<DrawableButton> fCaptureButton;
     ScopedPointer<Drawable> fCaptureButtonImage;
     
+    ScopedPointer<DrawableButton> fSettingsButton;
+    ScopedPointer<Drawable> fSettingsButtonImage;
+    
     Atomic<bool> fLoadingFinished;
     
     OverScroller fScroller;

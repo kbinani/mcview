@@ -50,6 +50,14 @@ MapViewComponent::MapViewComponent()
     addAndMakeVisible(fCaptureButton);
     fCaptureButton->setEnabled(false);
 
+    fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
+                                                         BinaryData::baseline_settings_white_18dp_pngSize);
+    fSettingsButton = new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fSettingsButton->setImages(fSettingsButtonImage);
+    fSettingsButton->onClick = [this]() {
+    };
+    addAndMakeVisible(fSettingsButton);
+    
     setOpaque(true);
     fOpenGLContext.setRenderer(this);
     fOpenGLContext.attachTo(*this);
@@ -722,6 +730,9 @@ void MapViewComponent::resized()
     }
     if (fCaptureButton) {
         fCaptureButton->setBounds(width - kButtonSize - margin, margin, kButtonSize, kButtonSize);
+    }
+    if (fSettingsButton) {
+        fSettingsButton->setBounds(width - kButtonSize - margin, margin * 2 + kButtonSize, kButtonSize, kButtonSize);
     }
 }
 
