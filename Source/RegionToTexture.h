@@ -18,6 +18,12 @@ public:
     ScopedPointer<PixelARGB> fPixels;
     
     static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
-    
+
+    static int constexpr kBlockIdOffset = 100;
+    static_assert(mcfile::biomes::minecraft::minecraft_max_biome_id < kBlockIdOffset, "");
+
+    static Colour const kDefaultOceanColor;
+    static std::map<mcfile::biomes::BiomeId, Colour> const kOceanToColor;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture);
 };

@@ -130,6 +130,16 @@ static std::set<mcfile::blocks::BlockId> transparentBlocks = {
     mcfile::blocks::minecraft::ladder, // Colour(255, 255, 255)},
 };
 
+Colour const RegionToTexture::kDefaultOceanColor(51, 89, 162);
+
+std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kOceanToColor = {
+    {mcfile::biomes::minecraft::ocean, RegionToTexture::kDefaultOceanColor},
+    {mcfile::biomes::minecraft::lukewarm_ocean, Colour(43, 122, 170)},
+    {mcfile::biomes::minecraft::warm_ocean, Colour(56, 150, 177)},
+    {mcfile::biomes::minecraft::cold_ocean, Colour(50, 66, 158)},
+    {mcfile::biomes::minecraft::frozen_ocean, Colour(50, 47, 155)},
+};
+
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
@@ -176,8 +186,10 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                         int const idx = (z - minZ) * width + (x - minX);
                         assert(0 <= idx && idx < width * height);
                         uint8 const h = (uint8)std::min(std::max(y, 0), 255);
+                        mcfile::biomes::BiomeId biome = chunk.biomeAt(x, z);
                         PixelARGB p;
-                        p.setARGB(h, waterDepth, 0xFF & (block >> 8), 0xFF & block);
+                        uint16_t const num = (int)biome + kBlockIdOffset * block;
+                        p.setARGB(h, waterDepth, 0xFF & (num >> 8), 0xFF & num);
                         pixelsPtr[idx] = p;
                         break;
                     }
