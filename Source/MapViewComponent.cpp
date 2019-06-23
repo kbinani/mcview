@@ -88,7 +88,7 @@ MapViewComponent::~MapViewComponent()
     fPool->removeAllJobs(true, -1);
 }
 
-void MapViewComponent::paint(Graphics& g)
+void MapViewComponent::paint(Graphics&)
 {
 }
 
@@ -843,7 +843,7 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     }
 }
 
-void MapViewComponent::mouseDown(MouseEvent const& event)
+void MapViewComponent::mouseDown(MouseEvent const&)
 {
     LookAt const current = fLookAt.get();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
@@ -858,7 +858,7 @@ void MapViewComponent::mouseMove(MouseEvent const& event)
     triggerRepaint();
 }
 
-void MapViewComponent::mouseUp(MouseEvent const& event)
+void MapViewComponent::mouseUp(MouseEvent const&)
 {
     if (fLastDragPosition.size() != 2) {
         return;
@@ -954,7 +954,7 @@ public:
     void run()
     {
         Rectangle<int> bounds;
-        fOpenGLContext.executeOnGLThread([this, &bounds](OpenGLContext& ctx) {
+        fOpenGLContext.executeOnGLThread([this, &bounds](OpenGLContext&) {
             bounds = fComponent->regionBoundingBox();
         }, true);
         

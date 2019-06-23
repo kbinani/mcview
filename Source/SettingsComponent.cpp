@@ -170,7 +170,7 @@ SettingsComponent::SettingsComponent()
     setSize(250, 600);
 }
 
-void SettingsComponent::paint(Graphics &g)
+void SettingsComponent::paint(Graphics &)
 {
     
 }

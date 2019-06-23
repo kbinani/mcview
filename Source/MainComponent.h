@@ -106,7 +106,7 @@ public:
         }
     }
 
-    void childBoundsChanged (Component *child) override
+    void childBoundsChanged (Component *) override
     {
         resized();
     }

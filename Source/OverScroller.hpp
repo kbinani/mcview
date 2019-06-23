@@ -231,7 +231,7 @@ public:
     }
 
 private:
-    void startSpringback(int start, int end, int velocity) {
+    void startSpringback(int start, int end, int /*velocity*/) {
         // mStartTime has been set
         mFinished = false;
         mState = CUBIC;
