@@ -98,13 +98,21 @@ private:
             Cz.reset(createUniform(openGLContext, shader, "Cz"));
             grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
             north.reset(createUniform(openGLContext, shader, "north"));
+            northEast.reset(createUniform(openGLContext, shader, "norhtEast"));
+            east.reset(createUniform(openGLContext, shader, "east"));
+            southEast.reset(createUniform(openGLContext, shader, "southEast"));
+            south.reset(createUniform(openGLContext, shader, "south"));
+            southWest.reset(createUniform(openGLContext, shader, "southWest"));
             west.reset(createUniform(openGLContext, shader, "west"));
+            northWest.reset(createUniform(openGLContext, shader, "northWest"));
             waterAbsorptionCoefficient.reset(createUniform(openGLContext, shader, "waterAbsorptionCoefficient"));
             waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
+            biomeBlend.reset(createUniform(openGLContext, shader, "biomeBlend"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz,
-            grassBlockId, north, west, waterAbsorptionCoefficient, waterTranslucent;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> waterAbsorptionCoefficient, waterTranslucent, biomeBlend;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,

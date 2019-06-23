@@ -153,9 +153,16 @@ void MapViewComponent::updateShader()
         uniform int grassBlockId;
         uniform float waterAbsorptionCoefficient;
         uniform bool waterTranslucent;
+        uniform int biomeBlend;
     
         uniform sampler2D north;
+        uniform sampler2D northEast;
+        uniform sampler2D east;
+        uniform sampler2D southEast;
+        uniform sampler2D south;
+        uniform sampler2D southWest;
         uniform sampler2D west;
+        uniform sampler2D northWest;
     )#";
 
 	fragment << altitude.getSource() << std::endl;
@@ -232,9 +239,55 @@ void MapViewComponent::updateShader()
     fragment << "    }" << std::endl;
     fragment << "}";
 
-	fragment << "void main() {" << std::endl;
+    fragment << R"#(
 
-	fragment << R"#(
+    vec4 waterColor() {
+        vec4 sumColor = vec4(0.0, 0.0, 0.0, 0.0);
+        vec2 center = textureCoordOut;
+        int count = 0;
+        for (int dx = -biomeBlend; dx <= biomeBlend; dx++) {
+            for (int dz = -biomeBlend; dz <= biomeBlend; dz++) {
+                float x = center.x + float(dx) / 512.0;
+                float y = center.y + float(dz) / 512.0;
+                vec4 c;
+                if (x < 0.0) {
+                    if (y < 0.0) {
+                        c = texture2D(northWest, vec2(x + 1.0, y + 1.0));
+                    } else if (y < 1.0) {
+                        c = texture2D(west, vec2(x + 1.0, y));
+                    } else {
+                        c = texture2D(southWest, vec2(x + 1.0, y - 1.0));
+                    }
+                } else if (x < 1.0) {
+                    if (y < 0.0) {
+                        c = texture2D(north, vec2(x, y + 1.0));
+                    } else if (y < 1.0) {
+                        c = texture2D(texture, vec2(x, y));
+                    } else {
+                        c = texture2D(south, vec2(x, y - 1.0));
+                    }
+                } else {
+                    if (y < 0.0) {
+                        c = texture2D(northEast, vec2(x - 1.0, y + 1.0));
+                    } else if (y < 1.0) {
+                        c = texture2D(east, vec2(x - 1.0, y));
+                    } else {
+                        c = texture2D(southEast, vec2(x - 1.0, y - 1.0));
+                    }
+                }
+                int hi = int(c.g * 255.0);
+                int lo = int(c.b * 255.0);
+                int num = hi * 256 + lo;
+                ivec2 ids = decomposite(num);
+                int biomeId = ids.y;
+                sumColor += waterColorFromBiome(biomeId);
+                count++;
+            }
+        }
+        return sumColor / float(count);
+    }
+    
+    void main() {
         float alpha = fade;
 
         vec4 color = texture2D(texture, textureCoordOut);
@@ -250,7 +303,7 @@ void MapViewComponent::updateShader()
 
         vec4 c;
         if (waterDepth > 0.0) {
-            vec4 wc = waterColorFromBiome(biomeId);
+            vec4 wc = waterColor();
             if (waterTranslucent) {
                 float intensity = pow(10.0, -waterAbsorptionCoefficient * waterDepth);
                 c = vec4(wc.r * intensity, wc.g * intensity, wc.b* intensity, alpha);
@@ -448,6 +501,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         if (fUniforms->waterTranslucent) {
             fUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
         }
+        if (fUniforms->biomeBlend) {
+            fUniforms->biomeBlend->set((GLint)2);
+        }
 
         if (fUniforms->fade.get() != nullptr) {
             if (enableUI) {
@@ -473,7 +529,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
         auto north = fTextures.find(MakeRegion(x, z - 1));
         if (north != fTextures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE1);
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
             north->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -482,18 +538,84 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
+        auto northEast = fTextures.find(MakeRegion(x + 1, z - 1));
+        if (northEast != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
+            northEast->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->northEast.get() != nullptr) {
+                fUniforms->northEast->set(2);
+            }
+        }
+
+        auto east = fTextures.find(MakeRegion(x + 1, z));
+        if (east != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
+            east->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->east.get() != nullptr) {
+                fUniforms->east->set(3);
+            }
+        }
+
+        auto southEast = fTextures.find(MakeRegion(x + 1, z + 1));
+        if (southEast != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
+            southEast->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->southEast.get() != nullptr) {
+                fUniforms->southEast->set(4);
+            }
+        }
+
+        auto south = fTextures.find(MakeRegion(x, z + 1));
+        if (south != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
+            south->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->south.get() != nullptr) {
+                fUniforms->south->set(5);
+            }
+        }
+
+        auto southWest = fTextures.find(MakeRegion(x - 1, z + 1));
+        if (southWest != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
+            southWest->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->southWest.get() != nullptr) {
+                fUniforms->southWest->set(6);
+            }
+        }
+
         auto west = fTextures.find(MakeRegion(x - 1, z));
         if (west != fTextures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE2);
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
             west->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             if (fUniforms->west.get() != nullptr) {
-                fUniforms->west->set(2);
+                fUniforms->west->set(7);
             }
         }
 
-		fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fBuffer->vBuffer);
+        auto northWest = fTextures.find(MakeRegion(x - 1, z - 1));
+        if (northWest != fTextures.end()) {
+            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
+            northWest->second->fTexture->bind();
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            if (fUniforms->northWest.get() != nullptr) {
+                fUniforms->northWest->set(8);
+            }
+        }
+
+        fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fBuffer->vBuffer);
 		fOpenGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fBuffer->iBuffer);
         
         fAttributes->enable(fOpenGLContext);
