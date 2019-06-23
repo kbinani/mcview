@@ -64,6 +64,8 @@ public:
     void handleAsyncUpdate() override;
     void timerCallback() override;
     
+    void setWaterAbsorptionCoefficient(float v);
+    
 private:
     void updateShader();
     Point<float> getMapCoordinateFromView(Point<float> p) const;
@@ -96,9 +98,10 @@ private:
             grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
             north.reset(createUniform(openGLContext, shader, "north"));
             west.reset(createUniform(openGLContext, shader, "west"));
+            waterAbsorptionCoefficient.reset(createUniform(openGLContext, shader, "waterAbsorptionCoefficient"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, north, west;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, north, west, waterAbsorptionCoefficient;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
@@ -212,6 +215,8 @@ private:
     OverScroller fScroller;
     std::deque<MouseEvent> fLastDragPosition;
     TimerInstance fScrollerTimer;
+    
+    Atomic<float> fWaterAbsorptionCoefficient;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

@@ -47,6 +47,9 @@ public:
         addAndMakeVisible(fBrowser);
 
         fSettings = new SettingsComponent();
+        fSettings->onWaterAbsorptionCoefficientChanged = [this](float coeff) {
+            fMapView->setWaterAbsorptionCoefficient(coeff);
+        };
         addAndMakeVisible(fSettings);
         
 		setSize(1280, 720);

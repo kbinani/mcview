@@ -4,6 +4,7 @@
 #include "RegionTextureCache.h"
 #include "OverScroller.hpp"
 #include "PNGWriter.h"
+#include "SettingsComponent.h"
 #include <set>
 #include <cassert>
 #include <cmath>
@@ -22,6 +23,7 @@ MapViewComponent::MapViewComponent()
     , fPool(CreateThreadPool())
     , fMouseDragAmount({0, 0})
     , fLoadingFinished(true)
+    , fWaterAbsorptionCoefficient(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -143,13 +145,16 @@ void MapViewComponent::updateShader()
     colormap::kbinani::Altitude altitude;
 
 	std::ostringstream fragment;
-	fragment << "varying vec2 textureCoordOut;" << std::endl;
-	fragment << "uniform sampler2D texture;" << std::endl;
-	fragment << "uniform float fade;" << std::endl;
-	fragment << "uniform int grassBlockId;" << std::endl;
+    fragment << R"#(
+        varying vec2 textureCoordOut;
+        uniform sampler2D texture;
+        uniform float fade;
+        uniform int grassBlockId;
+        uniform float waterAbsorptionCoefficient;
     
-    fragment << "uniform sampler2D north;" << std::endl;
-    fragment << "uniform sampler2D west;" << std::endl;
+        uniform sampler2D north;
+        uniform sampler2D west;
+    )#";
 
 	fragment << altitude.getSource() << std::endl;
     
@@ -202,7 +207,6 @@ void MapViewComponent::updateShader()
 
 	fragment << R"#(
         vec4 waterColor = vec4(69.0 / 255.0, 91.0 / 255.0, 211.0 / 255.0, 1.0);
-        float waterDiffusion = 0.02;
 
         float alpha = fade;
 
@@ -216,7 +220,7 @@ void MapViewComponent::updateShader()
 
         vec4 c;
         if (waterDepth > 0.0) {
-            float intensity = pow(10.0, -waterDiffusion * waterDepth);
+            float intensity = pow(10.0, -waterAbsorptionCoefficient * waterDepth);
             c = vec4(waterColor.r * intensity, waterColor.g * intensity, waterColor.b * intensity, alpha);
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
@@ -400,6 +404,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
         if (fUniforms->grassBlockId.get() != nullptr) {
             fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
+        }
+        if (fUniforms->waterAbsorptionCoefficient) {
+            fUniforms->waterAbsorptionCoefficient->set((GLfloat)fWaterAbsorptionCoefficient.get());
         }
 
         if (fUniforms->fade.get() != nullptr) {
@@ -873,4 +880,10 @@ void MapViewComponent::timerCallback()
 {
     fOpenGLContext.setContinuousRepainting(false);
     stopTimer();
+}
+
+void MapViewComponent::setWaterAbsorptionCoefficient(float v)
+{
+    fWaterAbsorptionCoefficient = v;
+    triggerRepaint();
 }
