@@ -86,7 +86,7 @@ public:
         addAndMakeVisible(fEnableBiome);
         
         fBlendTitle = new Label();
-        fBlendTitle->setText("Biome blend", NotificationType::dontSendNotification);
+        fBlendTitle->setText("Blend", NotificationType::dontSendNotification);
         addAndMakeVisible(fBlendTitle);
         
         fBlend = new Slider(Slider::LinearHorizontal, Slider::NoTextBox);
