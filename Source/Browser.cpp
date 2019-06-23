@@ -10,6 +10,23 @@ Browser::Browser()
     fPanel = new ConcertinaPanel();
     addAndMakeVisible(fPanel);
     
+    fAddButtonImage = Drawable::createFromImageData(BinaryData::baseline_add_white_18dp_png,
+                                                                BinaryData::baseline_add_white_18dp_pngSize);
+    fAddButton = new DrawableButton("Add", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fAddButton->setImages(fAddButtonImage);
+    addAndMakeVisible(fAddButton);
+    fAddButton->onClick = [this]() {
+        FileChooser dialog("Choose directory");
+        if (!dialog.browseForDirectory()) {
+            return;
+        }
+        File directory = dialog.getResult();
+        if (directory.getChildFile("region").exists() && directory.getChildFile("level.dat").exists()) {
+            directory = directory.getParentDirectory();
+        }
+        addDirectory(directory);
+    };
+
     setSize(kDefaultWidth, 400);
 }
 
@@ -26,6 +43,7 @@ void Browser::addDirectory(File directory, String title)
     browser->setName(title.length() == 0 ? directory.getFileName() : title);
     fPanel->addPanel(fPanel->getNumPanels(), browser, true);
     fPanel->setPanelHeaderSize(browser, 32);
+    fPanel->expandPanelFully(browser, true);
     resized();
 }
 
@@ -39,7 +57,11 @@ void Browser::resized()
     int const height = getHeight();
     fResizer->setBounds(width - kResizerWidth, 0, kResizerWidth, height);
     
-    fPanel->setBounds(0, 0, width - kResizerWidth, height);
+    int const margin = 10;
+    int const buttonSize = 40;
+    fPanel->setBounds(0, 0, width - kResizerWidth, height - margin - buttonSize - margin);
+    
+    fAddButton->setBounds(margin, height - margin - buttonSize, buttonSize, buttonSize);
     
     Component *parent = getParentComponent();
     if (parent) {

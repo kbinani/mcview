@@ -20,6 +20,8 @@ private:
     ScopedPointer<ResizableEdgeComponent> fResizer;
     ScopedPointer<ComponentBoundsConstrainer> fConstrainer;
     ScopedPointer<ConcertinaPanel> fPanel;
+    ScopedPointer<DrawableButton> fAddButton;
+    ScopedPointer<Drawable> fAddButtonImage;
         
     static int constexpr kResizerWidth = 8;
     

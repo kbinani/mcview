@@ -5,6 +5,8 @@
               bundleIdentifier="com.github.kbinani.mcview" version="1.1.0">
   <MAINGROUP id="IT5WFJ" name="mcview">
     <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
+      <FILE id="OFUr6M" name="baseline_add_white_18dp.png" compile="0" resource="1"
+            file="Resource/baseline_add_white_18dp.png"/>
       <FILE id="IDq8vE" name="baseline_camera_white_18dp.png" compile="0"
             resource="1" file="Resource/baseline_camera_white_18dp.png"/>
       <FILE id="XVgsYT" name="baseline_keyboard_arrow_left_white_18dp.png"
