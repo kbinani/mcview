@@ -29,6 +29,7 @@ class MapViewComponent : public Component, private OpenGLRenderer, private Async
 {
 public:
     std::function<void()> onOpenButtonClicked;
+    std::function<void()> onSettingsButtonClicked;
     
 public:
     MapViewComponent();

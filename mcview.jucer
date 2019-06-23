@@ -40,6 +40,10 @@
             file="Source/RegionToTexture.cpp"/>
       <FILE id="SQSRbc" name="RegionToTexture.h" compile="0" resource="0"
             file="Source/RegionToTexture.h"/>
+      <FILE id="Uou2h9" name="SettingsComponent.cpp" compile="1" resource="0"
+            file="Source/SettingsComponent.cpp"/>
+      <FILE id="tFrICH" name="SettingsComponent.h" compile="0" resource="0"
+            file="Source/SettingsComponent.h"/>
       <FILE id="WcR7oH" name="zlib.cpp" compile="1" resource="0" file="Source/zlib.cpp"/>
     </GROUP>
   </MAINGROUP>

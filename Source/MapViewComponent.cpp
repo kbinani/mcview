@@ -55,6 +55,7 @@ MapViewComponent::MapViewComponent()
     fSettingsButton = new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground);
     fSettingsButton->setImages(fSettingsButtonImage);
     fSettingsButton->onClick = [this]() {
+        onSettingsButtonClicked();
     };
     addAndMakeVisible(fSettingsButton);
     
