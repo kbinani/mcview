@@ -1003,8 +1003,8 @@ public:
                 buffer->release();
                 buffer.reset();
                 
-                for (int i = row; --i >= 0;) {
-                    writer.writeRow(pixelsPtr + width * i);
+                for (int j = row; --j >= 0;) {
+                    writer.writeRow(pixelsPtr + width * j);
                     y++;
                     setProgress(y / float(height));
                     if (y >= height) {
