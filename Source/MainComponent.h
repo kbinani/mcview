@@ -53,6 +53,12 @@ public:
         fSettings->onWaterTranslucentChanged = [this](bool translucent) {
             fMapView->setWaterTranslucent(translucent);
         };
+        fSettings->onBiomeEnableChanged = [this](bool enable) {
+            fMapView->setBiomeEnable(enable);
+        };
+        fSettings->onBiomeBlendChanged = [this](int blend) {
+            fMapView->setBiomeBlend(blend);
+        };
         addAndMakeVisible(fSettings);
         
 		setSize(1280, 720);

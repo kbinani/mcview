@@ -25,6 +25,8 @@ MapViewComponent::MapViewComponent()
     , fLoadingFinished(true)
     , fWaterAbsorptionCoefficient(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
     , fWaterTranslucent(true)
+    , fEnableBiome(true)
+    , fBiomeBlend(2)
 {
     if (auto* peer = getPeer()) {
         peer->setCurrentRenderingEngine (0);
@@ -154,6 +156,7 @@ void MapViewComponent::updateShader()
         uniform float waterAbsorptionCoefficient;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
+        uniform int enableBiome;
     
         uniform sampler2D north;
         uniform sampler2D northEast;
@@ -242,6 +245,9 @@ void MapViewComponent::updateShader()
     fragment << R"#(
 
     vec4 waterColor() {
+        if (enableBiome == 0) {
+            return waterColorFromBiome(-1);
+        }
         vec4 sumColor = vec4(0.0, 0.0, 0.0, 0.0);
         vec2 center = textureCoordOut;
         int count = 0;
@@ -502,7 +508,10 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
         }
         if (fUniforms->biomeBlend) {
-            fUniforms->biomeBlend->set((GLint)2);
+            fUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
+        }
+        if (fUniforms->enableBiome) {
+            fUniforms->enableBiome->set((GLint)(fEnableBiome.get() ? 1 : 0));
         }
 
         if (fUniforms->fade.get() != nullptr) {
@@ -1053,5 +1062,17 @@ void MapViewComponent::setWaterAbsorptionCoefficient(float v)
 void MapViewComponent::setWaterTranslucent(bool translucent)
 {
     fWaterTranslucent = translucent;
+    triggerRepaint();
+}
+
+void MapViewComponent::setBiomeEnable(bool enable)
+{
+    fEnableBiome = enable;
+    triggerRepaint();
+}
+
+void MapViewComponent::setBiomeBlend(int blend)
+{
+    fBiomeBlend = blend;
     triggerRepaint();
 }

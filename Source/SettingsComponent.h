@@ -6,6 +6,8 @@ class SettingsComponent : public Component {
 public:
     std::function<void(float)> onWaterAbsorptionCoefficientChanged;
     std::function<void(bool)> onWaterTranslucentChanged;
+    std::function<void(bool)> onBiomeEnableChanged;
+    std::function<void(int)> onBiomeBlendChanged;
 
     static float constexpr kDefaultWaterAbsorptionCoefficient = 0.02f;
     
@@ -16,8 +18,6 @@ public:
     void resized() override;
 
 private:
-    ScopedPointer<Slider> fWaterAbsorptionCoefficient;
-    ScopedPointer<Label> fWaterAbsorptionCoefficientLabel;
-
-    ScopedPointer<ToggleButton> fTranslucentWater;
+    ScopedPointer<GroupComponent> fGroupWater;
+    ScopedPointer<GroupComponent> fGroupBiome;
 };

@@ -66,6 +66,8 @@ public:
     
     void setWaterAbsorptionCoefficient(float v);
     void setWaterTranslucent(bool translucent);
+    void setBiomeEnable(bool enable);
+    void setBiomeBlend(int blend);
     
 private:
     void updateShader();
@@ -108,11 +110,12 @@ private:
             waterAbsorptionCoefficient.reset(createUniform(openGLContext, shader, "waterAbsorptionCoefficient"));
             waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
             biomeBlend.reset(createUniform(openGLContext, shader, "biomeBlend"));
+            enableBiome.reset(createUniform(openGLContext, shader, "enableBiome"));
         }
 
         std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId;
         std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
-        std::unique_ptr<OpenGLShaderProgram::Uniform> waterAbsorptionCoefficient, waterTranslucent, biomeBlend;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> waterAbsorptionCoefficient, waterTranslucent, biomeBlend, enableBiome;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
@@ -229,6 +232,9 @@ private:
     
     Atomic<float> fWaterAbsorptionCoefficient;
     Atomic<bool> fWaterTranslucent;
+    
+    Atomic<bool> fEnableBiome;
+    Atomic<int> fBiomeBlend;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
