@@ -12,6 +12,18 @@
 #include "MainComponent.h"
 #include "MapViewComponent.h"
 
+class LAF : public LookAndFeel_V4
+{
+    void drawConcertinaPanelHeader (Graphics &g, const Rectangle< int > &area, bool isMouseOver, bool isMouseDown, ConcertinaPanel &panel, Component &component) override
+    {
+        LookAndFeel_V4::drawConcertinaPanelHeader(g, area, isMouseOver, isMouseDown, panel, component);
+        auto const name = component.getName();
+        g.setColour(Colours::white);
+        int const margin = 10;
+        g.drawFittedText(name, margin, 0, area.getWidth() - 2 * margin, area.getHeight(), Justification::centredLeft, 1);
+    }
+};
+
 //==============================================================================
 class mcviewApplication  : public JUCEApplication
 {
@@ -28,6 +40,8 @@ public:
     {
         // This method is where you should put your application's initialisation code..
 
+        fLookAndFeel = new LAF();
+        LookAndFeel::setDefaultLookAndFeel(fLookAndFeel);
         mainWindow.reset (new MainWindow (getApplicationName()));
     }
 
@@ -100,6 +114,7 @@ public:
 
 private:
     std::unique_ptr<MainWindow> mainWindow;
+    ScopedPointer<LAF> fLookAndFeel;
 };
 
 //==============================================================================

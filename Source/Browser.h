@@ -10,7 +10,7 @@ public:
     
     void resized() override;
 
-    void addDirectory(File directory);
+    void addDirectory(File directory, String title = String());
 
     std::function<void(File)> onSelect;
 
@@ -19,9 +19,8 @@ public:
 private:
     ScopedPointer<ResizableEdgeComponent> fResizer;
     ScopedPointer<ComponentBoundsConstrainer> fConstrainer;
-
-    Array<DirectoryBrowser*> fBrowsers;
-    
+    ScopedPointer<ConcertinaPanel> fPanel;
+        
     static int constexpr kResizerWidth = 8;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Browser)

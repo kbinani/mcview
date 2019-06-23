@@ -38,7 +38,7 @@ public:
         addAndMakeVisible(fMapView);
 
         fBrowser = new Browser();
-        fBrowser->addDirectory(DefaultMinecraftSaveDirectory());
+        fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
         fBrowser->onSelect = [this](File dir) {
             fMapView->setRegionsDirectory(dir.getChildFile("region"));
             getTopLevelComponent()->setName(dir.getFileName());

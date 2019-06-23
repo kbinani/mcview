@@ -7,26 +7,25 @@ Browser::Browser()
     fResizer = new ResizableEdgeComponent(this, fConstrainer, ResizableEdgeComponent::Edge::rightEdge);
     addAndMakeVisible(fResizer);
     
+    fPanel = new ConcertinaPanel();
+    addAndMakeVisible(fPanel);
+    
     setSize(kDefaultWidth, 400);
 }
 
 Browser::~Browser()
 {
-    for (DirectoryBrowser* component : fBrowsers) {
-        removeChildComponent(component);
-        delete component;
-    }
-    fBrowsers.clear();
 }
 
-void Browser::addDirectory(File directory)
+void Browser::addDirectory(File directory, String title)
 {
     DirectoryBrowser* browser = new DirectoryBrowser(directory);
     browser->onSelect = [this](File f) {
         onSelect(f);
     };
-    addAndMakeVisible(browser);
-    fBrowsers.add(browser);
+    browser->setName(title.length() == 0 ? directory.getFileName() : title);
+    fPanel->addPanel(fPanel->getNumPanels(), browser, true);
+    fPanel->setPanelHeaderSize(browser, 32);
     resized();
 }
 
@@ -40,12 +39,7 @@ void Browser::resized()
     int const height = getHeight();
     fResizer->setBounds(width - kResizerWidth, 0, kResizerWidth, height);
     
-    int y = 0;
-    for (DirectoryBrowser* component : fBrowsers) {
-        component->setBounds(0, y, width - kResizerWidth, height);
-        y += component->getHeight();
-        break; //TODO: multiple directory support
-    }
+    fPanel->setBounds(0, 0, width - kResizerWidth, height);
     
     Component *parent = getParentComponent();
     if (parent) {
