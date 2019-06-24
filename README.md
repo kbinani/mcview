@@ -2,7 +2,7 @@
 
 Minecraft: top-down 2D map viewer for 1.13 and 1.14
 
-![coverimage](https://raw.githubusercontent.com/kbinani/mcview/master/ss.png)
+![coverimage](https://raw.githubusercontent.com/kbinani/mcview/master/ss.jpg)
 
 # License
 
