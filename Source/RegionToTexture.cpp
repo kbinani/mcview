@@ -143,6 +143,8 @@ std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kOceanToColor =
     {mcfile::biomes::minecraft::deep_cold_ocean, Colour(50, 66, 158)},
     {mcfile::biomes::minecraft::frozen_ocean, Colour(50, 47, 155)},
     {mcfile::biomes::minecraft::deep_frozen_ocean, Colour(50, 47, 155)},
+    {mcfile::biomes::minecraft::swamp, Colour(115, 133, 120)},
+    {mcfile::biomes::minecraft::swamp_hills, Colour(103, 117, 107)},
 };
 
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
