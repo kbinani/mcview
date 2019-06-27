@@ -15,6 +15,7 @@
 float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 
+static int const kMargin = 10;
 static int const kButtonSize = 40;
 static int const kFadeDurationMS = 300;
 
@@ -76,7 +77,7 @@ MapViewComponent::MapViewComponent()
         next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
         next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
         fLookAt = next;
-        fOpenGLContext.triggerRepaint();
+        triggerRepaint();
     };
     
     setSize (600, 400);
@@ -88,8 +89,39 @@ MapViewComponent::~MapViewComponent()
     fPool->removeAllJobs(true, -1);
 }
 
-void MapViewComponent::paint(Graphics&)
+void MapViewComponent::paint(Graphics &g)
 {
+    g.saveState();
+
+    int const width = getWidth();
+    int const lineHeight = 24;
+    int const coordLabelWidth = 100;
+    int const coordLabelHeight = 2 * lineHeight;
+
+    Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
+    g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
+    g.fillRoundedRectangle(border, 6.0f);
+    g.setColour(Colours::lightgrey);
+    g.drawRoundedRectangle(border, 6.0f, 1.0f);
+    Point<float> block = getMapCoordinateFromView(fMouse);
+    int y = kMargin;
+    g.setColour(Colours::black);
+    Font bold(14, Font::bold);
+    Font regular(14);
+    Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+    g.setFont(regular);
+    g.drawText("X: ", line1, Justification::centredLeft);
+    g.setFont(bold);
+    g.drawFittedText(String::formatted("%d", (int)floor(block.x)), line1, Justification::centredRight, 1);
+    y += lineHeight;
+    Rectangle<int> line2(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+    g.setFont(regular);
+    g.drawText("Z: ", line2, Justification::centredLeft);
+    g.setFont(bold);
+    g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
+    y += lineHeight;
+
+    g.restoreState();
 }
 
 void MapViewComponent::newOpenGLContextCreated()
@@ -901,17 +933,16 @@ void MapViewComponent::triggerRepaint()
 
 void MapViewComponent::resized()
 {
-    int const margin = 10;
     int const width = getWidth();
     
     if (fBrowserOpenButton) {
-        fBrowserOpenButton->setBounds(margin, margin, kButtonSize, kButtonSize);
+        fBrowserOpenButton->setBounds(kMargin, kMargin, kButtonSize, kButtonSize);
     }
     if (fCaptureButton) {
-        fCaptureButton->setBounds(width - kButtonSize - margin, margin, kButtonSize, kButtonSize);
+        fCaptureButton->setBounds(width - kButtonSize - kMargin, kMargin, kButtonSize, kButtonSize);
     }
     if (fSettingsButton) {
-        fSettingsButton->setBounds(width - kButtonSize - margin, margin * 2 + kButtonSize, kButtonSize, kButtonSize);
+        fSettingsButton->setBounds(width - kButtonSize - kMargin, kMargin * 2 + kButtonSize, kButtonSize, kButtonSize);
     }
 }
 
