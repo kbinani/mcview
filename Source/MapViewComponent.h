@@ -78,9 +78,10 @@ private:
     void magnify(Point<float> p, float rate);
     void drawBackground();
     void triggerRepaint();
-
     void captureToImage();
-    
+    LookAt limitLookAt(LookAt lookAt) const;
+    LookAt limitedLookAt() const;
+
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
 
@@ -196,6 +197,7 @@ private:
     std::unique_ptr<Buffer> fBuffer;
 
     Atomic<LookAt> fLookAt;
+    Atomic<Rectangle<int>> fVisibleRegions;
 
     static float const kMaxScale;
     static float const kMinScale;
@@ -208,8 +210,6 @@ private:
     std::vector<std::unique_ptr<RegionToTexture>> fJobs;
 
     static int constexpr kCheckeredPatternSize = 16;
-    Point<int> fMouseDragAmount;
-    Point<int> fMouseDragAmountWhenDragStart;
     
     std::set<Region> fLoadingRegions;
     CriticalSection fLoadingRegionsLock;

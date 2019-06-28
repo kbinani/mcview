@@ -21,8 +21,8 @@ static int const kFadeDurationMS = 300;
 
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
+    , fVisibleRegions({0, 0, 0, 0})
     , fPool(CreateThreadPool())
-    , fMouseDragAmount({0, 0})
     , fLoadingFinished(true)
     , fWaterAbsorptionCoefficient(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
     , fWaterTranslucent(true)
@@ -73,10 +73,10 @@ MapViewComponent::MapViewComponent()
         if (!fScroller.computeScrollOffset()) {
             timer.stopTimer();
         }
-        LookAt next = fLookAt.get();
+        LookAt next = limitedLookAt();
         next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
         next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
-        fLookAt = next;
+        fLookAt = limitLookAt(next);
         triggerRepaint();
     };
     
@@ -428,7 +428,7 @@ void MapViewComponent::updateShader()
 
 void MapViewComponent::renderOpenGL()
 {
-    LookAt lookAt = fLookAt.get();
+    LookAt lookAt = limitedLookAt();
     auto desktopScale = (float)fOpenGLContext.getRenderingScale();
     int const width = getWidth() * desktopScale;
     int const height = getHeight() * desktopScale;
@@ -678,13 +678,17 @@ void MapViewComponent::drawBackground()
         return;
     }
 
+    LookAt current = limitedLookAt();
+
     Graphics g(*glRenderer);
     g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
 
-    g.setColour(Colour::fromRGB(236, 236, 236));
-    int const xoffset = fMouseDragAmount.x % (2 * kCheckeredPatternSize);
-    int const yoffset = fMouseDragAmount.y % (2 * kCheckeredPatternSize);
+    Point<float> mapOriginPx = getViewCoordinateFromMap({0.0f, 0.0f}, current);
+    int const xoffset = int(floor(mapOriginPx.x)) % (2 * kCheckeredPatternSize);
+    int const yoffset = int(floor(mapOriginPx.y)) % (2 * kCheckeredPatternSize);
 
+    g.setColour(Colour::fromRGB(236, 236, 236));
+    
     const int w = width / kCheckeredPatternSize + 5;
     const int h = height / kCheckeredPatternSize + 5;
     for (int j = 0; j < h; j++) {
@@ -703,8 +707,6 @@ void MapViewComponent::drawBackground()
         const int y = (j - 2) * kCheckeredPatternSize + yoffset;
         g.drawHorizontalLine(y, 0, width);
     }
-    
-    LookAt current = fLookAt.get();
     
     fLoadingRegionsLock.enter();
     std::set<Region> loadingRegions(fLoadingRegions);
@@ -757,6 +759,11 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fLoadingRegions.clear();
     fRegionsDirectory = directory;
 
+    int minX = 0;
+    int maxX = 0;
+    int minZ = 0;
+    int maxZ = 0;
+
     DirectoryIterator it(fRegionsDirectory, false, "*.mca");
     std::vector<File> files;
     while (it.next()) {
@@ -765,6 +772,10 @@ void MapViewComponent::setRegionsDirectory(File directory)
         if (!r) {
             continue;
         }
+        minX = std::min(minX, r->fX);
+        maxX = std::max(maxX, r->fX);
+        minZ = std::min(minZ, r->fZ);
+        maxZ = std::max(maxZ, r->fZ);
         files.push_back(f);
     }
     
@@ -773,6 +784,7 @@ void MapViewComponent::setRegionsDirectory(File directory)
     next.fX = 0;
     next.fZ = 0;
     fLookAt = next;
+    fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
 
     std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
         auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
@@ -817,19 +829,19 @@ Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt l
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
 {
-    LookAt const current = fLookAt.get();
+    LookAt const current = limitedLookAt();
     return getMapCoordinateFromView(p, current);
 }
 
 Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p) const
 {
-    LookAt const current = fLookAt.get();
+    LookAt const current = limitedLookAt();
     return getViewCoordinateFromMap(p, current);
 }
 
 void MapViewComponent::magnify(Point<float> p, float rate)
 {
-    LookAt const current = fLookAt.get();
+    LookAt const current = limitedLookAt();
     LookAt next = current;
 
     next.fBlocksPerPixel = (std::min)((std::max)(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
@@ -842,7 +854,7 @@ void MapViewComponent::magnify(Point<float> p, float rate)
     next.fX = pivot.x - dx * next.fBlocksPerPixel;
     next.fZ = pivot.y - dz * next.fBlocksPerPixel;
 
-    fLookAt.set(next);
+    fLookAt = limitLookAt(next);
 
     triggerRepaint();
 }
@@ -860,18 +872,16 @@ void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails
 
 void MapViewComponent::mouseDrag(MouseEvent const& event)
 {
-    LookAt const current = fLookAt.get();
+    LookAt const current = limitedLookAt();
     float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
     float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
     LookAt next = current;
     next.fX = fCenterWhenDragStart.x - dx;
     next.fZ = fCenterWhenDragStart.y - dy;
-    fLookAt.set(next);
-    
-    fMouseDragAmount.x = (fMouseDragAmountWhenDragStart.x + event.getDistanceFromDragStartX()) % (2 * kCheckeredPatternSize);
-    fMouseDragAmount.y = (fMouseDragAmountWhenDragStart.y + event.getDistanceFromDragStartY()) % (2 * kCheckeredPatternSize);
+    next = limitLookAt(next);
+    fLookAt = next;
 
-	fMouse = event.position;
+    fMouse = event.position;
 
     triggerRepaint();
     
@@ -883,9 +893,8 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
 
 void MapViewComponent::mouseDown(MouseEvent const&)
 {
-    LookAt const current = fLookAt.get();
+    LookAt const current = limitedLookAt();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
-    fMouseDragAmountWhenDragStart = fMouseDragAmount;
     
     fScrollerTimer.stopTimer();
 }
@@ -901,7 +910,7 @@ void MapViewComponent::mouseUp(MouseEvent const&)
     if (fLastDragPosition.size() != 2) {
         return;
     }
-    LookAt current = fLookAt.get();
+    LookAt current = limitedLookAt();
 
     MouseEvent p0 = fLastDragPosition.front();
     MouseEvent p1 = fLastDragPosition.back();
@@ -1112,4 +1121,28 @@ void MapViewComponent::setBiomeBlend(int blend)
 {
     fBiomeBlend = blend;
     triggerRepaint();
+}
+
+MapViewComponent::LookAt MapViewComponent::limitedLookAt() const
+{
+    return limitLookAt(fLookAt.get());
+}
+
+MapViewComponent::LookAt MapViewComponent::limitLookAt(LookAt l) const
+{
+    Rectangle<int> visibleRegions = fVisibleRegions.get();
+
+    if (visibleRegions.getWidth() == 0 && visibleRegions.getHeight() == 0) {
+        return l;
+    }
+
+    float const minX = visibleRegions.getX() * 512;
+    float const minZ = visibleRegions.getY() * 512;
+    float const maxX = visibleRegions.getRight() * 512;
+    float const maxZ = visibleRegions.getBottom() * 512;
+
+    l.fX = std::min(std::max(l.fX, minX), maxX);
+    l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
+
+    return l;
 }
