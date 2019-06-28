@@ -866,6 +866,8 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     fMouseDragAmount.x = (fMouseDragAmountWhenDragStart.x + event.getDistanceFromDragStartX()) % (2 * kCheckeredPatternSize);
     fMouseDragAmount.y = (fMouseDragAmountWhenDragStart.y + event.getDistanceFromDragStartY()) % (2 * kCheckeredPatternSize);
 
+	fMouse = event.position;
+
     triggerRepaint();
     
     fLastDragPosition.push_back(event);
