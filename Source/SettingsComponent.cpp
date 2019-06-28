@@ -170,9 +170,18 @@ SettingsComponent::SettingsComponent()
     setSize(250, 600);
 }
 
-void SettingsComponent::paint(Graphics &)
+void SettingsComponent::paint(Graphics &g)
 {
+    g.saveState();
+
+    int const width = getWidth();
+    int const height = getHeight();
+    int const margin = 10;
     
+    g.setColour(Colours::white);
+    g.drawText(String("Version: ") + String(ProjectInfo::versionString), 0, 0, width - margin, height - margin, Justification::bottomRight);
+
+    g.restoreState();
 }
 
 void SettingsComponent::resized()
