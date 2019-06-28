@@ -925,11 +925,11 @@ void MapViewComponent::mouseUp(MouseEvent const&)
     float const vx = -dx / dt;
     float const vz = -dz / dt;
     
-    int const minX = current.fX / current.fBlocksPerPixel - getWidth();
-    int const maxX = current.fX / current.fBlocksPerPixel + getWidth();
-    int const minZ = current.fZ / current.fBlocksPerPixel - getHeight();
-    int const maxZ = current.fZ / current.fBlocksPerPixel + getHeight();
-    fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel, vx, vz, minX, maxX, minZ, maxZ);
+    Rectangle<int> visible = fVisibleRegions.get();
+    fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
+                    vx, vz,
+                    visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
+                    visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
     fScrollerTimer.stopTimer();
     fScrollerTimer.startTimerHz(50);
 }
