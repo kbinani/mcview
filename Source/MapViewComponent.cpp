@@ -768,12 +768,17 @@ void MapViewComponent::setRegionsDirectory(File directory)
         files.push_back(f);
     }
     
-    LookAt lookAt = fLookAt.get();
-    std::sort(files.begin(), files.end(), [lookAt](File const& a, File const& b) {
+    LookAt const lookAt = fLookAt.get();
+    LookAt next = lookAt;
+    next.fX = 0;
+    next.fZ = 0;
+    fLookAt = next;
+
+    std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
         auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
         auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
-        auto distanceA = DistanceSqBetweenRegionAndLookAt(lookAt, *rA);
-        auto distanceB = DistanceSqBetweenRegionAndLookAt(lookAt, *rB);
+        auto distanceA = DistanceSqBetweenRegionAndLookAt(next, *rA);
+        auto distanceB = DistanceSqBetweenRegionAndLookAt(next, *rB);
         return distanceA < distanceB;
     });
     
