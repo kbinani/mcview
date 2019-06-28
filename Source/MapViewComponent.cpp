@@ -465,12 +465,11 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
                 continue;
             }
             fPool->removeJob(job.get(), false, 0);
-            RegionToTexture* j = job.release();
+            ScopedPointer<RegionToTexture> j(job.release());
             fJobs.erase(fJobs.begin() + i);
             auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
             cache->load(j->fPixels);
             fTextures.insert(std::make_pair(j->fRegion, cache));
-            delete j;
             
             fLoadingRegionsLock.enter();
             auto it = fLoadingRegions.find(j->fRegion);
