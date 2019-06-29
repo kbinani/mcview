@@ -226,6 +226,7 @@ void MapViewComponent::updateShader()
         uniform bool waterTranslucent;
         uniform int biomeBlend;
         uniform int enableBiome;
+        uniform vec4 background;
     
         uniform sampler2D north;
         uniform sampler2D northEast;
@@ -254,14 +255,34 @@ void MapViewComponent::updateShader()
     fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
     fragment << "    }" << std::endl;
     fragment << "}" << std::endl;
-
-    fragment << "ivec2 decomposite(int num) {" << std::endl;
-    fragment << "    int blockId = num / " << RegionToTexture::kBlockIdOffset << ";" << std::endl;
-    fragment << "    int biomeId = num - blockId * " << RegionToTexture::kBlockIdOffset << ";" << std::endl;
-    fragment << "    return ivec2(blockId, biomeId);" << std::endl;
-    fragment << "}" << std::endl;
     
     fragment << R"#(
+        struct BlockInfo {
+            float height;
+            float waterDepth;
+            int biomeId;
+            int blockId;
+        };
+    
+        BlockInfo pixelInfo(vec4 color) {
+            // h:           8bit
+            // waterDepth:  8bit
+            // biome:       4bit
+            // block:      12bit
+            int h = int(color.a * 255.0);
+            int waterDepth = int(color.r * 255.0);
+            int g = int(color.g * 255.0);
+            int b = int(color.b * 255.0);
+            int biome = g / 16;
+            int block = (g - biome * 16) * 256 + b;
+            BlockInfo info;
+            info.height = float(h);
+            info.waterDepth = float(waterDepth);
+            info.biomeId = biome;
+            info.blockId = block;
+            return info;
+        }
+    
         vec3 rgb2hsv(vec3 c)
         {
             vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -301,7 +322,7 @@ void MapViewComponent::updateShader()
         int r = c.getRed();
         int g = c.getGreen();
         int b = c.getBlue();
-        fragment << "    if (biome == " << id << ") {" << std::endl;
+        fragment << "    if (biome == " << (int)id << ") {" << std::endl;
         fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
         fragment << "    } else" << std::endl;
     }
@@ -318,7 +339,7 @@ void MapViewComponent::updateShader()
         int r = c.getRed();
         int g = c.getGreen();
         int b = c.getBlue();
-        fragment << "    if (biome == " << id << ") {" << std::endl;
+        fragment << "    if (biome == " << (int)id << ") {" << std::endl;
         fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
         fragment << "    } else" << std::endl;
     }
@@ -367,12 +388,8 @@ void MapViewComponent::updateShader()
                         c = texture2D(southEast, vec2(x - 1.0, y - 1.0));
                     }
                 }
-                int hi = int(c.g * 255.0);
-                int lo = int(c.b * 255.0);
-                int num = hi * 256 + lo;
-                ivec2 ids = decomposite(num);
-                int biomeId = ids.y;
-                sumColor += waterColorFromBiome(biomeId);
+                BlockInfo info = pixelInfo(c);
+                sumColor += waterColorFromBiome(info.biomeId);
                 count++;
             }
         }
@@ -383,15 +400,12 @@ void MapViewComponent::updateShader()
         float alpha = fade;
 
         vec4 color = texture2D(texture, textureCoordOut);
+        BlockInfo info = pixelInfo(color);
 
-        float height = color.a * 255.0;
-        float waterDepth = color.r * 255.0;
-        int hi = int(color.g * 255.0);
-        int lo = int(color.b * 255.0);
-        int num = hi * 256 + lo;
-        ivec2 ids = decomposite(num);
-        int blockId = ids.x;
-        int biomeId = ids.y;
+        float height = info.height;
+        float waterDepth = info.waterDepth;
+        int biomeId = info.biomeId;
+        int blockId = info.blockId;
 
         vec4 c;
         if (waterDepth > 0.0) {
@@ -403,18 +417,14 @@ void MapViewComponent::updateShader()
                 c = wc;
             }
         } else if (blockId == foliageBlockId) {
-            vec4 lc = foliageColorFromBiome(enableBiome == 0 ? - 1 : biomeId);
+            vec4 lc = foliageColorFromBiome(enableBiome == 0 ? -1 : biomeId);
             c = vec4(lc.rgb, alpha);
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
             vec4 g = colormap(v);
             c = vec4(g.r, g.g, g.b, alpha);
         } else if (blockId == 0) {
-            if (height > 0.0) {
-                c = vec4(1.0, 0.0, 0.0, 1.0);
-            } else {
-                c = vec4(0.0, 0.0, 0.0, 0.0);
-            }
+            c = background;
         } else {
             vec4 cc = colorFromBlockId(blockId);
             if (cc.a == 0.0) {
@@ -608,6 +618,13 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
         if (fUniforms->enableBiome) {
             fUniforms->enableBiome->set((GLint)(fEnableBiome.get() ? 1 : 0));
+        }
+        if (fUniforms->background) {
+            if (fDimension == Dimension::End) {
+                fUniforms->background->set(13.0f / 255.0f, 10.0f / 255.0f, 18.0f / 255.0f, 1.0f);
+            } else {
+                fUniforms->background->set(0.0f, 0.0f, 0.0f, 0.0f);
+            }
         }
 
         if (fUniforms->fade.get() != nullptr) {

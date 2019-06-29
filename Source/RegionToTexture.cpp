@@ -86,6 +86,10 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::cobweb, Colour(255, 255, 255)},
     {mcfile::blocks::minecraft::blue_ice, Colour(102, 151, 246)},
     {mcfile::blocks::minecraft::magma_block, Colour(181, 64, 9)},
+    {mcfile::blocks::minecraft::end_stone, Colour(219, 219, 172)},
+    {mcfile::blocks::minecraft::end_portal, Colour(4, 18, 24)},
+    {mcfile::blocks::minecraft::end_portal_frame, Colour(65, 114, 102)},
+    {mcfile::blocks::minecraft::bedrock, Colour(111, 111, 111)},
 
     // plants
     {mcfile::blocks::minecraft::lily_pad, Colour(0, 123, 0)},
@@ -132,26 +136,20 @@ static std::set<mcfile::blocks::BlockId> transparentBlocks = {
 
 Colour const RegionToTexture::kDefaultOceanColor(51, 89, 162);
 
-std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kOceanToColor = {
-    {mcfile::biomes::minecraft::ocean, RegionToTexture::kDefaultOceanColor},
-    {mcfile::biomes::minecraft::deep_ocean, RegionToTexture::kDefaultOceanColor},
-    {mcfile::biomes::minecraft::lukewarm_ocean, Colour(43, 122, 170)},
-    {mcfile::biomes::minecraft::deep_lukewarm_ocean, Colour(43, 122, 170)},
-    {mcfile::biomes::minecraft::warm_ocean, Colour(56, 150, 177)},
-    {mcfile::biomes::minecraft::deep_warm_ocean, Colour(56, 150, 177)},
-    {mcfile::biomes::minecraft::cold_ocean, Colour(50, 66, 158)},
-    {mcfile::biomes::minecraft::deep_cold_ocean, Colour(50, 66, 158)},
-    {mcfile::biomes::minecraft::frozen_ocean, Colour(50, 47, 155)},
-    {mcfile::biomes::minecraft::deep_frozen_ocean, Colour(50, 47, 155)},
-    {mcfile::biomes::minecraft::swamp, Colour(115, 133, 120)},
-    {mcfile::biomes::minecraft::swamp_hills, Colour(103, 117, 107)},
+std::map<Biome, Colour> const RegionToTexture::kOceanToColor = {
+    {Biome::Ocean, RegionToTexture::kDefaultOceanColor},
+    {Biome::LukewarmOcean, Colour(43, 122, 170)},
+    {Biome::WarmOcean, Colour(56, 150, 177)},
+    {Biome::ColdOcean, Colour(50, 66, 158)},
+    {Biome::FrozenOcean, Colour(50, 47, 155)},
+    {Biome::Swamp, Colour(115, 133, 120)},
 };
 
 Colour const RegionToTexture::kDefaultFoliageColor(56, 95, 31);
 
-std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kFoliageToColor = {
-    {mcfile::biomes::minecraft::swamp, Colour(6975545)},
-    {mcfile::biomes::minecraft::badlands, Colour(10387789)},
+std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
+    {Biome::Swamp, Colour(6975545)},
+    {Biome::Badlands, Colour(10387789)},
 };
 
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
@@ -195,15 +193,30 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                     }
                     auto it = kBlockToColor.find(block);
                     if (it == kBlockToColor.end()) {
-
+#if JUCE_DEBUG
+                        static std::set<std::string> unknown_blocks;
+                        auto b = chunk.blockAt(x, y, z);
+                        auto name = b->fName;
+                        if (unknown_blocks.find(name) == unknown_blocks.end()) {
+                            unknown_blocks.insert(name);
+                            std::cout << "Unknown block: " << name << std::endl;
+                        }
+#endif
                     } else {
                         int const idx = (z - minZ) * width + (x - minX);
                         assert(0 <= idx && idx < width * height);
                         uint8 const h = (uint8)std::min(std::max(y, 0), 255);
-                        mcfile::biomes::BiomeId biome = chunk.biomeAt(x, z);
+                        Biome biome = ToBiome(chunk.biomeAt(x, z));
                         PixelARGB p;
-                        uint16_t const num = (int)biome + kBlockIdOffset * block;
-                        p.setARGB(h, waterDepth, 0xFF & (num >> 8), 0xFF & num);
+                        // h:           8bit
+                        // waterDepth:  8bit
+                        // biome:       4bit
+                        // block:      12bit
+                        uint32_t const num = ((0xFF & (uint32_t)h) << 24)
+                            | ((0xFF & (uint32_t)waterDepth) << 16)
+                            | ((0xF & (uint32_t)biome) << 12)
+                            | (0xFFF & (uint32_t)block);
+                        p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
                         pixelsPtr[idx] = p;
                         break;
                     }
