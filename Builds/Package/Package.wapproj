@@ -56,7 +56,7 @@
     <DefaultLanguage>ja-JP</DefaultLanguage>
     <EntryPointProjectUniqueName>..\VisualStudio2019\mcview_App.vcxproj</EntryPointProjectUniqueName>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <PackageCertificateThumbprint>C694351469852828BE39C372C234556C191588B1</PackageCertificateThumbprint>
     <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
