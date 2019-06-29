@@ -505,8 +505,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
     glEnable(GL_TEXTURE_2D);
 
     fShader->use();
-
-    for (auto it : fTextures) {
+    auto const& textures = fTextures;
+    
+    for (auto it : textures) {
         auto cache = it.second;
         if (fUniforms->blocksPerPixel.get() != nullptr) {
             fUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
@@ -567,8 +568,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         int const x = it.first.first;
         int const z = it.first.second;
 
-        auto north = fTextures.find(MakeRegion(x, z - 1));
-        if (north != fTextures.end()) {
+        auto const& north = textures.find(MakeRegion(x, z - 1));
+        if (north != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
             north->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -578,8 +579,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto northEast = fTextures.find(MakeRegion(x + 1, z - 1));
-        if (northEast != fTextures.end()) {
+        auto const& northEast = textures.find(MakeRegion(x + 1, z - 1));
+        if (northEast != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
             northEast->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -589,8 +590,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto east = fTextures.find(MakeRegion(x + 1, z));
-        if (east != fTextures.end()) {
+        auto const& east = textures.find(MakeRegion(x + 1, z));
+        if (east != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
             east->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -600,8 +601,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto southEast = fTextures.find(MakeRegion(x + 1, z + 1));
-        if (southEast != fTextures.end()) {
+        auto const& southEast = textures.find(MakeRegion(x + 1, z + 1));
+        if (southEast != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
             southEast->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -611,8 +612,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto south = fTextures.find(MakeRegion(x, z + 1));
-        if (south != fTextures.end()) {
+        auto const& south = textures.find(MakeRegion(x, z + 1));
+        if (south != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
             south->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -622,8 +623,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto southWest = fTextures.find(MakeRegion(x - 1, z + 1));
-        if (southWest != fTextures.end()) {
+        auto const& southWest = textures.find(MakeRegion(x - 1, z + 1));
+        if (southWest != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
             southWest->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -633,8 +634,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto west = fTextures.find(MakeRegion(x - 1, z));
-        if (west != fTextures.end()) {
+        auto const& west = textures.find(MakeRegion(x - 1, z));
+        if (west != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
             west->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -644,8 +645,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
         }
 
-        auto northWest = fTextures.find(MakeRegion(x - 1, z - 1));
-        if (northWest != fTextures.end()) {
+        auto const& northWest = textures.find(MakeRegion(x - 1, z - 1));
+        if (northWest != textures.end()) {
             fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
             northWest->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
