@@ -187,7 +187,7 @@ void MapViewComponent::updateShader()
         uniform sampler2D texture;
         uniform float fade;
         uniform int grassBlockId;
-        uniform int leavesBlockId;
+        uniform int foliageBlockId;
         uniform float waterAbsorptionCoefficient;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
@@ -277,8 +277,8 @@ void MapViewComponent::updateShader()
     fragment << "    }" << std::endl;
     fragment << "}";
 
-    fragment << "vec4 leaveColorFromBiome(int biome) {" << std::endl;
-    for (auto it : RegionToTexture::kLeaveToColor) {
+    fragment << "vec4 foliageColorFromBiome(int biome) {" << std::endl;
+    for (auto it : RegionToTexture::kFoliageToColor) {
         auto id = it.first;
         Colour c = it.second;
         int r = c.getRed();
@@ -289,8 +289,8 @@ void MapViewComponent::updateShader()
         fragment << "    } else" << std::endl;
     }
     fragment << "    { " << std::endl;
-    auto leave = RegionToTexture::kDefaultLeaveColor;
-    fragment << "        return rgb(" << (int)leave.getRed() << ", " << (int)leave.getGreen() << ", " << (int)leave.getBlue() << ", 255);" << std::endl;
+    auto foliage = RegionToTexture::kDefaultFoliageColor;
+    fragment << "        return rgb(" << (int)foliage.getRed() << ", " << (int)foliage.getGreen() << ", " << (int)foliage.getBlue() << ", 255);" << std::endl;
     fragment << "    }" << std::endl;
     fragment << "}" << std::endl;
     
@@ -368,8 +368,8 @@ void MapViewComponent::updateShader()
             } else {
                 c = wc;
             }
-        } else if (blockId == leavesBlockId) {
-            vec4 lc = leaveColorFromBiome(enableBiome == 0 ? - 1 : biomeId);
+        } else if (blockId == foliageBlockId) {
+            vec4 lc = foliageColorFromBiome(enableBiome == 0 ? - 1 : biomeId);
             c = vec4(lc.rgb, alpha);
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
@@ -556,8 +556,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         if (fUniforms->grassBlockId.get() != nullptr) {
             fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
         }
-        if (fUniforms->leavesBlockId) {
-            fUniforms->leavesBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
+        if (fUniforms->foliageBlockId) {
+            fUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
         }
         if (fUniforms->waterAbsorptionCoefficient) {
             fUniforms->waterAbsorptionCoefficient->set((GLfloat)fWaterAbsorptionCoefficient.get());
