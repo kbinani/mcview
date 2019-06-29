@@ -73,10 +73,10 @@ MapViewComponent::MapViewComponent()
         if (!fScroller.computeScrollOffset()) {
             timer.stopTimer();
         }
-        LookAt next = limitedLookAt();
+        LookAt next = clampedLookAt();
         next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
         next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
-        fLookAt = limitLookAt(next);
+        fLookAt = clampLookAt(next);
         triggerRepaint();
     };
     
@@ -428,7 +428,7 @@ void MapViewComponent::updateShader()
 
 void MapViewComponent::renderOpenGL()
 {
-    LookAt lookAt = limitedLookAt();
+    LookAt lookAt = clampedLookAt();
     auto desktopScale = (float)fOpenGLContext.getRenderingScale();
     int const width = getWidth() * desktopScale;
     int const height = getHeight() * desktopScale;
@@ -679,7 +679,7 @@ void MapViewComponent::drawBackground()
         return;
     }
 
-    LookAt current = limitedLookAt();
+    LookAt current = clampedLookAt();
 
     Graphics g(*glRenderer);
     g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
@@ -830,19 +830,19 @@ Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt l
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
 {
-    LookAt const current = limitedLookAt();
+    LookAt const current = clampedLookAt();
     return getMapCoordinateFromView(p, current);
 }
 
 Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p) const
 {
-    LookAt const current = limitedLookAt();
+    LookAt const current = clampedLookAt();
     return getViewCoordinateFromMap(p, current);
 }
 
 void MapViewComponent::magnify(Point<float> p, float rate)
 {
-    LookAt const current = limitedLookAt();
+    LookAt const current = clampedLookAt();
     LookAt next = current;
 
     next.fBlocksPerPixel = (std::min)((std::max)(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
@@ -855,7 +855,7 @@ void MapViewComponent::magnify(Point<float> p, float rate)
     next.fX = pivot.x - dx * next.fBlocksPerPixel;
     next.fZ = pivot.y - dz * next.fBlocksPerPixel;
 
-    fLookAt = limitLookAt(next);
+    fLookAt = clampLookAt(next);
 
     triggerRepaint();
 }
@@ -873,13 +873,13 @@ void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails
 
 void MapViewComponent::mouseDrag(MouseEvent const& event)
 {
-    LookAt const current = limitedLookAt();
+    LookAt const current = clampedLookAt();
     float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
     float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
     LookAt next = current;
     next.fX = fCenterWhenDragStart.x - dx;
     next.fZ = fCenterWhenDragStart.y - dy;
-    next = limitLookAt(next);
+    next = clampLookAt(next);
     fLookAt = next;
 
     fMouse = event.position;
@@ -894,7 +894,7 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
 
 void MapViewComponent::mouseDown(MouseEvent const&)
 {
-    LookAt const current = limitedLookAt();
+    LookAt const current = clampedLookAt();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
     
     fScrollerTimer.stopTimer();
@@ -911,7 +911,7 @@ void MapViewComponent::mouseUp(MouseEvent const&)
     if (fLastDragPosition.size() != 2) {
         return;
     }
-    LookAt current = limitedLookAt();
+    LookAt current = clampedLookAt();
 
     MouseEvent p0 = fLastDragPosition.front();
     MouseEvent p1 = fLastDragPosition.back();
@@ -1124,12 +1124,12 @@ void MapViewComponent::setBiomeBlend(int blend)
     triggerRepaint();
 }
 
-MapViewComponent::LookAt MapViewComponent::limitedLookAt() const
+MapViewComponent::LookAt MapViewComponent::clampedLookAt() const
 {
-    return limitLookAt(fLookAt.get());
+    return clampLookAt(fLookAt.get());
 }
 
-MapViewComponent::LookAt MapViewComponent::limitLookAt(LookAt l) const
+MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
 {
     Rectangle<int> visibleRegions = fVisibleRegions.get();
 

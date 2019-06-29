@@ -79,8 +79,8 @@ private:
     void drawBackground();
     void triggerRepaint();
     void captureToImage();
-    LookAt limitLookAt(LookAt lookAt) const;
-    LookAt limitedLookAt() const;
+    LookAt clampLookAt(LookAt lookAt) const;
+    LookAt clampedLookAt() const;
 
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
