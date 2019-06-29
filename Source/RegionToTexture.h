@@ -25,5 +25,8 @@ public:
     static Colour const kDefaultOceanColor;
     static std::map<mcfile::biomes::BiomeId, Colour> const kOceanToColor;
 
+    static Colour const kDefaultLeaveColor;
+    static std::map<mcfile::biomes::BiomeId, Colour> const kLeaveToColor;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture);
 };

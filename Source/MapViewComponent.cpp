@@ -187,6 +187,7 @@ void MapViewComponent::updateShader()
         uniform sampler2D texture;
         uniform float fade;
         uniform int grassBlockId;
+        uniform int leavesBlockId;
         uniform float waterAbsorptionCoefficient;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
@@ -276,6 +277,23 @@ void MapViewComponent::updateShader()
     fragment << "    }" << std::endl;
     fragment << "}";
 
+    fragment << "vec4 leaveColorFromBiome(int biome) {" << std::endl;
+    for (auto it : RegionToTexture::kLeaveToColor) {
+        auto id = it.first;
+        Colour c = it.second;
+        int r = c.getRed();
+        int g = c.getGreen();
+        int b = c.getBlue();
+        fragment << "    if (biome == " << id << ") {" << std::endl;
+        fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
+        fragment << "    } else" << std::endl;
+    }
+    fragment << "    { " << std::endl;
+    auto leave = RegionToTexture::kDefaultLeaveColor;
+    fragment << "        return rgb(" << (int)leave.getRed() << ", " << (int)leave.getGreen() << ", " << (int)leave.getBlue() << ", 255);" << std::endl;
+    fragment << "    }" << std::endl;
+    fragment << "}" << std::endl;
+    
     fragment << R"#(
 
     vec4 waterColor() {
@@ -350,6 +368,9 @@ void MapViewComponent::updateShader()
             } else {
                 c = wc;
             }
+        } else if (blockId == leavesBlockId) {
+            vec4 lc = leaveColorFromBiome(enableBiome == 0 ? - 1 : biomeId);
+            c = vec4(lc.rgb, alpha);
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
             vec4 g = colormap(v);
@@ -534,6 +555,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
         if (fUniforms->grassBlockId.get() != nullptr) {
             fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
+        }
+        if (fUniforms->leavesBlockId) {
+            fUniforms->leavesBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
         }
         if (fUniforms->waterAbsorptionCoefficient) {
             fUniforms->waterAbsorptionCoefficient->set((GLfloat)fWaterAbsorptionCoefficient.get());

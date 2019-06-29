@@ -147,6 +147,13 @@ std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kOceanToColor =
     {mcfile::biomes::minecraft::swamp_hills, Colour(103, 117, 107)},
 };
 
+Colour const RegionToTexture::kDefaultLeaveColor(56, 95, 31);
+
+std::map<mcfile::biomes::BiomeId, Colour> const RegionToTexture::kLeaveToColor = {
+    {mcfile::biomes::minecraft::swamp, Colour(6975545)},
+    {mcfile::biomes::minecraft::badlands, Colour(10387789)},
+};
+
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
