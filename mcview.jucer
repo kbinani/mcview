@@ -7,14 +7,20 @@
     <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
       <FILE id="OFUr6M" name="baseline_add_white_18dp.png" compile="0" resource="1"
             file="Resource/baseline_add_white_18dp.png"/>
+      <FILE id="WT5TRT" name="baseline_brightness_2_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_brightness_2_white_18dp.png"/>
       <FILE id="IDq8vE" name="baseline_camera_white_18dp.png" compile="0"
             resource="1" file="Resource/baseline_camera_white_18dp.png"/>
       <FILE id="XVgsYT" name="baseline_keyboard_arrow_left_white_18dp.png"
             compile="0" resource="1" file="Resource/baseline_keyboard_arrow_left_white_18dp.png"/>
       <FILE id="MUfGxb" name="baseline_keyboard_arrow_right_white_18dp.png"
             compile="0" resource="1" file="Resource/baseline_keyboard_arrow_right_white_18dp.png"/>
+      <FILE id="R6FB1V" name="baseline_public_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_public_white_18dp.png"/>
       <FILE id="IanvsB" name="baseline_settings_white_18dp.png" compile="0"
             resource="1" file="Resource/baseline_settings_white_18dp.png"/>
+      <FILE id="ioYbGW" name="baseline_whatshot_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_whatshot_white_18dp.png"/>
       <FILE id="NQpftd" name="icon_large.png" compile="0" resource="1" file="Resource/icon_large.png"/>
       <FILE id="OiucKw" name="icon_small.png" compile="0" resource="1" file="Resource/icon_small.png"/>
     </GROUP>
@@ -22,6 +28,7 @@
       <FILE id="D9uNQU" name="Browser.cpp" compile="1" resource="0" file="Source/Browser.cpp"/>
       <FILE id="mzRNGl" name="Browser.h" compile="0" resource="0" file="Source/Browser.h"/>
       <FILE id="MK40Sp" name="defer.h" compile="0" resource="0" file="Source/defer.h"/>
+      <FILE id="bwgPId" name="Dimension.h" compile="0" resource="0" file="Source/Dimension.h"/>
       <FILE id="wruocI" name="DirectoryBrowser.cpp" compile="1" resource="0"
             file="Source/DirectoryBrowser.cpp"/>
       <FILE id="fLyAMF" name="DirectoryBrowser.h" compile="0" resource="0"

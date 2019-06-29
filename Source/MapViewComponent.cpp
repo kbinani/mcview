@@ -47,6 +47,37 @@ MapViewComponent::MapViewComponent()
     };
     addAndMakeVisible(fBrowserOpenButton);
 
+    fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_public_white_18dp_png,
+                                                    BinaryData::baseline_public_white_18dp_pngSize);
+    fOverworld = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fOverworld->setImages(fOverworldImage);
+    fOverworld->onClick = [this]() {
+        setWorldDirectory(fWorldDirectory, Dimension::Overworld);
+    };
+    fOverworld->setEnabled(false);
+    fOverworld->setTooltip("Overworld");
+    addAndMakeVisible(fOverworld);
+    
+    fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
+    fNether = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fNether->setImages(fNetherImage);
+    fNether->onClick = [this]() {
+        setWorldDirectory(fWorldDirectory, Dimension::Nether);
+    };
+    fNether->setEnabled(false);
+    fNether->setTooltip("The Nether");
+    addAndMakeVisible(fNether);
+    
+    fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_2_white_18dp_png, BinaryData::baseline_brightness_2_white_18dp_pngSize);
+    fEnd = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fEnd->setImages(fEndImage);
+    fEnd->onClick = [this]() {
+        setWorldDirectory(fWorldDirectory, Dimension::End);
+    };
+    fEnd->setEnabled(false);
+    fEnd->setTooltip("The End");
+    addAndMakeVisible(fEnd);
+    
     fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
                                                         BinaryData::baseline_camera_white_18dp_pngSize);
     fCaptureButton = new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground);
@@ -80,6 +111,9 @@ MapViewComponent::MapViewComponent()
         fLookAt = clampLookAt(next);
         triggerRepaint();
     };
+    
+    fTooltipWindow = new TooltipWindow();
+    addAndMakeVisible(fTooltipWindow);
     
     setSize (600, 400);
 }
@@ -376,7 +410,11 @@ void MapViewComponent::updateShader()
             vec4 g = colormap(v);
             c = vec4(g.r, g.g, g.b, alpha);
         } else if (blockId == 0) {
-            c = vec4(0.0, 0.0, 0.0, 0.0);
+            if (height > 0.0) {
+                c = vec4(1.0, 0.0, 0.0, 1.0);
+            } else {
+                c = vec4(0.0, 0.0, 0.0, 0.0);
+            }
         } else {
             vec4 cc = colorFromBlockId(blockId);
             if (cc.a == 0.0) {
@@ -764,12 +802,16 @@ float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::
     return dx * dx + dz * dz;
 }
 
-void MapViewComponent::setRegionsDirectory(File directory)
+void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
 {
-    if (fRegionsDirectory.getFullPathName() == directory.getFullPathName()) {
+    if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
         return;
     }
 
+    fOverworld->setEnabled(dim != Dimension::Overworld);
+    fNether->setEnabled(dim != Dimension::Nether);
+    fEnd->setEnabled(dim != Dimension::End);
+    
     fLoadingFinished = false;
     fCaptureButton->setEnabled(false);
     
@@ -784,14 +826,15 @@ void MapViewComponent::setRegionsDirectory(File directory)
     fLoadingRegionsLock.enter();
 
     fLoadingRegions.clear();
-    fRegionsDirectory = directory;
+    fWorldDirectory = directory;
+    fDimension = dim;
 
     int minX = 0;
     int maxX = 0;
     int minZ = 0;
     int maxZ = 0;
 
-    DirectoryIterator it(fRegionsDirectory, false, "*.mca");
+    DirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
     std::vector<File> files;
     while (it.next()) {
         File f = it.getFile();
@@ -976,14 +1019,21 @@ void MapViewComponent::triggerRepaint()
 void MapViewComponent::resized()
 {
     int const width = getWidth();
+
+    {
+        int y = kMargin;
+        fBrowserOpenButton->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
+        y += kMargin;
+        fOverworld->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
+        y += kMargin;
+        fNether->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
+        y += kMargin;
+        fEnd->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
+        y += kMargin;
+    }
     
-    if (fBrowserOpenButton) {
-        fBrowserOpenButton->setBounds(kMargin, kMargin, kButtonSize, kButtonSize);
-    }
-    if (fCaptureButton) {
+    {
         fCaptureButton->setBounds(width - kButtonSize - kMargin, kMargin, kButtonSize, kButtonSize);
-    }
-    if (fSettingsButton) {
         fSettingsButton->setBounds(width - kButtonSize - kMargin, kMargin * 2 + kButtonSize, kButtonSize, kButtonSize);
     }
 }

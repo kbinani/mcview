@@ -4,6 +4,7 @@
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
 #include "OverScroller.hpp"
+#include "Dimension.h"
 #include <map>
 #include <vector>
 #include <set>
@@ -49,7 +50,7 @@ public:
     void mouseMove(MouseEvent const& event) override;
     void mouseUp(MouseEvent const& event) override;
 
-    void setRegionsDirectory(File directory);
+    void setWorldDirectory(File directory, Dimension dim);
     void setBrowserOpened(bool opened);
 
     struct LookAt {
@@ -190,7 +191,8 @@ private:
 
 private:
     OpenGLContext fOpenGLContext;
-    File fRegionsDirectory;
+    File fWorldDirectory;
+    Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
     std::unique_ptr<OpenGLShaderProgram> fShader;
     std::unique_ptr<Uniforms> fUniforms;
@@ -219,11 +221,22 @@ private:
     ScopedPointer<Drawable> fBrowserOpenButtonImageOpen;
     ScopedPointer<Drawable> fBrowserOpenButtonImageClose;
 
+    ScopedPointer<DrawableButton> fOverworld;
+    ScopedPointer<Drawable> fOverworldImage;
+    
+    ScopedPointer<DrawableButton> fNether;
+    ScopedPointer<Drawable> fNetherImage;
+    
+    ScopedPointer<DrawableButton> fEnd;
+    ScopedPointer<Drawable> fEndImage;
+    
     ScopedPointer<DrawableButton> fCaptureButton;
     ScopedPointer<Drawable> fCaptureButtonImage;
     
     ScopedPointer<DrawableButton> fSettingsButton;
     ScopedPointer<Drawable> fSettingsButtonImage;
+    
+    ScopedPointer<TooltipWindow> fTooltipWindow;
     
     Atomic<bool> fLoadingFinished;
     

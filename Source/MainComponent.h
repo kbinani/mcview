@@ -12,6 +12,7 @@
 #include "MapViewComponent.h"
 #include "Browser.h"
 #include "SettingsComponent.h"
+#include "Dimension.h"
 #include <iostream>
 
 //==============================================================================
@@ -40,7 +41,7 @@ public:
         fBrowser = new Browser();
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
         fBrowser->onSelect = [this](File dir) {
-            fMapView->setRegionsDirectory(dir.getChildFile("region"));
+            fMapView->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());
             setBrowserOpened(false);
         };
