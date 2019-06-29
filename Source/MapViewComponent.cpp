@@ -1078,6 +1078,7 @@ void MapViewComponent::captureToImage()
     {
         FileChooser dialog("Choose file name", File(), "*.png", true);
         if (!dialog.browseForFileToSave(true)) {
+            fCaptureButton->setEnabled(true);
             return;
         }
         file = dialog.getResult();
