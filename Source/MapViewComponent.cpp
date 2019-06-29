@@ -871,7 +871,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     next.fX = 0;
     next.fZ = 0;
     fLookAt = next;
-    fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
+    fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
 
     std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
         auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
