@@ -5,6 +5,7 @@
 #include "OverScroller.hpp"
 #include "PNGWriter.h"
 #include "SettingsComponent.h"
+#include "defer.h"
 #include <set>
 #include <cassert>
 #include <cmath>
@@ -92,6 +93,9 @@ MapViewComponent::~MapViewComponent()
 void MapViewComponent::paint(Graphics &g)
 {
     g.saveState();
+    defer {
+        g.restoreState();
+    };
 
     int const width = getWidth();
     int const lineHeight = 24;
@@ -120,8 +124,6 @@ void MapViewComponent::paint(Graphics &g)
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
     y += lineHeight;
-
-    g.restoreState();
 }
 
 void MapViewComponent::newOpenGLContextCreated()
@@ -1073,12 +1075,14 @@ private:
 void MapViewComponent::captureToImage()
 {
     fCaptureButton->setEnabled(false);
-
+    defer {
+        fCaptureButton->setEnabled(true);
+    };
+    
     File file;
     {
         FileChooser dialog("Choose file name", File(), "*.png", true);
         if (!dialog.browseForFileToSave(true)) {
-            fCaptureButton->setEnabled(true);
             return;
         }
         file = dialog.getResult();
@@ -1086,8 +1090,6 @@ void MapViewComponent::captureToImage()
     
     SavePNGProgressWindow wnd(this, fOpenGLContext, file);
     wnd.runThread();
-    
-    fCaptureButton->setEnabled(true);
 }
 
 void MapViewComponent::handleAsyncUpdate()

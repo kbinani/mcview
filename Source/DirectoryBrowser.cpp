@@ -1,4 +1,5 @@
 #include "DirectoryBrowser.h"
+#include "defer.h"
 
 DirectoryBrowserModel::DirectoryBrowserModel(DirectoryBrowser *parent, File directory, LookAndFeel const& laf)
     : fDirectory(directory)
@@ -24,6 +25,10 @@ int DirectoryBrowserModel::getNumRows()
 
 void DirectoryBrowserModel::paintListBoxItem (int rowNumber, Graphics &g, int width, int height, bool rowIsSelected)
 {
+    g.saveState();
+    defer {
+        g.restoreState();
+    };
     int margin = 10;
     g.setColour(rowIsSelected ? fBackgroundColorOn : fBackgroundColorOff);
     g.fillRect(0, 0, width, height);

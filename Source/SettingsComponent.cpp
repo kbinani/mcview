@@ -1,4 +1,5 @@
 #include "SettingsComponent.h"
+#include "defer.h"
 
 class GroupWater : public GroupComponent
 {
@@ -173,6 +174,9 @@ SettingsComponent::SettingsComponent()
 void SettingsComponent::paint(Graphics &g)
 {
     g.saveState();
+    defer {
+        g.restoreState();
+    };
 
     int const width = getWidth();
     int const height = getHeight();
@@ -180,8 +184,6 @@ void SettingsComponent::paint(Graphics &g)
     
     g.setColour(Colours::white);
     g.drawText(String("Version: ") + String(ProjectInfo::versionString), 0, 0, width - margin, height - margin, Justification::bottomRight);
-
-    g.restoreState();
 }
 
 void SettingsComponent::resized()
