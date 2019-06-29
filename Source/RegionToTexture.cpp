@@ -124,6 +124,16 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::dark_prismarine_slab, Colour(55, 97, 80)},
     {mcfile::blocks::minecraft::dark_prismarine_stairs, Colour(55, 97, 80)},
     {mcfile::blocks::minecraft::netherrack, Colour(86, 32, 31)},
+    {mcfile::blocks::minecraft::nether_brick, Colour(33, 17, 20)},
+    {mcfile::blocks::minecraft::nether_bricks, Colour(33, 17, 20)},
+    {mcfile::blocks::minecraft::nether_brick_slab, Colour(33, 17, 20)},
+    {mcfile::blocks::minecraft::nether_brick_wall, Colour(33, 17, 20)},
+    {mcfile::blocks::minecraft::red_nether_bricks, Colour(89, 0, 0)},
+    {mcfile::blocks::minecraft::red_nether_brick_slab, Colour(89, 0, 0)},
+    {mcfile::blocks::minecraft::red_nether_brick_wall, Colour(89, 0, 0)},
+    {mcfile::blocks::minecraft::glowstone, Colour(248, 215, 115)},
+    {mcfile::blocks::minecraft::nether_quartz_ore, Colour(170, 112, 105)},
+    {mcfile::blocks::minecraft::soul_sand, Colour(72, 54, 43)},
 
     // plants
     {mcfile::blocks::minecraft::lily_pad, Colour(0, 123, 0)},
@@ -188,7 +198,7 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std::function<void(PixelARGB *)> completion) {
+void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
 
@@ -200,7 +210,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
     int const minZ = region.minBlockZ();
 
     bool error = false;
-    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job](mcfile::Chunk const& chunk) {
+    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job, dim](mcfile::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -212,7 +222,19 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                     return false;
                 }
                 uint8 waterDepth = 0;
-                for (int y = 255; y >= 0; y--) {
+                int yini = 255;
+                if (dim == Dimension::Nether) {
+                    yini = 127;
+                    for (int y = 127; y >= 0; y--) {
+                        auto block = chunk.blockIdAt(x, y, z);
+                        if (!block) continue;
+                        if (block == mcfile::blocks::minecraft::air) {
+                            yini = y;
+                            break;
+                        }
+                    }
+                }
+                for (int y = yini; y >= 0; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
                     if (!block) {
                         continue;
@@ -235,7 +257,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
                         auto name = b->fName;
                         if (unknown_blocks.find(name) == unknown_blocks.end()) {
                             unknown_blocks.insert(name);
-                            std::cout << "Unknown block: " << name << std::endl;
+                            std::cout << "{" << name << ", Colour(, , )}," << name << std::endl;
                         }
 #endif
                     } else {
@@ -265,10 +287,11 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, std
     completion(pixels.release());
 }
 
-RegionToTexture::RegionToTexture(File const& mcaFile, Region region)
+RegionToTexture::RegionToTexture(File const& mcaFile, Region region, Dimension dim)
     : ThreadPoolJob(mcaFile.getFileName())
     , fRegionFile(mcaFile)
     , fRegion(region)
+    , fDimension(dim)
 {
     
 }
@@ -283,7 +306,7 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
     if (!region) {
         return ThreadPoolJob::jobHasFinished;
     }
-    Load(*region, this, [this](PixelARGB *pixels) {
+    Load(*region, this, fDimension, [this](PixelARGB *pixels) {
         fPixels.reset(pixels);
     });
     return ThreadPoolJob::jobHasFinished;

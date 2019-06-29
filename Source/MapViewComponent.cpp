@@ -883,7 +883,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     
     for (File const& f : files) {
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
-        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ));
+        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), fDimension);
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
         fLoadingRegions.insert(job->fRegion);

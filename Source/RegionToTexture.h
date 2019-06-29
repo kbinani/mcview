@@ -3,6 +3,7 @@
 #include "minecraft-file.hpp"
 #include "RegionToTexture.h"
 #include "Region.h"
+#include "Dimension.h"
 
 enum class Biome : uint8_t {
     Other = 0,
@@ -47,21 +48,19 @@ inline Biome ToBiome(mcfile::biomes::BiomeId b)
 
 class RegionToTexture : public ThreadPoolJob {
 public:
-    RegionToTexture(File const& mcaFile, Region region);
+    RegionToTexture(File const& mcaFile, Region region, Dimension dim);
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
-    static void Load(mcfile::Region const& region, ThreadPoolJob* job, std::function<void(PixelARGB *)> completion);
+    static void Load(mcfile::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(PixelARGB *)> completion);
     
 public:
     File const fRegionFile;
     Region const fRegion;
+    Dimension const fDimension;
     ScopedPointer<PixelARGB> fPixels;
     
     static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
-
-    static int constexpr kBlockIdOffset = 100;
-    static_assert(mcfile::biomes::minecraft::minecraft_max_biome_id < kBlockIdOffset, "");
 
     static Colour const kDefaultOceanColor;
     static std::map<Biome, Colour> const kOceanToColor;
