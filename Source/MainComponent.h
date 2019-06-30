@@ -13,6 +13,7 @@
 #include "Browser.h"
 #include "SettingsComponent.h"
 #include "Dimension.h"
+#include "Settings.h"
 #include <iostream>
 
 //==============================================================================
@@ -28,6 +29,9 @@ public:
         : fBrowserOpened(true)
         , fSettingsOpened(false)
     {
+        fConfig = new Settings();
+        fConfig->load();
+        
         fMapView = new MapViewComponent();
         fMapView->setSize(600, 400);
         fMapView->onOpenButtonClicked = [this]() {
@@ -36,29 +40,47 @@ public:
         fMapView->onSettingsButtonClicked = [this]() {
             setSettingsOpened(!fSettingsOpened);
         };
+        
+        fMapView->setWaterTranslucent(fConfig->fWaterTranslucent);
+        fMapView->setWaterAbsorptionCoefficient(fConfig->fWaterOpticalDensity);
+        fMapView->setBiomeEnable(fConfig->fBiomeEnabled);
+        fMapView->setBiomeBlend(fConfig->fBiomeBlend);
+        
         addAndMakeVisible(fMapView);
 
         fBrowser = new Browser();
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
+        Array<File> directories = fConfig->directories();
+        for (int i = 0; i < directories.size(); i++) {
+            fBrowser->addDirectory(directories[i]);
+        }
         fBrowser->onSelect = [this](File dir) {
             fMapView->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());
             setBrowserOpened(false);
         };
+        fBrowser->onAdd = [this](File dir) {
+            fConfig->addDirectory(dir);
+            fConfig->save();
+        };
         addAndMakeVisible(fBrowser);
 
-        fSettings = new SettingsComponent();
+        fSettings = new SettingsComponent(*fConfig);
         fSettings->onWaterAbsorptionCoefficientChanged = [this](float coeff) {
             fMapView->setWaterAbsorptionCoefficient(coeff);
+            fConfig->fWaterOpticalDensity = coeff;
         };
         fSettings->onWaterTranslucentChanged = [this](bool translucent) {
             fMapView->setWaterTranslucent(translucent);
+            fConfig->fWaterTranslucent = translucent;
         };
         fSettings->onBiomeEnableChanged = [this](bool enable) {
             fMapView->setBiomeEnable(enable);
+            fConfig->fBiomeEnabled = enable;
         };
         fSettings->onBiomeBlendChanged = [this](int blend) {
             fMapView->setBiomeBlend(blend);
+            fConfig->fBiomeBlend = blend;
         };
         addAndMakeVisible(fSettings);
         
@@ -67,6 +89,7 @@ public:
 
     ~MainComponent()
     {
+        fConfig->save();
     }
 
     //==============================================================================
@@ -180,6 +203,8 @@ private:
     ScopedPointer<SettingsComponent> fSettings;
     bool fSettingsOpened;
 
+    ScopedPointer<Settings> fConfig;
+    
     static int constexpr kAnimationDuration = 300;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

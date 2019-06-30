@@ -51,6 +51,9 @@ void Browser::addDirectory(File directory, String title)
     fPanel->setPanelHeaderSize(browser, 32);
     fPanel->expandPanelFully(browser, true);
     fBrowsers.add(browser);
+    if (onAdd) {
+        onAdd(directory);
+    }
     resized();
 }
 

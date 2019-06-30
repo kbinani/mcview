@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "Settings.h"
 
 class SettingsComponent : public Component {
 public:
@@ -9,10 +10,16 @@ public:
     std::function<void(bool)> onBiomeEnableChanged;
     std::function<void(int)> onBiomeBlendChanged;
 
-    static float constexpr kDefaultWaterAbsorptionCoefficient = 0.02f;
+    static float const kDefaultWaterAbsorptionCoefficient;
+    static float const kMaxWaterAbsorptionCoefficient;
+    static float const kMinWaterAbsorptionCoefficient;
+    
+    static int const kDefaultBiomeBlend;
+    static int const kMaxBiomeBlend;
+    static int const kMinBiomeBlend;
     
 public:
-    SettingsComponent();
+    explicit SettingsComponent(Settings const& settings);
     
     void paint(Graphics &g) override;
     void resized() override;

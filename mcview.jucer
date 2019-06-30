@@ -52,6 +52,8 @@
             file="Source/RegionToTexture.cpp"/>
       <FILE id="SQSRbc" name="RegionToTexture.h" compile="0" resource="0"
             file="Source/RegionToTexture.h"/>
+      <FILE id="XfbyUl" name="Settings.cpp" compile="1" resource="0" file="Source/Settings.cpp"/>
+      <FILE id="S1ubeo" name="Settings.h" compile="0" resource="0" file="Source/Settings.h"/>
       <FILE id="Uou2h9" name="SettingsComponent.cpp" compile="1" resource="0"
             file="Source/SettingsComponent.cpp"/>
       <FILE id="tFrICH" name="SettingsComponent.h" compile="0" resource="0"

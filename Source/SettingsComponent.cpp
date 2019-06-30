@@ -1,6 +1,14 @@
 #include "SettingsComponent.h"
 #include "defer.h"
 
+float const SettingsComponent::kDefaultWaterAbsorptionCoefficient = 0.02f;
+float const SettingsComponent::kMaxWaterAbsorptionCoefficient = 0.04f;
+float const SettingsComponent::kMinWaterAbsorptionCoefficient = 0.0f;
+
+int const SettingsComponent::kDefaultBiomeBlend = 2;
+int const SettingsComponent::kMaxBiomeBlend = 7;
+int const SettingsComponent::kMinBiomeBlend = 0;
+
 class GroupWater : public GroupComponent
 {
 public:
@@ -8,11 +16,11 @@ public:
     std::function<void(bool)> onWaterTranslucentChanged;
 
 public:
-    GroupWater()
+    GroupWater(Settings const& settings)
     {
         fWaterAbsorptionCoefficient = new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow);
-        fWaterAbsorptionCoefficient->setRange(0, 0.04);
-        fWaterAbsorptionCoefficient->setValue(SettingsComponent::kDefaultWaterAbsorptionCoefficient);
+        fWaterAbsorptionCoefficient->setRange(SettingsComponent::kMinWaterAbsorptionCoefficient, SettingsComponent::kMaxWaterAbsorptionCoefficient);
+        fWaterAbsorptionCoefficient->setValue(settings.fWaterOpticalDensity);
         fWaterAbsorptionCoefficient->onValueChange = [this]() {
             if (onWaterAbsorptionCoefficientChanged) {
                 onWaterAbsorptionCoefficientChanged((float)fWaterAbsorptionCoefficient->getValue());
@@ -25,7 +33,7 @@ public:
         addAndMakeVisible(fWaterAbsorptionCoefficientLabel);
         
         fTranslucentWater = new ToggleButton("Translucent");
-        fTranslucentWater->setToggleState(true, NotificationType::dontSendNotification);
+        fTranslucentWater->setToggleState(settings.fWaterTranslucent, NotificationType::dontSendNotification);
         addAndMakeVisible(fTranslucentWater);
         fTranslucentWater->onStateChange = [this]() {
             auto translucent = fTranslucentWater->getToggleState();
@@ -71,7 +79,7 @@ public:
     std::function<void(int)> onBiomeBlendChanged;
     
 public:
-    GroupBiome()
+    explicit GroupBiome(Settings const& settings)
     {
         setText("Biome");
 
@@ -83,7 +91,7 @@ public:
             }
             fBlend->setEnabled(enable);
         };
-        fEnableBiome->setToggleState(true, NotificationType::dontSendNotification);
+        fEnableBiome->setToggleState(settings.fBiomeEnabled, NotificationType::dontSendNotification);
         addAndMakeVisible(fEnableBiome);
         
         fBlendTitle = new Label();
@@ -91,8 +99,8 @@ public:
         addAndMakeVisible(fBlendTitle);
         
         fBlend = new Slider(Slider::LinearHorizontal, Slider::NoTextBox);
-        fBlend->setRange(0, 7, 1);
-        fBlend->setValue(2);
+        fBlend->setRange(SettingsComponent::kMinBiomeBlend, SettingsComponent::kMaxBiomeBlend, 1);
+        fBlend->setValue(settings.fBiomeBlend);
         fBlend->onValueChange = [this]() {
             int v = (int)fBlend->getValue();
             std::string text;
@@ -142,9 +150,9 @@ private:
     ScopedPointer<Label> fBlendLabel;
 };
 
-SettingsComponent::SettingsComponent()
+SettingsComponent::SettingsComponent(Settings const& settings)
 {
-    ScopedPointer<GroupWater> water = new GroupWater();
+    ScopedPointer<GroupWater> water = new GroupWater(settings);
     water->onWaterTranslucentChanged = [this](bool translucent) {
         onWaterTranslucentChanged(translucent);
     };
@@ -154,7 +162,7 @@ SettingsComponent::SettingsComponent()
     fGroupWater.reset(water.release());
     addAndMakeVisible(fGroupWater);
     
-    ScopedPointer<GroupBiome> biome = new GroupBiome();
+    ScopedPointer<GroupBiome> biome = new GroupBiome(settings);
     biome->onEnableChanged = [this](bool enable) {
         if (onBiomeEnableChanged) {
             onBiomeEnableChanged(enable);

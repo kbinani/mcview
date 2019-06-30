@@ -13,6 +13,7 @@ public:
     void addDirectory(File directory, String title = String());
 
     std::function<void(File)> onSelect;
+    std::function<void(File)> onAdd;
 
     static int constexpr kDefaultWidth = 214;
 
