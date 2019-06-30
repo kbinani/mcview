@@ -47,8 +47,8 @@ MapViewComponent::MapViewComponent()
     };
     addAndMakeVisible(fBrowserOpenButton);
 
-    fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_public_white_18dp_png,
-                                                    BinaryData::baseline_public_white_18dp_pngSize);
+    fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_landscape_white_18dp_png,
+                                                    BinaryData::baseline_landscape_white_18dp_pngSize);
     fOverworld = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
     fOverworld->setImages(fOverworldImage);
     fOverworld->onClick = [this]() {
@@ -68,7 +68,7 @@ MapViewComponent::MapViewComponent()
     fNether->setTooltip("The Nether");
     addAndMakeVisible(fNether);
     
-    fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_2_white_18dp_png, BinaryData::baseline_brightness_2_white_18dp_pngSize);
+    fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
     fEnd = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
     fEnd->setImages(fEndImage);
     fEnd->onClick = [this]() {
