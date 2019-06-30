@@ -336,6 +336,8 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                         // waterDepth:  8bit
                         // biome:       4bit
                         // block:      12bit
+                        static_assert((int)Biome::max_Biome <= 1 << 4, "");
+                        static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 12, "");
                         uint32_t const num = ((0xFF & (uint32_t)h) << 24)
                             | ((0xFF & (uint32_t)waterDepth) << 16)
                             | ((0xF & (uint32_t)biome) << 12)
