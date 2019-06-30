@@ -264,6 +264,23 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
+static PixelARGB ToPixelInfo(uint8_t height, uint8_t waterDepth, uint8_t biome, uint32_t block)
+{
+    // h:           8bit
+    // waterDepth:  8bit
+    // biome:       4bit
+    // block:      12bit
+    static_assert((int)Biome::max_Biome <= 1 << 4, "");
+    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 12, "");
+    uint32_t const num = ((0xFF & (uint32_t)height) << 24)
+        | ((0xFF & (uint32_t)waterDepth) << 16)
+        | ((0xF & (uint32_t)biome) << 12)
+        | (0xFFF & (uint32_t)block);
+    PixelARGB p;
+    p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
+    return p;
+}
+
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
@@ -284,10 +301,12 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
         int const eX = chunk.maxBlockX();
         for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
+                int const idx = (z - minZ) * width + (x - minX);
+                assert(0 <= idx && idx < width * height);
                 if (job->shouldExit()) {
                     return false;
                 }
-                uint8 waterDepth = 0;
+                uint8_t waterDepth = 0;
                 int yini = 255;
                 if (dim == Dimension::Nether) {
                     yini = 127;
@@ -300,6 +319,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                         }
                     }
                 }
+                bool all_transparent = true;
                 for (int y = yini; y >= 0; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
                     if (!block) {
@@ -307,6 +327,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     }
                     if (block == mcfile::blocks::minecraft::water || block == mcfile::blocks::minecraft::bubble_column) {
                         waterDepth++;
+                        all_transparent = false;
                         continue;
                     }
                     if (transparentBlocks.find(block) != transparentBlocks.end()) {
@@ -315,6 +336,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     if (plantBlocks.find(block) != plantBlocks.end()) {
                         continue;
                     }
+                    all_transparent = false;
                     auto it = kBlockToColor.find(block);
                     if (it == kBlockToColor.end()) {
 #if JUCE_DEBUG
@@ -327,25 +349,14 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                         }
 #endif
                     } else {
-                        int const idx = (z - minZ) * width + (x - minX);
-                        assert(0 <= idx && idx < width * height);
-                        uint8 const h = (uint8)std::min(std::max(y, 0), 255);
+                        uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
                         Biome biome = ToBiome(chunk.biomeAt(x, z));
-                        PixelARGB p;
-                        // h:           8bit
-                        // waterDepth:  8bit
-                        // biome:       4bit
-                        // block:      12bit
-                        static_assert((int)Biome::max_Biome <= 1 << 4, "");
-                        static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 12, "");
-                        uint32_t const num = ((0xFF & (uint32_t)h) << 24)
-                            | ((0xFF & (uint32_t)waterDepth) << 16)
-                            | ((0xF & (uint32_t)biome) << 12)
-                            | (0xFFF & (uint32_t)block);
-                        p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
-                        pixelsPtr[idx] = p;
+                        pixelsPtr[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block);
                         break;
                     }
+                }
+                if (all_transparent) {
+                    pixelsPtr[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air);
                 }
             }
         }

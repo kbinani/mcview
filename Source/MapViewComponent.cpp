@@ -241,6 +241,9 @@ void MapViewComponent::updateShader()
 	fragment << altitude.getSource() << std::endl;
     
     fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
+    fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
+    fragment << "        return background;" << std::endl;
+    fragment << "    }" << std::endl;
     for (auto it : RegionToTexture::kBlockToColor) {
         auto id = it.first;
         Colour c = it.second;
@@ -424,7 +427,7 @@ void MapViewComponent::updateShader()
             vec4 g = colormap(v);
             c = vec4(g.r, g.g, g.b, alpha);
         } else if (blockId == 0) {
-            c = background;
+            c = vec4(0.0, 0.0, 0.0, 0.0);
         } else {
             vec4 cc = colorFromBlockId(blockId);
             if (cc.a == 0.0) {
