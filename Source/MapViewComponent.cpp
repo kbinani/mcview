@@ -62,7 +62,7 @@ MapViewComponent::MapViewComponent()
     fNether = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
     fNether->setImages(fNetherImage);
     fNether->onClick = [this]() {
-        setWorldDirectory(fWorldDirectory, Dimension::Nether);
+        setWorldDirectory(fWorldDirectory, Dimension::TheNether);
     };
     fNether->setEnabled(false);
     fNether->setTooltip("The Nether");
@@ -72,7 +72,7 @@ MapViewComponent::MapViewComponent()
     fEnd = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
     fEnd->setImages(fEndImage);
     fEnd->onClick = [this]() {
-        setWorldDirectory(fWorldDirectory, Dimension::End);
+        setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
     };
     fEnd->setEnabled(false);
     fEnd->setTooltip("The End");
@@ -623,7 +623,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fUniforms->enableBiome->set((GLint)(fEnableBiome.get() ? 1 : 0));
         }
         if (fUniforms->background) {
-            if (fDimension == Dimension::End) {
+            if (fDimension == Dimension::TheEnd) {
                 fUniforms->background->set(13.0f / 255.0f, 10.0f / 255.0f, 18.0f / 255.0f, 1.0f);
             } else {
                 fUniforms->background->set(0.0f, 0.0f, 0.0f, 0.0f);
@@ -829,8 +829,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     }
 
     fOverworld->setEnabled(dim != Dimension::Overworld);
-    fNether->setEnabled(dim != Dimension::Nether);
-    fEnd->setEnabled(dim != Dimension::End);
+    fNether->setEnabled(dim != Dimension::TheNether);
+    fEnd->setEnabled(dim != Dimension::TheEnd);
     
     fLoadingFinished = false;
     fCaptureButton->setEnabled(false);

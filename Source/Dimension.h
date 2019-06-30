@@ -2,22 +2,16 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-enum class Dimension {
-    Overworld,
-    Nether,
-    End,
+enum class Dimension : int {
+    Overworld = 0,
+    TheNether = -1,
+    TheEnd    = 1,
 };
 
 static inline File DimensionDirectory(File directory, Dimension dim)
 {
-    switch (dim) {
-        case Dimension::Overworld:
-            return directory.getChildFile("region");
-        case Dimension::Nether:
-            return directory.getChildFile("DIM-1").getChildFile("region");
-        case Dimension::End:
-            return directory.getChildFile("DIM1").getChildFile("region");
+    if (dim == Dimension::Overworld) {
+        return directory.getChildFile("region");
     }
-    assert(false);
-    return directory;
+    return directory.getChildFile(String::formatted("DIM%d", (int)dim)).getChildFile("region");
 }

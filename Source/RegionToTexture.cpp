@@ -308,7 +308,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                 }
                 uint8_t waterDepth = 0;
                 int yini = 255;
-                if (dim == Dimension::Nether) {
+                if (dim == Dimension::TheNether) {
                     yini = 127;
                     for (int y = 127; y >= 0; y--) {
                         auto block = chunk.blockIdAt(x, y, z);
