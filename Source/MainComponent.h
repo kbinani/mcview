@@ -29,67 +29,67 @@ public:
         : fBrowserOpened(true)
         , fSettingsOpened(false)
     {
-        fConfig = new Settings();
-        fConfig->load();
+        fSettings = new Settings();
+        fSettings->load();
         
-        fMapView = new MapViewComponent();
-        fMapView->setSize(600, 400);
-        fMapView->onOpenButtonClicked = [this]() {
+        fMapViewComponent = new MapViewComponent();
+        fMapViewComponent->setSize(600, 400);
+        fMapViewComponent->onOpenButtonClicked = [this]() {
             setBrowserOpened(!fBrowserOpened);
         };
-        fMapView->onSettingsButtonClicked = [this]() {
+        fMapViewComponent->onSettingsButtonClicked = [this]() {
             setSettingsOpened(!fSettingsOpened);
         };
         
-        fMapView->setWaterTranslucent(fConfig->fWaterTranslucent);
-        fMapView->setWaterOpticalDensity(fConfig->fWaterOpticalDensity);
-        fMapView->setBiomeEnable(fConfig->fBiomeEnabled);
-        fMapView->setBiomeBlend(fConfig->fBiomeBlend);
+        fMapViewComponent->setWaterTranslucent(fSettings->fWaterTranslucent);
+        fMapViewComponent->setWaterOpticalDensity(fSettings->fWaterOpticalDensity);
+        fMapViewComponent->setBiomeEnable(fSettings->fBiomeEnabled);
+        fMapViewComponent->setBiomeBlend(fSettings->fBiomeBlend);
         
-        addAndMakeVisible(fMapView);
+        addAndMakeVisible(fMapViewComponent);
 
         fBrowser = new Browser();
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
-        Array<File> directories = fConfig->directories();
+        Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
             fBrowser->addDirectory(directories[i]);
         }
         fBrowser->onSelect = [this](File dir) {
-            fMapView->setWorldDirectory(dir, Dimension::Overworld);
+            fMapViewComponent->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());
             setBrowserOpened(false);
         };
         fBrowser->onAdd = [this](File dir) {
-            fConfig->addDirectory(dir);
-            fConfig->save();
+            fSettings->addDirectory(dir);
+            fSettings->save();
         };
         addAndMakeVisible(fBrowser);
 
-        fSettings = new SettingsComponent(*fConfig);
-        fSettings->onWaterOpticalDensityChanged = [this](float coeff) {
-            fMapView->setWaterOpticalDensity(coeff);
-            fConfig->fWaterOpticalDensity = coeff;
+        fSettingsComponent = new SettingsComponent(*fSettings);
+        fSettingsComponent->onWaterOpticalDensityChanged = [this](float coeff) {
+            fMapViewComponent->setWaterOpticalDensity(coeff);
+            fSettings->fWaterOpticalDensity = coeff;
         };
-        fSettings->onWaterTranslucentChanged = [this](bool translucent) {
-            fMapView->setWaterTranslucent(translucent);
-            fConfig->fWaterTranslucent = translucent;
+        fSettingsComponent->onWaterTranslucentChanged = [this](bool translucent) {
+            fMapViewComponent->setWaterTranslucent(translucent);
+            fSettings->fWaterTranslucent = translucent;
         };
-        fSettings->onBiomeEnableChanged = [this](bool enable) {
-            fMapView->setBiomeEnable(enable);
-            fConfig->fBiomeEnabled = enable;
+        fSettingsComponent->onBiomeEnableChanged = [this](bool enable) {
+            fMapViewComponent->setBiomeEnable(enable);
+            fSettings->fBiomeEnabled = enable;
         };
-        fSettings->onBiomeBlendChanged = [this](int blend) {
-            fMapView->setBiomeBlend(blend);
-            fConfig->fBiomeBlend = blend;
+        fSettingsComponent->onBiomeBlendChanged = [this](int blend) {
+            fMapViewComponent->setBiomeBlend(blend);
+            fSettings->fBiomeBlend = blend;
         };
-        addAndMakeVisible(fSettings);
+        addAndMakeVisible(fSettingsComponent);
         
 		setSize(1280, 720);
 	}
 
     ~MainComponent()
     {
-        fConfig->save();
+        fSettings->save();
     }
 
     //==============================================================================
@@ -110,23 +110,23 @@ public:
     
     void resized() override
     {
-        if (!fMapView || !fBrowser || !fSettings) {
+        if (!fMapViewComponent || !fBrowser || !fSettingsComponent) {
 			return;
 		}
         int const width = getWidth();
         int const height = getHeight();
         int const browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;
-        int const settingsWidth = fSettingsOpened ? fSettings->getWidth() : 0;
+        int const settingsWidth = fSettingsOpened ? fSettingsComponent->getWidth() : 0;
 
         auto& animator = Desktop::getInstance().getAnimator();
         if (!animator.isAnimating(fBrowser)) {
             fBrowser->setBounds(fBrowserOpened ? 0 : -fBrowser->getWidth(), 0, fBrowser->getWidth(), height);
         }
-        if (!animator.isAnimating(fMapView)) {
-            fMapView->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
+        if (!animator.isAnimating(fMapViewComponent)) {
+            fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
         }
-        if (!animator.isAnimating(fSettings)) {
-            fSettings->setBounds(width - settingsWidth, 0, fSettings->getWidth(), height);
+        if (!animator.isAnimating(fSettingsComponent)) {
+            fSettingsComponent->setBounds(width - settingsWidth, 0, fSettingsComponent->getWidth(), height);
         }
     }
 
@@ -145,22 +145,22 @@ public:
         int const height = getHeight();
 
         fBrowser->setVisible(opened);
-        int const settingsWidth = fSettingsOpened ? fSettings->getWidth() : 0;
+        int const settingsWidth = fSettingsOpened ? fSettingsComponent->getWidth() : 0;
 
         if (opened) {
             int const w = fBrowser->getWidth();
             fBrowser->setBounds(-w, 0, w, height);
             Animate(fBrowser, 0, 0, w, height);
-            fMapView->setBounds(0, 0, width - settingsWidth, height);
-            Animate(fMapView, w, 0, width - w - settingsWidth, height);
+            fMapViewComponent->setBounds(0, 0, width - settingsWidth, height);
+            Animate(fMapViewComponent, w, 0, width - w - settingsWidth, height);
         } else {
             int const w = fBrowser->getWidth();
             fBrowser->setBounds(0, 0, w, height);
             Animate(fBrowser, -w, 0, w, height);
-            fMapView->setBounds(w, 0, width - w - settingsWidth, height);
-            Animate(fMapView, 0, 0, width - settingsWidth, height);
+            fMapViewComponent->setBounds(w, 0, width - w - settingsWidth, height);
+            Animate(fMapViewComponent, 0, 0, width - settingsWidth, height);
         }
-        fMapView->setBrowserOpened(opened);
+        fMapViewComponent->setBrowserOpened(opened);
     }
     
     void setSettingsOpened(bool opened) {
@@ -173,20 +173,20 @@ public:
         int const height = getHeight();
 
         int const browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;
-        int const settingsWidth = fSettings->getWidth();
+        int const settingsWidth = fSettingsComponent->getWidth();
         
-        fSettings->setVisible(fSettingsOpened);
+        fSettingsComponent->setVisible(fSettingsOpened);
         
         if (fSettingsOpened) {
-            fSettings->setBounds(width, 0, settingsWidth, height);
-            Animate(fSettings, width - settingsWidth, 0, settingsWidth, height);
-            fMapView->setBounds(browserWidth, 0, width - browserWidth, height);
-            Animate(fMapView, browserWidth, 0, width - browserWidth - settingsWidth, height);
+            fSettingsComponent->setBounds(width, 0, settingsWidth, height);
+            Animate(fSettingsComponent, width - settingsWidth, 0, settingsWidth, height);
+            fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth, height);
+            Animate(fMapViewComponent, browserWidth, 0, width - browserWidth - settingsWidth, height);
         } else {
-            fSettings->setBounds(width - settingsWidth, 0, settingsWidth, height);
-            Animate(fSettings, width, 0, settingsWidth, height);
-            fMapView->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
-            Animate(fMapView, browserWidth, 0, width - browserWidth, height);
+            fSettingsComponent->setBounds(width - settingsWidth, 0, settingsWidth, height);
+            Animate(fSettingsComponent, width, 0, settingsWidth, height);
+            fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
+            Animate(fMapViewComponent, browserWidth, 0, width - browserWidth, height);
         }
     }
     
@@ -197,13 +197,13 @@ private:
     }
     
 private:
-    ScopedPointer<MapViewComponent> fMapView;
+    ScopedPointer<MapViewComponent> fMapViewComponent;
     ScopedPointer<Browser> fBrowser;
     bool fBrowserOpened;
-    ScopedPointer<SettingsComponent> fSettings;
+    ScopedPointer<SettingsComponent> fSettingsComponent;
     bool fSettingsOpened;
 
-    ScopedPointer<Settings> fConfig;
+    ScopedPointer<Settings> fSettings;
     
     static int constexpr kAnimationDuration = 300;
     
