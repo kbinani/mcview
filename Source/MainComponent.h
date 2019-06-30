@@ -42,7 +42,7 @@ public:
         };
         
         fMapView->setWaterTranslucent(fConfig->fWaterTranslucent);
-        fMapView->setWaterAbsorptionCoefficient(fConfig->fWaterOpticalDensity);
+        fMapView->setWaterOpticalDensity(fConfig->fWaterOpticalDensity);
         fMapView->setBiomeEnable(fConfig->fBiomeEnabled);
         fMapView->setBiomeBlend(fConfig->fBiomeBlend);
         
@@ -66,8 +66,8 @@ public:
         addAndMakeVisible(fBrowser);
 
         fSettings = new SettingsComponent(*fConfig);
-        fSettings->onWaterAbsorptionCoefficientChanged = [this](float coeff) {
-            fMapView->setWaterAbsorptionCoefficient(coeff);
+        fSettings->onWaterOpticalDensityChanged = [this](float coeff) {
+            fMapView->setWaterOpticalDensity(coeff);
             fConfig->fWaterOpticalDensity = coeff;
         };
         fSettings->onWaterTranslucentChanged = [this](bool translucent) {

@@ -5,14 +5,14 @@
 
 class SettingsComponent : public Component {
 public:
-    std::function<void(float)> onWaterAbsorptionCoefficientChanged;
+    std::function<void(float)> onWaterOpticalDensityChanged;
     std::function<void(bool)> onWaterTranslucentChanged;
     std::function<void(bool)> onBiomeEnableChanged;
     std::function<void(int)> onBiomeBlendChanged;
 
-    static float const kDefaultWaterAbsorptionCoefficient;
-    static float const kMaxWaterAbsorptionCoefficient;
-    static float const kMinWaterAbsorptionCoefficient;
+    static float const kDefaultWaterOpticalDensity;
+    static float const kMaxWaterOpticalDensity;
+    static float const kMinWaterOpticalDensity;
     
     static int const kDefaultBiomeBlend;
     static int const kMaxBiomeBlend;

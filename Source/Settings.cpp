@@ -86,7 +86,7 @@ File Settings::ConfigFile()
 }
 
 Settings::Settings()
-    : fWaterOpticalDensity(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
+    : fWaterOpticalDensity(SettingsComponent::kDefaultWaterOpticalDensity)
     , fWaterTranslucent(true)
     , fBiomeEnabled(true)
     , fBiomeBlend(SettingsComponent::kDefaultBiomeBlend)
@@ -115,8 +115,8 @@ void Settings::load()
     
     // water_optical_density
     GetFloat(v, kWaterOpticalDensity, &fWaterOpticalDensity,
-             SettingsComponent::kMinWaterAbsorptionCoefficient,
-             SettingsComponent::kMaxWaterAbsorptionCoefficient);
+             SettingsComponent::kMinWaterOpticalDensity,
+             SettingsComponent::kMaxWaterOpticalDensity);
 
     // water_translucent
     GetBool(v, kWaterTranslucent, &fWaterTranslucent);

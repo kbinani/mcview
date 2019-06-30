@@ -65,7 +65,7 @@ public:
     void handleAsyncUpdate() override;
     void timerCallback() override;
     
-    void setWaterAbsorptionCoefficient(float v);
+    void setWaterOpticalDensity(float v);
     void setWaterTranslucent(bool translucent);
     void setBiomeEnable(bool enable);
     void setBiomeBlend(int blend);
@@ -110,7 +110,7 @@ private:
             southWest.reset(createUniform(openGLContext, shader, "southWest"));
             west.reset(createUniform(openGLContext, shader, "west"));
             northWest.reset(createUniform(openGLContext, shader, "northWest"));
-            waterAbsorptionCoefficient.reset(createUniform(openGLContext, shader, "waterAbsorptionCoefficient"));
+            waterOpticalDensity.reset(createUniform(openGLContext, shader, "waterOpticalDensity"));
             waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
             biomeBlend.reset(createUniform(openGLContext, shader, "biomeBlend"));
             enableBiome.reset(createUniform(openGLContext, shader, "enableBiome"));
@@ -119,7 +119,7 @@ private:
 
         std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, background;
         std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
-        std::unique_ptr<OpenGLShaderProgram::Uniform> waterAbsorptionCoefficient, waterTranslucent, biomeBlend, enableBiome;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
 
     private:
         static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
@@ -245,7 +245,7 @@ private:
     std::deque<MouseEvent> fLastDragPosition;
     TimerInstance fScrollerTimer;
     
-    Atomic<float> fWaterAbsorptionCoefficient;
+    Atomic<float> fWaterOpticalDensity;
     Atomic<bool> fWaterTranslucent;
     
     Atomic<bool> fEnableBiome;

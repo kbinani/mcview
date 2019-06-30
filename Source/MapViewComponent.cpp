@@ -25,7 +25,7 @@ MapViewComponent::MapViewComponent()
     , fVisibleRegions({0, 0, 0, 0})
     , fPool(CreateThreadPool())
     , fLoadingFinished(true)
-    , fWaterAbsorptionCoefficient(SettingsComponent::kDefaultWaterAbsorptionCoefficient)
+    , fWaterOpticalDensity(SettingsComponent::kDefaultWaterOpticalDensity)
     , fWaterTranslucent(true)
     , fEnableBiome(true)
     , fBiomeBlend(2)
@@ -222,7 +222,7 @@ void MapViewComponent::updateShader()
         uniform float fade;
         uniform int grassBlockId;
         uniform int foliageBlockId;
-        uniform float waterAbsorptionCoefficient;
+        uniform float waterOpticalDensity;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
         uniform int enableBiome;
@@ -414,7 +414,7 @@ void MapViewComponent::updateShader()
         if (waterDepth > 0.0) {
             vec4 wc = waterColor();
             if (waterTranslucent) {
-                float intensity = pow(10.0, -waterAbsorptionCoefficient * waterDepth);
+                float intensity = pow(10.0, -waterOpticalDensity * waterDepth);
                 c = vec4(wc.r * intensity, wc.g * intensity, wc.b* intensity, alpha);
             } else {
                 c = wc;
@@ -610,8 +610,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         if (fUniforms->foliageBlockId) {
             fUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
         }
-        if (fUniforms->waterAbsorptionCoefficient) {
-            fUniforms->waterAbsorptionCoefficient->set((GLfloat)fWaterAbsorptionCoefficient.get());
+        if (fUniforms->waterOpticalDensity) {
+            fUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
         }
         if (fUniforms->waterTranslucent) {
             fUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
@@ -1197,9 +1197,9 @@ void MapViewComponent::timerCallback()
     stopTimer();
 }
 
-void MapViewComponent::setWaterAbsorptionCoefficient(float v)
+void MapViewComponent::setWaterOpticalDensity(float v)
 {
-    fWaterAbsorptionCoefficient = v;
+    fWaterOpticalDensity = v;
     triggerRepaint();
 }
 

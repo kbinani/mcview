@@ -1,9 +1,9 @@
 #include "SettingsComponent.h"
 #include "defer.h"
 
-float const SettingsComponent::kDefaultWaterAbsorptionCoefficient = 0.02f;
-float const SettingsComponent::kMaxWaterAbsorptionCoefficient = 0.04f;
-float const SettingsComponent::kMinWaterAbsorptionCoefficient = 0.0f;
+float const SettingsComponent::kDefaultWaterOpticalDensity = 0.02f;
+float const SettingsComponent::kMaxWaterOpticalDensity = 0.04f;
+float const SettingsComponent::kMinWaterOpticalDensity = 0.0f;
 
 int const SettingsComponent::kDefaultBiomeBlend = 2;
 int const SettingsComponent::kMaxBiomeBlend = 7;
@@ -12,25 +12,25 @@ int const SettingsComponent::kMinBiomeBlend = 0;
 class GroupWater : public GroupComponent
 {
 public:
-    std::function<void(float)> onWaterAbsorptionCoefficientChanged;
+    std::function<void(float)> onWaterOpticalDensityChanged;
     std::function<void(bool)> onWaterTranslucentChanged;
 
 public:
     GroupWater(Settings const& settings)
     {
-        fWaterAbsorptionCoefficient = new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow);
-        fWaterAbsorptionCoefficient->setRange(SettingsComponent::kMinWaterAbsorptionCoefficient, SettingsComponent::kMaxWaterAbsorptionCoefficient);
-        fWaterAbsorptionCoefficient->setValue(settings.fWaterOpticalDensity);
-        fWaterAbsorptionCoefficient->onValueChange = [this]() {
-            if (onWaterAbsorptionCoefficientChanged) {
-                onWaterAbsorptionCoefficientChanged((float)fWaterAbsorptionCoefficient->getValue());
+        fWaterOpticalDensity = new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow);
+        fWaterOpticalDensity->setRange(SettingsComponent::kMinWaterOpticalDensity, SettingsComponent::kMaxWaterOpticalDensity);
+        fWaterOpticalDensity->setValue(settings.fWaterOpticalDensity);
+        fWaterOpticalDensity->onValueChange = [this]() {
+            if (onWaterOpticalDensityChanged) {
+                onWaterOpticalDensityChanged((float)fWaterOpticalDensity->getValue());
             }
         };
-        addAndMakeVisible(fWaterAbsorptionCoefficient);
+        addAndMakeVisible(fWaterOpticalDensity);
         
-        fWaterAbsorptionCoefficientLabel = new Label();
-        fWaterAbsorptionCoefficientLabel->setText("Optical Density", NotificationType::dontSendNotification);
-        addAndMakeVisible(fWaterAbsorptionCoefficientLabel);
+        fWaterOpticalDensityLabel = new Label();
+        fWaterOpticalDensityLabel->setText("Optical Density", NotificationType::dontSendNotification);
+        addAndMakeVisible(fWaterOpticalDensityLabel);
         
         fTranslucentWater = new ToggleButton("Translucent");
         fTranslucentWater->setToggleState(settings.fWaterTranslucent, NotificationType::dontSendNotification);
@@ -40,7 +40,7 @@ public:
             if (onWaterTranslucentChanged) {
                 onWaterTranslucentChanged(translucent);
             }
-            fWaterAbsorptionCoefficient->setEnabled(translucent);
+            fWaterOpticalDensity->setEnabled(translucent);
         };
         
         setText("Water");
@@ -59,15 +59,15 @@ public:
         y += rowHeight;
         y += rowMargin;
         
-        fWaterAbsorptionCoefficientLabel->setBounds(margin, y, width - 2 * margin, labelHeight);
+        fWaterOpticalDensityLabel->setBounds(margin, y, width - 2 * margin, labelHeight);
         y += labelHeight;
-        fWaterAbsorptionCoefficient->setBounds(margin, y, width - 2 * margin, rowHeight);
+        fWaterOpticalDensity->setBounds(margin, y, width - 2 * margin, rowHeight);
         y += rowHeight;
     }
     
 private:
-    ScopedPointer<Slider> fWaterAbsorptionCoefficient;
-    ScopedPointer<Label> fWaterAbsorptionCoefficientLabel;
+    ScopedPointer<Slider> fWaterOpticalDensity;
+    ScopedPointer<Label> fWaterOpticalDensityLabel;
     
     ScopedPointer<ToggleButton> fTranslucentWater;
 };
@@ -156,8 +156,8 @@ SettingsComponent::SettingsComponent(Settings const& settings)
     water->onWaterTranslucentChanged = [this](bool translucent) {
         onWaterTranslucentChanged(translucent);
     };
-    water->onWaterAbsorptionCoefficientChanged = [this](float v) {
-        onWaterAbsorptionCoefficientChanged(v);
+    water->onWaterOpticalDensityChanged = [this](float v) {
+        onWaterOpticalDensityChanged(v);
     };
     fGroupWater.reset(water.release());
     addAndMakeVisible(fGroupWater);
