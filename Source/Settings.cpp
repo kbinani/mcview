@@ -7,6 +7,70 @@ static const Identifier kWaterOpticalDensity("water_optical_density");
 static const Identifier kBiomeEnabled("biome_enabled");
 static const Identifier kBiomeBlend("biome_blend");
 
+static bool GetInt(var &v, Identifier key, int *r, int min, int max)
+{
+    if (!v.hasProperty(key)) {
+        return false;
+    }
+    var vv = v.getProperty(key, var());
+    if (!vv.isInt()) {
+        return false;
+    }
+    *r = std::min(std::max((int)vv, min), max);
+    return true;
+}
+
+static bool GetBool(var &v, Identifier key, bool *r)
+{
+    if (!v.hasProperty(key)) {
+        return false;
+    }
+    var vv = v.getProperty(key, var());
+    if (!vv.isBool()) {
+        return false;
+    }
+    *r = (bool)vv;
+    return true;
+}
+
+static bool GetFloat(var &v, Identifier key, float *r, float min, float max)
+{
+    if (!v.hasProperty(key)) {
+        return false;
+    }
+    var vv = v.getProperty(key, var());
+    if (!vv.isDouble()) {
+        return false;
+    }
+    *r = std::min(std::max((float)(double)vv, min), max);
+    return true;
+}
+
+static bool GetStringArray(var &v, Identifier key, Array<String>& r)
+{
+    r.clear();
+
+    if (!v.hasProperty(key)) {
+        return false;
+    }
+    var dirs = v.getProperty(kDirectories, var());
+    if (!dirs.isArray()) {
+        return false;
+    }
+    Array<var> *d = dirs.getArray();
+    if (!d) {
+        return false;
+    }
+    for (int i = 0; i < d->size(); i++) {
+        var f = (*d)[i];
+        if (!f.isString()) {
+            continue;
+        }
+        r.add(f);
+    }
+    return true;
+}
+
 File Settings::ConfigDirectory()
 {
 #if JUCE_WINDOWS
@@ -39,56 +103,31 @@ void Settings::load()
     var v = JSON::parse(stream);
 
     // directories
-    if (v.hasProperty(kDirectories)) {
-        var dirs = v.getProperty(kDirectories, var());
-        if (dirs.isArray()) {
-            Array<var> *d = dirs.getArray();
-            if (d) {
-                for (int i = 0; i < d->size(); i++) {
-                    var f = (*d)[i];
-                    if (f.isString()) {
-                        File ff(f.toString());
-                        if (ff.exists() && ff.isDirectory()) {
-                            fDirectories.add(ff);
-                        }
-                    }
-                }
-            }
+    Array<String> dirs;
+    GetStringArray(v, kDirectories, dirs);
+    fDirectories.clear();
+    for (int i = 0; i < dirs.size(); i++) {
+        File f(dirs[i]);
+        if (f.exists() && f.isDirectory()) {
+            fDirectories.add(f);
         }
     }
     
     // water_optical_density
-    if (v.hasProperty(kWaterOpticalDensity)) {
-        var vv = v.getProperty(kWaterOpticalDensity, var());
-        if (vv.isDouble()) {
-            double value = (double)vv;
-            fWaterOpticalDensity = std::min(std::max((float)value, SettingsComponent::kMinWaterAbsorptionCoefficient), SettingsComponent::kMaxWaterAbsorptionCoefficient);
-        }
-    }
-    
+    GetFloat(v, kWaterOpticalDensity, &fWaterOpticalDensity,
+             SettingsComponent::kMinWaterAbsorptionCoefficient,
+             SettingsComponent::kMaxWaterAbsorptionCoefficient);
+
     // water_translucent
-    if (v.hasProperty(kWaterTranslucent)) {
-        var vv = v.getProperty(kWaterTranslucent, var());
-        if (vv.isBool()) {
-            fWaterTranslucent = (bool)vv;
-        }
-    }
+    GetBool(v, kWaterTranslucent, &fWaterTranslucent);
     
     // biome_enabled
-    if (v.hasProperty(kBiomeEnabled)) {
-        var vv = v.getProperty(kBiomeEnabled, var());
-        if (vv.isBool()) {
-            fBiomeEnabled = (bool)vv;
-        }
-    }
+    GetBool(v, kBiomeEnabled, &fBiomeEnabled);
     
     // biome_blend
-    if (v.hasProperty(kBiomeBlend)) {
-        var vv = v.getProperty(kBiomeBlend, var());
-        if (vv.isInt()) {
-            fBiomeBlend = std::min(std::max((int)vv, SettingsComponent::kMinBiomeBlend), SettingsComponent::kMaxBiomeBlend);
-        }
-    }
+    GetInt(v, kBiomeBlend, &fBiomeBlend,
+           SettingsComponent::kMinBiomeBlend,
+           SettingsComponent::kMaxBiomeBlend);
 }
 
 void Settings::save()
