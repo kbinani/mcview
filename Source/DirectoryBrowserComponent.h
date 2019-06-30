@@ -2,11 +2,11 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-class DirectoryBrowser;
+class DirectoryBrowserComponent;
 
 class DirectoryBrowserModel : public ListBoxModel {
 public:
-    DirectoryBrowserModel(DirectoryBrowser *parent, File directory, LookAndFeel const& laf);
+    DirectoryBrowserModel(DirectoryBrowserComponent *parent, File directory, LookAndFeel const& laf);
     int getNumRows() override;
     void paintListBoxItem (int rowNumber, Graphics &g, int width, int height, bool rowIsSelected) override;
 
@@ -21,15 +21,15 @@ private:
     Colour fTextColorOn;
     Colour fBackgroundColorOff;
     Colour fBackgroundColorOn;
-    DirectoryBrowser *const fParent;
+    DirectoryBrowserComponent *const fParent;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserModel);
 };
 
 
-class DirectoryBrowser : public ListBox {
+class DirectoryBrowserComponent : public ListBox {
 public:
-    DirectoryBrowser(File directory);
+    DirectoryBrowserComponent(File directory);
     void lookAndFeelChanged() override;
 
     std::function<void(File)> onSelect;
@@ -40,5 +40,5 @@ public:
 private:
     ScopedPointer<DirectoryBrowserModel> fModel;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowser);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserComponent);
 };

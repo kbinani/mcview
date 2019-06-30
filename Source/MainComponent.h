@@ -10,7 +10,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MapViewComponent.h"
-#include "Browser.h"
+#include "BrowserComponent.h"
 #include "SettingsComponent.h"
 #include "Dimension.h"
 #include "Settings.h"
@@ -48,7 +48,7 @@ public:
         
         addAndMakeVisible(fMapViewComponent);
 
-        fBrowser = new Browser();
+        fBrowser = new BrowserComponent();
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
         Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
@@ -198,7 +198,7 @@ private:
     
 private:
     ScopedPointer<MapViewComponent> fMapViewComponent;
-    ScopedPointer<Browser> fBrowser;
+    ScopedPointer<BrowserComponent> fBrowser;
     bool fBrowserOpened;
     ScopedPointer<SettingsComponent> fSettingsComponent;
     bool fSettingsOpened;

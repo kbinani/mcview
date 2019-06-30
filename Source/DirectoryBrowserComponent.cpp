@@ -1,8 +1,8 @@
-#include "DirectoryBrowser.h"
+#include "DirectoryBrowserComponent.h"
 #include "defer.h"
 #include "GraphicsHelper.h"
 
-DirectoryBrowserModel::DirectoryBrowserModel(DirectoryBrowser *parent, File directory, LookAndFeel const& laf)
+DirectoryBrowserModel::DirectoryBrowserModel(DirectoryBrowserComponent *parent, File directory, LookAndFeel const& laf)
     : fDirectory(directory)
     , fParent(parent)
 {
@@ -65,14 +65,14 @@ void DirectoryBrowserModel::listBoxItemDoubleClicked (int row, const MouseEvent 
     fParent->onSelect(dir);
 }
 
-DirectoryBrowser::DirectoryBrowser(File directory)
+DirectoryBrowserComponent::DirectoryBrowserComponent(File directory)
     : fDirectory(directory)
 {
     fModel = new DirectoryBrowserModel(this, directory, getLookAndFeel());
     setModel(fModel);
 }
 
-void DirectoryBrowser::lookAndFeelChanged()
+void DirectoryBrowserComponent::lookAndFeelChanged()
 {
     fModel->applyLookAndFeel(getLookAndFeel());
 }

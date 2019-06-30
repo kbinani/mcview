@@ -1,6 +1,6 @@
-#include "Browser.h"
+#include "BrowserComponent.h"
 
-Browser::Browser()
+BrowserComponent::BrowserComponent()
 {
     fConstrainer = new ComponentBoundsConstrainer();
     fConstrainer->setMinimumWidth(100);
@@ -36,13 +36,13 @@ Browser::Browser()
     setSize(kDefaultWidth, 400);
 }
 
-Browser::~Browser()
+BrowserComponent::~BrowserComponent()
 {
 }
 
-void Browser::addDirectory(File directory, String title)
+void BrowserComponent::addDirectory(File directory, String title)
 {
-    DirectoryBrowser* browser = new DirectoryBrowser(directory);
+    DirectoryBrowserComponent* browser = new DirectoryBrowserComponent(directory);
     browser->onSelect = [this](File f) {
         onSelect(f);
     };
@@ -57,7 +57,7 @@ void Browser::addDirectory(File directory, String title)
     resized();
 }
 
-void Browser::resized()
+void BrowserComponent::resized()
 {
     if (!fResizer) {
         return;

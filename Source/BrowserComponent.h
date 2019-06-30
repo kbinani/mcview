@@ -1,12 +1,12 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "DirectoryBrowser.h"
+#include "DirectoryBrowserComponent.h"
 
-class Browser : public Component {
+class BrowserComponent : public Component {
 public:
-    Browser();
-    ~Browser();
+    BrowserComponent();
+    ~BrowserComponent();
     
     void resized() override;
 
@@ -24,9 +24,9 @@ private:
     ScopedPointer<DrawableButton> fAddButton;
     ScopedPointer<Drawable> fAddButtonImage;
     
-    Array<DirectoryBrowser *> fBrowsers;
+    Array<DirectoryBrowserComponent *> fBrowsers;
     
     static int constexpr kResizerWidth = 8;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Browser)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BrowserComponent)
 };
