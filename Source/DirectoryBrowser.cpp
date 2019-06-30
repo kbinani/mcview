@@ -1,5 +1,6 @@
 #include "DirectoryBrowser.h"
 #include "defer.h"
+#include "GraphicsHelper.h"
 
 DirectoryBrowserModel::DirectoryBrowserModel(DirectoryBrowser *parent, File directory, LookAndFeel const& laf)
     : fDirectory(directory)
@@ -23,17 +24,31 @@ int DirectoryBrowserModel::getNumRows()
     return fItems.size();
 }
 
+class Dummy : public TextEditor
+{
+public:
+    void paint(Graphics &g) override
+    {
+        TextEditor::paint(g);
+        TextEditor::paintOverChildren(g);
+    }
+};
+
 void DirectoryBrowserModel::paintListBoxItem (int rowNumber, Graphics &g, int width, int height, bool rowIsSelected)
 {
     g.saveState();
     defer {
         g.restoreState();
     };
+    
+    
     int margin = 10;
     g.setColour(rowIsSelected ? fBackgroundColorOn : fBackgroundColorOff);
     g.fillRect(0, 0, width, height);
     g.setColour(rowIsSelected ? fTextColorOn : fTextColorOff);
-    g.drawFittedText(fItems[rowNumber].getFileName(), margin, 0, width - 2 * margin, height, Justification::centredLeft, 1);
+
+    String const name = fItems[rowNumber].getFileName();
+    GraphicsHelper::DrawFittedText(g, name, margin, 0, width - 2 * margin, height, Justification::centredLeft, 1);
 }
 
 void DirectoryBrowserModel::applyLookAndFeel(LookAndFeel const& laf)

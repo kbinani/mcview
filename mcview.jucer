@@ -33,6 +33,10 @@
             file="Source/DirectoryBrowser.cpp"/>
       <FILE id="fLyAMF" name="DirectoryBrowser.h" compile="0" resource="0"
             file="Source/DirectoryBrowser.h"/>
+      <FILE id="ke5apA" name="GraphicsHelper.cpp" compile="1" resource="0"
+            file="Source/GraphicsHelper.cpp"/>
+      <FILE id="BM2t84" name="GraphicsHelper.h" compile="0" resource="0"
+            file="Source/GraphicsHelper.h"/>
       <FILE id="xZVGLL" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="Ga0NBo" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="wECAun" name="MapViewComponent.cpp" compile="1" resource="0"
