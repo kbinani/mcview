@@ -1,11 +1,13 @@
-"Overworld" = "オーバーワールド";
-"The Nether" = "ネザー";
-"The End" = "ジ・エンド";
-"Writing image file" = "画像ファイルを出力中";
-"Choose file name" = "ファイルを選んでください";
-"Optical Density" = "光の吸収";
-"Translucent" = "半透明";
-"Water" = "水";
-"Biome" = "バイオーム";
-"Enable" = "有効";
-"Blend" = "重なり度合い";
+language: Japanese
+
+"Overworld" = "オーバーワールド"
+"The Nether" = "ネザー"
+"The End" = "ジ・エンド"
+"Writing image file" = "画像ファイルを出力中"
+"Choose file name" = "ファイルを選んでください"
+"Optical Density" = "光の吸収"
+"Translucent" = "半透明"
+"Water" = "水"
+"Biome" = "バイオーム"
+"Enable" = "有効"
+"Blend" = "重なり度合い"

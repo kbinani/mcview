@@ -40,6 +40,12 @@
             file="Source/GraphicsHelper.cpp"/>
       <FILE id="BM2t84" name="GraphicsHelper.h" compile="0" resource="0"
             file="Source/GraphicsHelper.h"/>
+      <FILE id="s1cEN4" name="LocalizationHelper.cpp" compile="1" resource="0"
+            file="Source/LocalizationHelper.cpp"/>
+      <FILE id="RebvE2" name="LocalizationHelper.h" compile="0" resource="0"
+            file="Source/LocalizationHelper.h"/>
+      <FILE id="xp8tGE" name="LocalizationHelper.mm" compile="1" resource="0"
+            file="Source/LocalizationHelper.mm"/>
       <FILE id="IL6SCN" name="LookAndFeel.h" compile="0" resource="0" file="Source/LookAndFeel.h"/>
       <FILE id="xZVGLL" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="Ga0NBo" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>

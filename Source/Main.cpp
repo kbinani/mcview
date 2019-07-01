@@ -13,14 +13,7 @@
 #include "MapViewComponent.h"
 #include "GraphicsHelper.h"
 #include "LookAndFeel.h"
-
-static LocalisedStrings* LoadLocalisedStrings(char const* data, int size)
-{
-    std::vector<char> d(size + 1);
-    std::copy_n(data, size, d.begin());
-    String t = String::fromUTF8(d.data());
-    return new LocalisedStrings(t, false);
-}
+#include "LocalizationHelper.h"
 
 //==============================================================================
 class mcviewApplication  : public JUCEApplication
@@ -38,8 +31,7 @@ public:
     {
         // This method is where you should put your application's initialisation code..
 
-        LocalisedStrings *jp = LoadLocalisedStrings(BinaryData::japanese_lang, BinaryData::japanese_langSize);
-        LocalisedStrings::setCurrentMappings(jp);
+        LocalisedStrings::setCurrentMappings(LocalizationHelper::CurrentLocalisedStrings());
 
         fLookAndFeel = new mcview::LookAndFeel();
         LookAndFeel::setDefaultLookAndFeel(fLookAndFeel);
