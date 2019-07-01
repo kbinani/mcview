@@ -1,3 +1,5 @@
+#include "../JuceLibraryCode/JuceHeader.h"
+
 #if JUCE_WINDOWS
 #include <windows.h>
 #endif
