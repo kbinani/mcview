@@ -12,19 +12,7 @@
 #include "MainComponent.h"
 #include "MapViewComponent.h"
 #include "GraphicsHelper.h"
-
-class LAF : public LookAndFeel_V4
-{
-public:
-    void drawConcertinaPanelHeader (Graphics &g, const Rectangle< int > &area, bool isMouseOver, bool isMouseDown, ConcertinaPanel &panel, Component &component) override
-    {
-        LookAndFeel_V4::drawConcertinaPanelHeader(g, area, isMouseOver, isMouseDown, panel, component);
-        auto const name = component.getName();
-        g.setColour(Colours::white);
-        int const margin = 10;
-        GraphicsHelper::DrawFittedText(g, name, margin, 0, area.getWidth() - 2 * margin, area.getHeight(), Justification::centredLeft, 1);
-    }
-};
+#include "LookAndFeel.h"
 
 static LocalisedStrings* LoadLocalisedStrings(char const* data, int size)
 {
@@ -53,7 +41,7 @@ public:
         LocalisedStrings *jp = LoadLocalisedStrings(BinaryData::japanese_lang, BinaryData::japanese_langSize);
         LocalisedStrings::setCurrentMappings(jp);
 
-        fLookAndFeel = new LAF();
+        fLookAndFeel = new mcview::LookAndFeel();
         LookAndFeel::setDefaultLookAndFeel(fLookAndFeel);
         mainWindow.reset (new MainWindow (getApplicationName()));
     }
@@ -127,7 +115,7 @@ public:
 
 private:
     std::unique_ptr<MainWindow> mainWindow;
-    ScopedPointer<LAF> fLookAndFeel;
+    ScopedPointer<mcview::LookAndFeel> fLookAndFeel;
 };
 
 //==============================================================================
