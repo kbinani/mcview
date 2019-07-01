@@ -222,6 +222,7 @@ void MapViewComponent::updateShader()
         uniform float fade;
         uniform int grassBlockId;
         uniform int foliageBlockId;
+        uniform int netherrackBlockId;
         uniform float waterOpticalDensity;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
@@ -239,25 +240,6 @@ void MapViewComponent::updateShader()
     )#";
 
 	fragment << altitude.getSource() << std::endl;
-    
-    fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
-    fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
-    fragment << "        return background;" << std::endl;
-    fragment << "    }" << std::endl;
-    for (auto it : RegionToTexture::kBlockToColor) {
-        auto id = it.first;
-        Colour c = it.second;
-        GLfloat r = c.getRed() / 255.0f;
-        GLfloat g = c.getGreen() / 255.0f;
-        GLfloat b = c.getBlue() / 255.0f;
-        fragment << "    if (blockId == " << id << ") {" << std::endl;
-        fragment << "        return vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0);" << std::endl;
-        fragment << "    } else" << std::endl;
-    }
-    fragment << "    { " << std::endl;
-    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
-    fragment << "    }" << std::endl;
-    fragment << "}" << std::endl;
     
     fragment << R"#(
         struct BlockInfo {
@@ -316,8 +298,36 @@ void MapViewComponent::updateShader()
         vec4 rgb(int r, int g, int b, int a) {
             return vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, float(a) / 255.0);
         }
+
+        vec4 netherrack_colormap(float x) {
+            float h = 1.0 / 360.0;
+            float s = 64.0 / 100.0;
+            float vmin = 16.0 / 100.0;
+            float vmax = 50.0 / 100.0;
+            float v = vmin + (vmax - vmin) * clamp(1.0 - x, 0.0, 1.0);
+            return vec4(hsv2rgb(vec3(h, s, v)), 1.0);
+        }
     )#";
     
+    fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
+    fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
+    fragment << "        return background;" << std::endl;
+    fragment << "    }" << std::endl;
+    for (auto it : RegionToTexture::kBlockToColor) {
+        auto id = it.first;
+        Colour c = it.second;
+        GLfloat r = c.getRed() / 255.0f;
+        GLfloat g = c.getGreen() / 255.0f;
+        GLfloat b = c.getBlue() / 255.0f;
+        fragment << "    if (blockId == " << id << ") {" << std::endl;
+        fragment << "        return vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0);" << std::endl;
+        fragment << "    } else" << std::endl;
+    }
+    fragment << "    { " << std::endl;
+    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
+    fragment << "    }" << std::endl;
+    fragment << "}" << std::endl;
+
     fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
     for (auto it : RegionToTexture::kOceanToColor) {
         auto id = it.first;
@@ -426,6 +436,10 @@ void MapViewComponent::updateShader()
             float v = (height - 63.0) / 193.0;
             vec4 g = colormap(v);
             c = vec4(g.r, g.g, g.b, alpha);
+        } else if (blockId == netherrackBlockId) {
+            float v = (height - 31.0) / (127.0 - 31.0);
+            vec4 cc = netherrack_colormap(v);
+            c = vec4(cc.rgb, alpha);
         } else if (blockId == 0) {
             c = vec4(0.0, 0.0, 0.0, 0.0);
         } else {
@@ -609,6 +623,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         }
         if (fUniforms->foliageBlockId) {
             fUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
+        }
+        if (fUniforms->netherrackBlockId) {
+            fUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
         }
         if (fUniforms->waterOpticalDensity) {
             fUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());

@@ -102,6 +102,7 @@ private:
             Cz.reset(createUniform(openGLContext, shader, "Cz"));
             grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
             foliageBlockId.reset(createUniform(openGLContext, shader, "foliageBlockId"));
+            netherrackBlockId.reset(createUniform(openGLContext, shader, "netherrackBlockId"));
             north.reset(createUniform(openGLContext, shader, "north"));
             northEast.reset(createUniform(openGLContext, shader, "norhtEast"));
             east.reset(createUniform(openGLContext, shader, "east"));
@@ -117,7 +118,7 @@ private:
             background.reset(createUniform(openGLContext, shader, "background"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, background;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, background;
         std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
         std::unique_ptr<OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
 
