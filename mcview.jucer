@@ -23,6 +23,7 @@
             resource="1" file="Resource/baseline_whatshot_white_18dp.png"/>
       <FILE id="NQpftd" name="icon_large.png" compile="0" resource="1" file="Resource/icon_large.png"/>
       <FILE id="OiucKw" name="icon_small.png" compile="0" resource="1" file="Resource/icon_small.png"/>
+      <FILE id="N0iTMy" name="japanese.lang" compile="0" resource="1" file="Resource/japanese.lang"/>
     </GROUP>
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
       <FILE id="D9uNQU" name="BrowserComponent.cpp" compile="1" resource="0"

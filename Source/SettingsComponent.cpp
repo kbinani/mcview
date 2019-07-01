@@ -29,10 +29,10 @@ public:
         addAndMakeVisible(fWaterOpticalDensity);
         
         fWaterOpticalDensityLabel = new Label();
-        fWaterOpticalDensityLabel->setText("Optical Density", NotificationType::dontSendNotification);
+        fWaterOpticalDensityLabel->setText(TRANS("Optical Density"), NotificationType::dontSendNotification);
         addAndMakeVisible(fWaterOpticalDensityLabel);
         
-        fTranslucentWater = new ToggleButton("Translucent");
+        fTranslucentWater = new ToggleButton(TRANS("Translucent"));
         fTranslucentWater->setToggleState(settings.fWaterTranslucent, NotificationType::dontSendNotification);
         addAndMakeVisible(fTranslucentWater);
         fTranslucentWater->onStateChange = [this]() {
@@ -43,7 +43,7 @@ public:
             fWaterOpticalDensity->setEnabled(translucent);
         };
         
-        setText("Water");
+        setText(TRANS("Water"));
         setSize(400, 140);
     }
 
@@ -81,9 +81,9 @@ public:
 public:
     explicit GroupBiome(Settings const& settings)
     {
-        setText("Biome");
+        setText(TRANS("Biome"));
 
-        fEnableBiome = new ToggleButton("Enable");
+        fEnableBiome = new ToggleButton(TRANS("Enable"));
         fEnableBiome->onStateChange = [this]() {
             bool const enable = fEnableBiome->getToggleState();
             if (onEnableChanged) {
@@ -95,7 +95,7 @@ public:
         addAndMakeVisible(fEnableBiome);
         
         fBlendTitle = new Label();
-        fBlendTitle->setText("Blend", NotificationType::dontSendNotification);
+        fBlendTitle->setText(TRANS("Blend"), NotificationType::dontSendNotification);
         addAndMakeVisible(fBlendTitle);
         
         fBlend = new Slider(Slider::LinearHorizontal, Slider::NoTextBox);

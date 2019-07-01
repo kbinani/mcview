@@ -55,7 +55,7 @@ MapViewComponent::MapViewComponent()
         setWorldDirectory(fWorldDirectory, Dimension::Overworld);
     };
     fOverworld->setEnabled(false);
-    fOverworld->setTooltip("Overworld");
+    fOverworld->setTooltip(TRANS("Overworld"));
     addAndMakeVisible(fOverworld);
     
     fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
@@ -65,7 +65,7 @@ MapViewComponent::MapViewComponent()
         setWorldDirectory(fWorldDirectory, Dimension::TheNether);
     };
     fNether->setEnabled(false);
-    fNether->setTooltip("The Nether");
+    fNether->setTooltip(TRANS("The Nether"));
     addAndMakeVisible(fNether);
     
     fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
@@ -75,7 +75,7 @@ MapViewComponent::MapViewComponent()
         setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
     };
     fEnd->setEnabled(false);
-    fEnd->setTooltip("The End");
+    fEnd->setTooltip(TRANS("The End"));
     addAndMakeVisible(fEnd);
     
     fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
@@ -1087,7 +1087,7 @@ Rectangle<int> MapViewComponent::regionBoundingBox()
 class SavePNGProgressWindow : public ThreadWithProgressWindow {
 public:
     SavePNGProgressWindow(MapViewComponent *component, OpenGLContext &openGLContext, File file)
-        : ThreadWithProgressWindow("Writing image file", true, false)
+        : ThreadWithProgressWindow(TRANS("Writing image file"), true, false)
         , fComponent(component)
         , fOpenGLContext(openGLContext)
         , fFile(file)
@@ -1175,7 +1175,7 @@ void MapViewComponent::captureToImage()
     
     File file;
     {
-        FileChooser dialog("Choose file name", File(), "*.png", true);
+        FileChooser dialog(TRANS("Choose file name"), File(), "*.png", true);
         if (!dialog.browseForFileToSave(true)) {
             return;
         }
