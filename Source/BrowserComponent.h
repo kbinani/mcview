@@ -3,20 +3,26 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "DirectoryBrowserComponent.h"
 
-class BrowserComponent : public Component {
+class BrowserComponent : public Component, private Timer {
 public:
     BrowserComponent();
     ~BrowserComponent();
     
     void resized() override;
 
-    void addDirectory(File directory, String title = String());
+    void addDirectory(File directory, bool fixed = false);
 
     std::function<void(File)> onSelect;
     std::function<void(File)> onAdd;
+    std::function<void(File)> onRemove;
 
     static int constexpr kDefaultWidth = 214;
 
+private:
+    void removeDirectory(File dir);
+    
+    void timerCallback() override;
+    
 private:
     ScopedPointer<ResizableEdgeComponent> fResizer;
     ScopedPointer<ComponentBoundsConstrainer> fConstrainer;
@@ -25,6 +31,7 @@ private:
     ScopedPointer<Drawable> fAddButtonImage;
     
     Array<DirectoryBrowserComponent *> fBrowsers;
+    Time fTimerStarted;
     
     static int constexpr kResizerWidth = 8;
     

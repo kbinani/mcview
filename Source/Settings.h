@@ -8,7 +8,8 @@ public:
     
     Array<File> directories() const { return fDirectories; }
     void addDirectory(File f);
-    
+    void removeDirectory(File f);
+
     void load();
     void save();
 

@@ -63,6 +63,10 @@ public:
             fSettings->addDirectory(dir);
             fSettings->save();
         };
+        fBrowser->onRemove = [this](File dir) {
+            fSettings->removeDirectory(dir);
+            fSettings->save();
+        };
         addAndMakeVisible(fBrowser);
 
         fSettingsComponent = new SettingsComponent(*fSettings);

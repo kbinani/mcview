@@ -17,6 +17,8 @@
             compile="0" resource="1" file="Resource/baseline_keyboard_arrow_right_white_18dp.png"/>
       <FILE id="zGmQY0" name="baseline_landscape_white_18dp.png" compile="0"
             resource="1" file="Resource/baseline_landscape_white_18dp.png"/>
+      <FILE id="SnAHlo" name="baseline_remove_white_18dp.png" compile="0"
+            resource="1" file="Resource/baseline_remove_white_18dp.png"/>
       <FILE id="IanvsB" name="baseline_settings_white_18dp.png" compile="0"
             resource="1" file="Resource/baseline_settings_white_18dp.png"/>
       <FILE id="ioYbGW" name="baseline_whatshot_white_18dp.png" compile="0"

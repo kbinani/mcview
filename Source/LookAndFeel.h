@@ -2,21 +2,13 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "GraphicsHelper.h"
+#include "DirectoryBrowserComponent.h"
 
 namespace mcview
 {
 
 class LookAndFeel : public juce::LookAndFeel_V4
 {
-    void drawConcertinaPanelHeader (Graphics &g, const Rectangle< int > &area, bool isMouseOver, bool isMouseDown, ConcertinaPanel &panel, Component &component) override
-    {
-        LookAndFeel_V4::drawConcertinaPanelHeader(g, area, isMouseOver, isMouseDown, panel, component);
-        auto const name = component.getName();
-        g.setColour(Colours::white);
-        int const margin = 10;
-        GraphicsHelper::DrawFittedText(g, name, margin, 0, area.getWidth() - 2 * margin, area.getHeight(), Justification::centredLeft, 1);
-    }
-    
     void drawButtonText(Graphics &g, TextButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
     {
         LookAndFeel_V4::drawButtonText(g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);

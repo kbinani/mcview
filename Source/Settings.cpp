@@ -173,3 +173,11 @@ void Settings::addDirectory(File f)
         fDirectories.add(f);
     }
 }
+
+void Settings::removeDirectory(File f)
+{
+    int const idx = fDirectories.indexOf(f);
+    if (idx >= 0) {
+        fDirectories.remove(idx);
+    }
+}
