@@ -1,0 +1,15 @@
+#!/bin/bash
+
+dir=$(cd "$(dirname "$0")"; pwd)
+
+(
+	cd "$dir"
+
+	configuration=Release
+	app="$dir/ext/JUCE/extras/Projucer/Builds/MacOSX/build/$configuration/Projucer.app"
+	(
+		cd "$dir/ext/JUCE/extras/Projucer/Builds/MacOSX"
+		test -d "$app" || xcodebuild -configuration $configuration
+	)
+	open -n -a "$app" --args "$dir/mcview.jucer"
+)
