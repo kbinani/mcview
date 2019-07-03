@@ -118,9 +118,6 @@ void BrowserComponent::browse()
         return;
     }
     File directory = dialog.getResult();
-    if (directory.getChildFile("region").exists() && directory.getChildFile("level.dat").exists()) {
-        directory = directory.getParentDirectory();
-    }
     for (int i = 0; i < fBrowsers.size(); i++) {
         auto b = fBrowsers[i];
         if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
