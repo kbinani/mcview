@@ -24,4 +24,9 @@ private:
     static File ConfigFile();
     
     Array<File> fDirectories;
+
+#if JUCE_MAC
+    static String Bookmark(File f);
+    static File FromBookmark(String s);
+#endif
 };

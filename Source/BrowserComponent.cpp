@@ -1,6 +1,7 @@
 #include "BrowserComponent.h"
 #include "LookAndFeel.h"
 #include "defer.h"
+#include "MainComponent.h"
 
 class Header : public Component
 {
@@ -104,32 +105,45 @@ BrowserComponent::BrowserComponent()
     fAddButton->setImages(fAddButtonImage);
     addAndMakeVisible(fAddButton);
     fAddButton->onClick = [this]() {
-        FileChooser dialog("Choose directory");
-        if (!dialog.browseForDirectory()) {
-            return;
-        }
-        File directory = dialog.getResult();
-        if (directory.getChildFile("region").exists() && directory.getChildFile("level.dat").exists()) {
-            directory = directory.getParentDirectory();
-        }
-        for (int i = 0; i < fBrowsers.size(); i++) {
-            auto b = fBrowsers[i];
-            if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
-                return;
-            }
-        }
-        addDirectory(directory);
+        browse();
     };
 
     setSize(kDefaultWidth, 400);
+}
+
+void BrowserComponent::browse()
+{
+    FileChooser dialog(TRANS("Select Minecraft \"saves\" directory"));
+    if (!dialog.browseForDirectory()) {
+        return;
+    }
+    File directory = dialog.getResult();
+    if (directory.getChildFile("region").exists() && directory.getChildFile("level.dat").exists()) {
+        directory = directory.getParentDirectory();
+    }
+    for (int i = 0; i < fBrowsers.size(); i++) {
+        auto b = fBrowsers[i];
+        if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+            return;
+        }
+    }
+    addDirectory(directory);
 }
 
 BrowserComponent::~BrowserComponent()
 {
 }
 
-void BrowserComponent::addDirectory(File directory, bool fixed)
+void BrowserComponent::addDirectory(File directory)
 {
+#if JUCE_MAC
+    // userHomeDirectory = $HOME/Library/Containers/com.github.kbinani.mcview/Data
+    File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
+    File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+    bool const fixed = directory.getFullPathName() == saves.getFullPathName();
+#else
+    bool const fixed = directory.getFullPathName() == MainComponent::DefaultMinecraftSaveDirectory().getFullPathName();
+#endif
     Header *header = new Header(fPanel, directory, fixed ? "Default" : directory.getFileName(), !fixed);
     DirectoryBrowserComponent* browser = new DirectoryBrowserComponent(directory);
     browser->onSelect = [this](File f) {

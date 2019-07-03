@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="wXW1rF" name="mcview" projectType="guiapp" jucerVersion="5.4.3"
               headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;../../ext/JUCE/modules/juce_core/zip/zlib&#10;../../ext/JUCE/modules/juce_graphics/image_formats"
-              bundleIdentifier="com.github.kbinani.mcview" version="1.3.2"
+              bundleIdentifier="com.github.kbinani.mcview" version="1.3.3"
               reportAppUsage="0" displaySplashScreen="1">
   <MAINGROUP id="IT5WFJ" name="mcview">
     <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
@@ -60,6 +60,8 @@
             file="Source/MapViewComponent.cpp"/>
       <FILE id="JwisrF" name="MapViewComponent.h" compile="0" resource="0"
             file="Source/MapViewComponent.h"/>
+      <FILE id="fhzJTZ" name="mcview.entitlements" compile="0" resource="0"
+            file="Source/mcview.entitlements"/>
       <FILE id="lK838W" name="OverScroller.hpp" compile="0" resource="0"
             file="Source/OverScroller.hpp"/>
       <FILE id="AQJMO6" name="PNGWriter.cpp" compile="1" resource="0" file="Source/PNGWriter.cpp"/>
@@ -75,6 +77,7 @@
             file="Source/RegionToTexture.h"/>
       <FILE id="XfbyUl" name="Settings.cpp" compile="1" resource="0" file="Source/Settings.cpp"/>
       <FILE id="S1ubeo" name="Settings.h" compile="0" resource="0" file="Source/Settings.h"/>
+      <FILE id="djQNzM" name="Settings.mm" compile="1" resource="0" file="Source/Settings.mm"/>
       <FILE id="Uou2h9" name="SettingsComponent.cpp" compile="1" resource="0"
             file="Source/SettingsComponent.cpp"/>
       <FILE id="tFrICH" name="SettingsComponent.h" compile="0" resource="0"
@@ -87,8 +90,8 @@
                bigIcon="FhB8Ex" customPList="&lt;plist&gt;&#10;  &lt;dict&gt;&#10;    &lt;key&gt;LSApplicationCategoryType&lt;/key&gt;&#10;    &lt;string&gt;public.app-category.productivity&lt;/string&gt;&#10;    &lt;key&gt;ITSAppUsesNonExemptEncryption&lt;/key&gt;&#10;    &lt;false/&gt;&#10;    &lt;key&gt;LSMinimumSystemVersion&lt;/key&gt;&#10;    &lt;string&gt;10.11.0&lt;/string&gt;&#10;  &lt;/dict&gt;&#10;&lt;/plist&gt;"
                iosDevelopmentTeamID="XM695N4A7T">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug"/>
-        <CONFIGURATION isDebug="0" name="Release"/>
+        <CONFIGURATION isDebug="1" name="Debug" customXcodeFlags="CODE_SIGN_ENTITLEMENTS=../../Source/mcview.entitlements"/>
+        <CONFIGURATION isDebug="0" name="Release" customXcodeFlags="CODE_SIGN_ENTITLEMENTS=../../Source/mcview.entitlements"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="ext/JUCE/modules"/>

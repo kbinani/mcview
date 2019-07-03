@@ -10,7 +10,8 @@ public:
     
     void resized() override;
 
-    void addDirectory(File directory, bool fixed = false);
+    void addDirectory(File directory);
+    void browse();
 
     std::function<void(File)> onSelect;
     std::function<void(File)> onAdd;

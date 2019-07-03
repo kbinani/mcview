@@ -21,7 +21,7 @@
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent   : public Component
+class MainComponent   : public Component, private AsyncUpdater
 {
 public:
     //==============================================================================
@@ -49,11 +49,18 @@ public:
         addAndMakeVisible(fMapViewComponent);
 
         fBrowser = new BrowserComponent();
+#if !JUCE_MAC
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
+#endif
         Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
             fBrowser->addDirectory(directories[i]);
         }
+#if JUCE_MAC
+        if (directories.size() == 0) {
+            triggerAsyncUpdate();
+        }
+#endif
         fBrowser->onSelect = [this](File dir) {
             fMapViewComponent->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());
@@ -89,11 +96,16 @@ public:
         addAndMakeVisible(fSettingsComponent);
         
 		setSize(1280, 720);
-	}
+    }
 
     ~MainComponent()
     {
         fSettings->save();
+    }
+    
+    void handleAsyncUpdate() override
+    {
+        fBrowser->browse();
     }
 
     //==============================================================================

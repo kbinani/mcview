@@ -107,7 +107,11 @@ void Settings::load()
     GetStringArray(v, kDirectories, dirs);
     fDirectories.clear();
     for (int i = 0; i < dirs.size(); i++) {
+#if JUCE_MAC
+        File f = FromBookmark(dirs[i]);
+#else
         File f(dirs[i]);
+#endif
         if (f.exists() && f.isDirectory()) {
             fDirectories.add(f);
         }
@@ -148,7 +152,15 @@ void Settings::save()
     Array<var> dirs;
     for (int i = 0; i < fDirectories.size(); i++) {
         File f = fDirectories[i];
+#if JUCE_MAC
+        String b = Bookmark(f);
+        if (b.isEmpty()) {
+            continue;
+        }
+        dirs.add(var(b));
+#else
         dirs.add(var(f.getFullPathName()));
+#endif
     }
     obj->setProperty(kDirectories, var(dirs));
 
