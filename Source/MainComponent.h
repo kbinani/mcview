@@ -50,7 +50,7 @@ public:
 
         fBrowser = new BrowserComponent();
 #if !JUCE_MAC
-        fBrowser->addDirectory(DefaultMinecraftSaveDirectory(), "Default");
+        fBrowser->addDirectory(DefaultMinecraftSaveDirectory());
 #endif
         Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
