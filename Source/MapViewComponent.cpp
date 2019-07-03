@@ -115,6 +115,9 @@ MapViewComponent::MapViewComponent()
     fTooltipWindow = new TooltipWindow();
     addAndMakeVisible(fTooltipWindow);
     
+    fRegionUpdateChecker = new RegionUpdateChecker(this);
+    fRegionUpdateChecker->startThread();
+    
     setSize (600, 400);
 }
 
@@ -122,6 +125,8 @@ MapViewComponent::~MapViewComponent()
 {
     fOpenGLContext.detach();
     fPool->removeAllJobs(true, -1);
+    fRegionUpdateChecker->signalThreadShouldExit();
+    fRegionUpdateChecker->waitForThreadToExit(-1);
 }
 
 void MapViewComponent::paint(Graphics &g)
@@ -855,6 +860,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         return;
     }
 
+    fRegionUpdateChecker->setDirectory(directory, dim);
+
     fOverworld->setEnabled(dim != Dimension::Overworld);
     fNether->setEnabled(dim != Dimension::TheNether);
     fEnd->setEnabled(dim != Dimension::TheEnd);
@@ -1270,4 +1277,67 @@ MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
     l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
 
     return l;
+}
+
+MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)
+    : Thread("RegionUpdateChecker")
+    , comp(comp)
+{
+}
+
+void MapViewComponent::RegionUpdateChecker::run()
+{
+    while (!currentThreadShouldExit()) {
+        Thread::sleep(1000);
+        File d;
+        Dimension dim;
+        fSection.enter();
+        d = fDirectory;
+        dim = fDim;
+        fSection.exit();
+        
+        if (!d.exists()) {
+            continue;
+        }
+
+        File const root = DimensionDirectory(d, dim);
+        
+        auto i = fUpdated.begin();
+        while (i.next()) {
+            File f(i.getKey());
+            if (f.getParentDirectory().getFullPathName() != root.getFullPathName()) {
+                fUpdated.remove(i.getKey());
+            }
+        }
+        
+        DirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
+        std::vector<File> files;
+        while (it.next()) {
+            File f = it.getFile();
+            auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+            if (!r) {
+                continue;
+            }
+            Time modified = f.getLastModificationTime();
+            String fullpath = f.getFullPathName();
+            if (fUpdated.contains(fullpath)) {
+                if (fUpdated[fullpath].toMilliseconds() < modified.toMilliseconds()) {
+                    fUpdated.set(fullpath, modified);
+                    //TODO: notify
+                }
+            } else {
+                fUpdated.set(fullpath, modified);
+            }
+        }
+    }
+}
+
+void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim)
+{
+    fSection.enter();
+    defer {
+        fSection.exit();
+    };
+    fDirectory = f;
+    fDim = dim;
 }

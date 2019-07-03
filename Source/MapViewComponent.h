@@ -191,6 +191,21 @@ private:
         static GLsizei const kNumPoints = 4;
     };
 
+    class RegionUpdateChecker : public Thread
+    {
+    public:
+        explicit RegionUpdateChecker(MapViewComponent *component);
+        void run() override;
+        void setDirectory(File f, Dimension dim);
+
+    private:
+        CriticalSection fSection;
+        File fDirectory;
+        Dimension fDim;
+        HashMap<String, Time> fUpdated;
+        MapViewComponent * const comp;
+    };
+
 private:
     OpenGLContext fOpenGLContext;
     File fWorldDirectory;
@@ -251,6 +266,8 @@ private:
     
     Atomic<bool> fEnableBiome;
     Atomic<int> fBiomeBlend;
+    
+    ScopedPointer<RegionUpdateChecker> fRegionUpdateChecker;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
