@@ -11,3 +11,4 @@ language: Japanese
 "Biome" = "バイオーム"
 "Enable" = "有効"
 "Blend" = "重なり度合い"
+"Select Minecraft \"saves\" directory" = "Minecraft の saves ディレクトリを選択してください"
