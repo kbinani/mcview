@@ -293,7 +293,8 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
     int const minZ = region.minBlockZ();
 
     bool error = false;
-    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job, dim](mcfile::Chunk const& chunk) {
+    bool didset = false;
+    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -352,18 +353,24 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                         uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
                         Biome biome = ToBiome(chunk.biomeAt(x, z));
                         pixelsPtr[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block);
+                        didset = true;
                         break;
                     }
                 }
                 if (all_transparent) {
                     pixelsPtr[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air);
+                    didset = true;
                 }
             }
         }
         return true;
     });
 
-    completion(pixels.release());
+    if (didset) {
+        completion(pixels.release());
+    } else {
+        completion(nullptr);
+    }
 }
 
 RegionToTexture::RegionToTexture(File const& mcaFile, Region region, Dimension dim)
