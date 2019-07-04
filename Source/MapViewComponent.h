@@ -51,6 +51,8 @@ public:
     void mouseUp(MouseEvent const& event) override;
 
     void setWorldDirectory(File directory, Dimension dim);
+    void queueTextureLoading(std::vector<File> files);
+    
     void setBrowserOpened(bool opened);
 
     struct LookAt {
@@ -203,7 +205,7 @@ private:
         File fDirectory;
         Dimension fDim;
         HashMap<String, Time> fUpdated;
-        MapViewComponent * const comp;
+        MapViewComponent * const fMapView;
     };
 
 private:

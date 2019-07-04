@@ -562,8 +562,12 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fJobs.erase(fJobs.begin() + i);
             auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
             cache->load(j->fPixels);
-            fTextures.insert(std::make_pair(j->fRegion, cache));
-            
+            auto before = fTextures.find(j->fRegion);
+            if (before != fTextures.end()) {
+                cache->fLoadTime = before->second->fLoadTime;
+            }
+            fTextures[j->fRegion] = cache;
+
             fLoadingRegionsLock.enter();
             auto it = fLoadingRegions.find(j->fRegion);
             if (it != fLoadingRegions.end()) {
@@ -877,46 +881,64 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fTextures.clear();
     }, true);
 
-    fLoadingRegionsLock.enter();
+    {
+        ScopedLock lk(fLoadingRegionsLock);
 
-    fLoadingRegions.clear();
-    fWorldDirectory = directory;
-    fDimension = dim;
+        fLoadingRegions.clear();
+        fWorldDirectory = directory;
+        fDimension = dim;
 
-    int minX = 0;
-    int maxX = 0;
-    int minZ = 0;
-    int maxZ = 0;
+        int minX = 0;
+        int maxX = 0;
+        int minZ = 0;
+        int maxZ = 0;
 
-    DirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
-    std::vector<File> files;
-    while (it.next()) {
-        File f = it.getFile();
-        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
-        if (!r) {
-            continue;
+        DirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
+        std::vector<File> files;
+        while (it.next()) {
+            File f = it.getFile();
+            auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+            if (!r) {
+                continue;
+            }
+            minX = std::min(minX, r->fX);
+            maxX = std::max(maxX, r->fX);
+            minZ = std::min(minZ, r->fZ);
+            maxZ = std::max(maxZ, r->fZ);
+            files.push_back(f);
         }
-        minX = std::min(minX, r->fX);
-        maxX = std::max(maxX, r->fX);
-        minZ = std::min(minZ, r->fZ);
-        maxZ = std::max(maxZ, r->fZ);
-        files.push_back(f);
+        
+        LookAt const lookAt = fLookAt.get();
+        LookAt next = lookAt;
+        next.fX = 0;
+        next.fZ = 0;
+        fLookAt = next;
+        fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+
+        std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
+            auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
+            auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
+            auto distanceA = DistanceSqBetweenRegionAndLookAt(next, *rA);
+            auto distanceB = DistanceSqBetweenRegionAndLookAt(next, *rB);
+            return distanceA < distanceB;
+        });
+        
+        queueTextureLoading(files);
     }
     
-    LookAt const lookAt = fLookAt.get();
-    LookAt next = lookAt;
-    next.fX = 0;
-    next.fZ = 0;
-    fLookAt = next;
-    fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+    if (fPool->getNumJobs() > 0) {
+        fOpenGLContext.setContinuousRepainting(true);
+    }
+}
 
-    std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
-        auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
-        auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
-        auto distanceA = DistanceSqBetweenRegionAndLookAt(next, *rA);
-        auto distanceB = DistanceSqBetweenRegionAndLookAt(next, *rB);
-        return distanceA < distanceB;
-    });
+void MapViewComponent::queueTextureLoading(std::vector<File> files)
+{
+    if (files.empty()) {
+        return;
+    }
+
+    ScopedLock lk(fLoadingRegionsLock);
+    fLoadingFinished = false;
     
     for (File const& f : files) {
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
@@ -924,12 +946,6 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
         fLoadingRegions.insert(job->fRegion);
-    }
-    
-    fLoadingRegionsLock.exit();
-    
-    if (fPool->getNumJobs() > 0) {
-        fOpenGLContext.setContinuousRepainting(true);
     }
 }
 
@@ -1281,7 +1297,7 @@ MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
 
 MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)
     : Thread("RegionUpdateChecker")
-    , comp(comp)
+    , fMapView(comp)
 {
 }
 
@@ -1323,11 +1339,16 @@ void MapViewComponent::RegionUpdateChecker::run()
             if (fUpdated.contains(fullpath)) {
                 if (fUpdated[fullpath].toMilliseconds() < modified.toMilliseconds()) {
                     fUpdated.set(fullpath, modified);
-                    //TODO: notify
+                    files.push_back(f);
                 }
             } else {
                 fUpdated.set(fullpath, modified);
             }
+        }
+        
+        if (!files.empty()) {
+            fMapView->queueTextureLoading(files);
+            fMapView->fOpenGLContext.setContinuousRepainting(true);
         }
     }
 }
