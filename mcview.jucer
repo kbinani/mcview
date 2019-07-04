@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="wXW1rF" name="mcview" projectType="guiapp" jucerVersion="5.4.3"
               headerPath="../../ext/libminecraft-file/include&#10;../../ext/colormap-shaders/include&#10;../../ext/JUCE/modules/juce_core/zip/zlib&#10;../../ext/JUCE/modules/juce_graphics/image_formats"
-              bundleIdentifier="com.github.kbinani.mcview" version="1.3.3"
+              bundleIdentifier="com.github.kbinani.mcview" version="1.4.0"
               reportAppUsage="0" displaySplashScreen="1">
   <MAINGROUP id="IT5WFJ" name="mcview">
     <GROUP id="{C020BAC6-4F7F-E27C-2D09-9766E9310B88}" name="Resource">
