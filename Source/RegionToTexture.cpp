@@ -342,6 +342,9 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     if (it == kBlockToColor.end()) {
 #if JUCE_DEBUG
                         static std::set<std::string> unknown_blocks;
+                        static CriticalSection unknown_blocks_cs;
+                        
+                        ScopedLock lk(unknown_blocks_cs);
                         auto b = chunk.blockAt(x, y, z);
                         auto name = b->fName;
                         if (unknown_blocks.find(name) == unknown_blocks.end()) {
