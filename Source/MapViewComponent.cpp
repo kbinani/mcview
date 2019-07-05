@@ -118,6 +118,7 @@ MapViewComponent::MapViewComponent()
     fRegionUpdateChecker = new RegionUpdateChecker(this);
     fRegionUpdateChecker->startThread();
     
+    fSize = Point<int>(600, 400);
     setSize (600, 400);
 }
 
@@ -523,8 +524,9 @@ void MapViewComponent::renderOpenGL()
 {
     LookAt lookAt = clampedLookAt();
     auto desktopScale = (float)fOpenGLContext.getRenderingScale();
-    int const width = getWidth() * desktopScale;
-    int const height = getHeight() * desktopScale;
+    Point<int> size = fSize.get();
+    int const width = size.x * desktopScale;
+    int const height = size.y * desktopScale;
     lookAt.fBlocksPerPixel /= desktopScale;
     render(width, height, lookAt, true);
 }
@@ -787,8 +789,9 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
 void MapViewComponent::drawBackground()
 {
-    const int width = getWidth();
-    const int height = getHeight();
+    Point<int> size = fSize.get();
+    const int width = size.x;
+    const int height = size.y;
     const float desktopScale = (float)fOpenGLContext.getRenderingScale();
 
     std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fOpenGLContext,
@@ -951,8 +954,9 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files)
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
 {
-    float const width = getWidth();
-    float const height = getHeight();
+    Point<int> size = fSize.get();
+    float const width = size.x;
+    float const height = size.y;
     float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
     float const bz = lookAt.fZ + (p.y - height / 2) * lookAt.fBlocksPerPixel;
     return Point<float>(bx, bz);
@@ -960,8 +964,9 @@ Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt l
 
 Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const
 {
-    float const width = getWidth();
-    float const height = getHeight();
+    Point<int> size = fSize.get();
+    float const width = size.x;
+    float const height = size.y;
     float const x = (p.x - lookAt.fX) / lookAt.fBlocksPerPixel + width / 2;
     float const y = (p.y - lookAt.fZ) / lookAt.fBlocksPerPixel + height / 2;
     return Point<float>(x, y);
@@ -1089,7 +1094,8 @@ void MapViewComponent::triggerRepaint()
 void MapViewComponent::resized()
 {
     int const width = getWidth();
-
+    fSize = Point<int>(getWidth(), getHeight());
+    
     {
         int y = kMargin;
         fBrowserOpenButton->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;

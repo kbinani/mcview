@@ -220,6 +220,7 @@ private:
 
     Atomic<LookAt> fLookAt;
     Atomic<Rectangle<int>> fVisibleRegions;
+    Atomic<Point<int>> fSize;
 
     static float const kMaxScale;
     static float const kMinScale;
