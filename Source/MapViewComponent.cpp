@@ -928,10 +928,6 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         
         queueTextureLoading(files);
     }
-    
-    if (fPool->getNumJobs() > 0) {
-        fOpenGLContext.setContinuousRepainting(true);
-    }
 }
 
 void MapViewComponent::queueTextureLoading(std::vector<File> files)
@@ -950,6 +946,8 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files)
         fPool->addJob(job, false);
         fLoadingRegions.insert(job->fRegion);
     }
+    
+    fOpenGLContext.setContinuousRepainting(true);
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
@@ -1249,7 +1247,9 @@ void MapViewComponent::handleAsyncUpdate()
 
 void MapViewComponent::timerCallback()
 {
-    fOpenGLContext.setContinuousRepainting(false);
+    fOpenGLContext.executeOnGLThread([](OpenGLContext &ctx) {
+        ctx.setContinuousRepainting(false);
+    }, false);
     stopTimer();
 }
 
@@ -1354,7 +1354,6 @@ void MapViewComponent::RegionUpdateChecker::run()
         
         if (!files.empty()) {
             fMapView->queueTextureLoading(files);
-            fMapView->fOpenGLContext.setContinuousRepainting(true);
         }
     }
 }
