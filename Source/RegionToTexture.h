@@ -58,7 +58,7 @@ public:
     File const fRegionFile;
     Region const fRegion;
     Dimension const fDimension;
-    ScopedPointer<PixelARGB> fPixels;
+    std::unique_ptr<PixelARGB[]> fPixels;
     
     static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
 

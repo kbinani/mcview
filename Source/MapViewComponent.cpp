@@ -563,7 +563,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             ScopedPointer<RegionToTexture> j(job.release());
             fJobs.erase(fJobs.begin() + i);
             auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
-            cache->load(j->fPixels);
+            cache->load(j->fPixels.get());
             auto before = fTextures.find(j->fRegion);
             if (before != fTextures.end()) {
                 cache->fLoadTime = before->second->fLoadTime;
