@@ -534,15 +534,95 @@ void MapViewComponent::renderOpenGL()
     render(width, height, lookAt, true);
 }
 
+template <typename T>
+static T Clamp(T v, T min, T max)
+{
+    if (v < min) {
+        return min;
+    } else if (max < v) {
+        return max;
+    } else {
+        return v;
+    }
+}
+
 static float CubicEaseInOut(float t, float start, float end, float duration) {
     float b = start;
     float c = end - start;
-    t  /= duration / 2.0;
-    if (t < 1.0) {
-        return c / 2.0 * t * t * t + b;
+    t  /= duration / 2.0f;
+    if (t < 1.0f) {
+        return c / 2.0f * t * t * t + b;
     } else {
-        t = t - 2.0;
-        return c / 2.0 * (t* t * t + 2.0) + b;
+        t = t - 2.0f;
+        return c / 2.0f * (t * t * t + 2.0f) + b;
+    }
+}
+
+void MapViewComponent::instantiateTextures(LookAt lookAt)
+{
+    bool loadingFinished = false;
+
+    std::vector<std::pair<RegionToTexture*, float>> distances;
+    for (int i = 0; i < fJobs.size(); i++) {
+        auto& job = fJobs[i];
+        if (fPool->contains(job.get())) {
+            continue;
+        }
+        float distance = DistanceSqBetweenRegionAndLookAt(lookAt, job->fRegion);
+        distances.emplace_back(job.get(), distance);
+    }
+    std::sort(distances.begin(), distances.end(), [](auto const& a, auto const& b) {
+        return a.second < b.second;
+    });
+
+    int constexpr kNumLoadTexturesPerFrame = 16;
+    for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
+        RegionToTexture* job = distances[i].first;
+        fPool->removeJob(job, false, 0);
+
+        ScopedPointer<RegionToTexture> j;
+        for (auto it = fJobs.begin(); it != fJobs.end(); it++) {
+            if (it->get() == job) {
+                j.reset(it->release());
+                fJobs.erase(it);
+                break;
+            }
+        }
+
+        assert(j);
+        if (!j) {
+            continue;
+        }
+
+        auto before = fTextures.find(j->fRegion);
+        if (j->fPixels) {
+            auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
+            cache->load(j->fPixels.get());
+            if (before != fTextures.end()) {
+                cache->fLoadTime = before->second->fLoadTime;
+            }
+            fTextures[j->fRegion] = cache;
+        } else {
+            if (before != fTextures.end()) {
+                fTextures.erase(before);
+            }
+        }
+
+        fLoadingRegionsLock.enter();
+        auto it = fLoadingRegions.find(j->fRegion);
+        if (it != fLoadingRegions.end()) {
+            fLoadingRegions.erase(it);
+        }
+        if (fLoadingRegions.empty()) {
+            fLoadingFinished = true;
+            loadingFinished = true;
+        }
+        fLoadingRegionsLock.exit();
+    }
+
+    if (loadingFinished) {
+        startTimer(kFadeDurationMS);
+        triggerAsyncUpdate();
     }
 }
 
@@ -556,73 +636,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
     glViewport(0, 0, width, height);
 
-    {
-        bool loadingFinished = false;
-
-        std::vector<std::pair<RegionToTexture*, float>> distances;
-        for (int i = 0; i < fJobs.size(); i++) {
-            auto& job = fJobs[i];
-            if (fPool->contains(job.get())) {
-                continue;
-            }
-            float distance = DistanceSqBetweenRegionAndLookAt(lookAt, job->fRegion);
-            distances.emplace_back(job.get(), distance);
-        }
-        std::sort(distances.begin(), distances.end(), [](auto const& a, auto const& b) {
-            return a.second < b.second;
-        });
-        
-        int constexpr kNumLoadTexturesPerFrame = 16;
-        for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
-            RegionToTexture *job = distances[i].first;
-            fPool->removeJob(job, false, 0);
-
-            ScopedPointer<RegionToTexture> j;
-            for (auto it = fJobs.begin(); it != fJobs.end(); it++) {
-                if (it->get() == job) {
-                    j.reset(it->release());
-                    fJobs.erase(it);
-                    break;
-                }
-            }
-
-            assert(j);
-            if (!j) {
-                continue;
-            }
-
-            auto before = fTextures.find(j->fRegion);
-            if (j->fPixels) {
-                auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
-                cache->load(j->fPixels.get());
-                if (before != fTextures.end()) {
-                    cache->fLoadTime = before->second->fLoadTime;
-                }
-                fTextures[j->fRegion] = cache;
-            } else {
-                if (before != fTextures.end()) {
-                    fTextures.erase(before);
-                }
-            }
-            
-            fLoadingRegionsLock.enter();
-            auto it = fLoadingRegions.find(j->fRegion);
-            if (it != fLoadingRegions.end()) {
-                fLoadingRegions.erase(it);
-            }
-            if (fLoadingRegions.empty()) {
-                fLoadingFinished = true;
-                loadingFinished = true;
-            }
-            fLoadingRegionsLock.exit();
-        }
-
-        if (loadingFinished) {
-            startTimer(kFadeDurationMS);
-            triggerAsyncUpdate();
-        }
-    }
-    
     if (enableUI) {
         drawBackground();
     }
@@ -696,9 +709,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
         if (fUniforms->fade.get() != nullptr) {
             if (enableUI) {
-                double const seconds = (now.toMilliseconds() - cache->fLoadTime.toMilliseconds()) / 1000.0;
-                GLfloat const fadeSeconds = kFadeDurationMS / 1000.0f;
-                GLfloat const a = seconds > fadeSeconds ? 1.0f : CubicEaseInOut(seconds / fadeSeconds, 0.0f, 1.0f, 1.0f);
+                int const ms = Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
+                GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
                 fUniforms->fade->set(a);
             } else {
                 fUniforms->fade->set(1.0f);
@@ -811,6 +823,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
         fAttributes->disable(fOpenGLContext);
     }
+
+    instantiateTextures(lookAt);
 }
 
 void MapViewComponent::drawBackground()

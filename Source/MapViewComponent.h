@@ -85,6 +85,7 @@ private:
     LookAt clampLookAt(LookAt lookAt) const;
     LookAt clampedLookAt() const;
     void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
+    void instantiateTextures(LookAt lookAt);
 
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
