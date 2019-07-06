@@ -554,6 +554,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
     glViewport(0, 0, width, height);
 
     {
+        bool loadingFinished = false;
         for (long i = (long)fJobs.size() - 1; i >= 0; i--) {
             auto& job = fJobs[i];
             if (fPool->contains(job.get())) {
@@ -581,14 +582,17 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             if (it != fLoadingRegions.end()) {
                 fLoadingRegions.erase(it);
             }
+            if (fLoadingRegions.empty()) {
+                fLoadingFinished = true;
+                loadingFinished = true;
+            }
             fLoadingRegionsLock.exit();
             
             break; // load only one textrue per frame
         }
         
-        if (fPool->getNumJobs() == 0 && !fLoadingFinished.get()) {
+        if (loadingFinished) {
             startTimer(kFadeDurationMS);
-            fLoadingFinished = true;
             triggerAsyncUpdate();
         }
     }
