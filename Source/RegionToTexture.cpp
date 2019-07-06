@@ -407,7 +407,6 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
 {
     File cache = CacheFile(fRegionFile);
     if (fUseCache && cache.existsAsFile()) {
-        PNGImageFormat fmt;
         FileInputStream stream(cache);
         GZIPDecompressorInputStream ungzip(stream);
         fPixels.reset(new PixelARGB[512 * 512]);
