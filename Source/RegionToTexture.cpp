@@ -379,8 +379,12 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
 
 File RegionToTexture::CacheFile(File const& file)
 {
+#if JUCE_WINDOWS
+	File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("mcview").getChildFile("cache");
+#else
     File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
-    if (!tmp.exists()) {
+#endif
+	if (!tmp.exists()) {
         tmp.createDirectory();
     }
     String hash = String("v0.") + String(file.getParentDirectory().getFullPathName().hashCode64());
