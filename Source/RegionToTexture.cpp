@@ -376,13 +376,27 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
     }
 }
 
-RegionToTexture::RegionToTexture(File const& mcaFile, Region region, Dimension dim)
+File RegionToTexture::CacheFile(File const& file)
+{
+    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
+    if (!tmp.exists()) {
+        tmp.createDirectory();
+    }
+    String hash = String("v0.") + String(file.getParentDirectory().getFullPathName().hashCode64());
+    File dir = tmp.getChildFile(hash);
+    if (!dir.exists()) {
+        dir.createDirectory();
+    }
+    return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
+}
+
+RegionToTexture::RegionToTexture(File const& mcaFile, Region region, Dimension dim, bool useCache)
     : ThreadPoolJob(mcaFile.getFileName())
     , fRegionFile(mcaFile)
     , fRegion(region)
     , fDimension(dim)
+    , fUseCache(useCache)
 {
-    
 }
 
 RegionToTexture::~RegionToTexture()
@@ -391,6 +405,19 @@ RegionToTexture::~RegionToTexture()
 
 ThreadPoolJob::JobStatus RegionToTexture::runJob()
 {
+    File cache = CacheFile(fRegionFile);
+    if (fUseCache && cache.existsAsFile()) {
+        PNGImageFormat fmt;
+        FileInputStream stream(cache);
+        GZIPDecompressorInputStream ungzip(stream);
+        fPixels.reset(new PixelARGB[512 * 512]);
+        int expectedBytes = sizeof(PixelARGB) * 512 * 512;
+        if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
+            fPixels.reset();
+        }
+        return ThreadPoolJob::jobHasFinished;
+    }
+
     auto region = mcfile::Region::MakeRegion(fRegionFile.getFullPathName().toStdString());
     if (!region) {
         return ThreadPoolJob::jobHasFinished;
@@ -398,5 +425,12 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
     Load(*region, this, fDimension, [this](PixelARGB *pixels) {
         fPixels.reset(pixels);
     });
+    FileOutputStream out(cache);
+    out.truncate();
+    out.setPosition(0);
+    GZIPCompressorOutputStream gzip(out, 9);
+    if (fPixels) {
+        gzip.write(fPixels.get(), sizeof(PixelARGB) * 512 * 512);
+    }
     return ThreadPoolJob::jobHasFinished;
 }

@@ -48,17 +48,19 @@ inline Biome ToBiome(mcfile::biomes::BiomeId b)
 
 class RegionToTexture : public ThreadPoolJob {
 public:
-    RegionToTexture(File const& mcaFile, Region region, Dimension dim);
+    RegionToTexture(File const& mcaFile, Region region, Dimension dim, bool useCache);
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
     static void Load(mcfile::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(PixelARGB *)> completion);
+    static File CacheFile(File const& file);
     
 public:
     File const fRegionFile;
     Region const fRegion;
     Dimension const fDimension;
     std::unique_ptr<PixelARGB[]> fPixels;
+    bool const fUseCache;
     
     static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
 

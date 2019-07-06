@@ -932,11 +932,11 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
             return distanceA < distanceB;
         });
         
-        queueTextureLoading(files);
+        queueTextureLoading(files, true);
     }
 }
 
-void MapViewComponent::queueTextureLoading(std::vector<File> files)
+void MapViewComponent::queueTextureLoading(std::vector<File> files, bool useCache)
 {
     if (files.empty()) {
         return;
@@ -947,7 +947,7 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files)
     
     for (File const& f : files) {
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
-        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), fDimension);
+        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), fDimension, useCache);
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
         fLoadingRegions.insert(job->fRegion);
@@ -1359,7 +1359,7 @@ void MapViewComponent::RegionUpdateChecker::run()
         }
         
         if (!files.empty()) {
-            fMapView->queueTextureLoading(files);
+            fMapView->queueTextureLoading(files, false);
         }
     }
 }
