@@ -84,6 +84,7 @@ private:
     void captureToImage();
     LookAt clampLookAt(LookAt lookAt) const;
     LookAt clampedLookAt() const;
+    void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
 
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);

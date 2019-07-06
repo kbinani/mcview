@@ -969,7 +969,21 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension di
         return;
     }
 
-    ScopedLock lk(fLoadingRegionsLock);
+    if (OpenGLContext::getCurrentContext() == &fOpenGLContext) {
+        queueTextureLoadingImpl(fOpenGLContext, files, dim, useCache);
+    } else {
+        fOpenGLContext.executeOnGLThread([this, files, dim, useCache](OpenGLContext &ctx) {
+            queueTextureLoadingImpl(ctx, files, dim, useCache);
+        }, false);
+    }
+}
+
+void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache)
+{
+    fLoadingRegionsLock.enter();
+    defer {
+        fLoadingRegionsLock.exit();
+    };
     fLoadingFinished = false;
     
     for (File const& f : files) {
@@ -980,7 +994,7 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension di
         fLoadingRegions.insert(job->fRegion);
     }
     
-    fOpenGLContext.setContinuousRepainting(true);
+    ctx.setContinuousRepainting(true);
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
@@ -1349,10 +1363,14 @@ void MapViewComponent::RegionUpdateChecker::run()
         Thread::sleep(1000);
         File d;
         Dimension dim;
-        fSection.enter();
-        d = fDirectory;
-        dim = fDim;
-        fSection.exit();
+        {
+            fSection.enter();
+            defer {
+                fSection.exit();
+            };
+            d = fDirectory;
+            dim = fDim;
+        }
         
         if (!d.exists()) {
             continue;
