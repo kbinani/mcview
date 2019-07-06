@@ -556,25 +556,38 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
     {
         bool loadingFinished = false;
 
-        long idx = -1;
-        float minDistance = FLT_MAX;
-        for (long i = 0; i < fJobs.size(); i++) {
+        std::vector<std::pair<RegionToTexture*, float>> distances;
+        for (int i = 0; i < fJobs.size(); i++) {
             auto& job = fJobs[i];
             if (fPool->contains(job.get())) {
                 continue;
             }
             float distance = DistanceSqBetweenRegionAndLookAt(lookAt, job->fRegion);
-            if (distance < minDistance) {
-                minDistance = distance;
-                idx = i;
-            }
+            distances.emplace_back(job.get(), distance);
         }
+        std::sort(distances.begin(), distances.end(), [](auto const& a, auto const& b) {
+            return a.second < b.second;
+        });
         
-        if (idx >= 0) {
-            auto& job = fJobs[idx];
-            fPool->removeJob(job.get(), false, 0);
-            ScopedPointer<RegionToTexture> j(job.release());
-            fJobs.erase(fJobs.begin() + idx);
+        int constexpr kNumLoadTexturesPerFrame = 16;
+        for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
+            RegionToTexture *job = distances[i].first;
+            fPool->removeJob(job, false, 0);
+
+            ScopedPointer<RegionToTexture> j;
+            for (auto it = fJobs.begin(); it != fJobs.end(); it++) {
+                if (it->get() == job) {
+                    j.reset(it->release());
+                    fJobs.erase(it);
+                    break;
+                }
+            }
+
+            assert(j);
+            if (!j) {
+                continue;
+            }
+
             auto before = fTextures.find(j->fRegion);
             if (j->fPixels) {
                 auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
@@ -588,7 +601,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
                     fTextures.erase(before);
                 }
             }
-
+            
             fLoadingRegionsLock.enter();
             auto it = fLoadingRegions.find(j->fRegion);
             if (it != fLoadingRegions.end()) {
@@ -600,7 +613,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             }
             fLoadingRegionsLock.exit();
         }
-        
+
         if (loadingFinished) {
             startTimer(kFadeDurationMS);
             triggerAsyncUpdate();
