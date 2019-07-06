@@ -1344,6 +1344,7 @@ MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
 MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)
     : Thread("RegionUpdateChecker")
     , fMapView(comp)
+	, fDim(Dimension::Overworld)
 {
 }
 
@@ -1354,10 +1355,7 @@ void MapViewComponent::RegionUpdateChecker::run()
         File d;
         Dimension dim;
         {
-            fSection.enter();
-            defer {
-                fSection.exit();
-            };
+			ScopedLock lk(fSection);
             d = fDirectory;
             dim = fDim;
         }
@@ -1404,10 +1402,7 @@ void MapViewComponent::RegionUpdateChecker::run()
 
 void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim)
 {
-    fSection.enter();
-    defer {
-        fSection.exit();
-    };
-    fDirectory = f;
+	ScopedLock lk(fSection);
+	fDirectory = f;
     fDim = dim;
 }
