@@ -295,6 +295,9 @@ void MapViewComponent::updateShader()
 
         vec4 blend(vec4 bg, vec4 fg) {
             float a = fg.a + bg.a * (1.0 - fg.a);
+            if (a == 0.0) {
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            }
             float r = (fg.r * fg.a + bg.r * bg.a * (1.0 - fg.a)) / a;
             float g = (fg.g * fg.a + bg.g * bg.a * (1.0 - fg.a)) / a;
             float b = (fg.b * fg.a + bg.b * bg.a * (1.0 - fg.a)) / a;
