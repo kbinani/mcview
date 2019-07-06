@@ -51,7 +51,7 @@ public:
     void mouseUp(MouseEvent const& event) override;
 
     void setWorldDirectory(File directory, Dimension dim);
-    void queueTextureLoading(std::vector<File> files, bool useCache);
+    void queueTextureLoading(std::vector<File> files, Dimension dim, bool useCache);
     
     void setBrowserOpened(bool opened);
 
