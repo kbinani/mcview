@@ -638,27 +638,17 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
     fShader->use();
     auto const& textures = fTextures;
-    Rectangle<float> viewport(0, 0, width, height);
     
     for (auto it : textures) {
         auto cache = it.second;
-
-        int const bx = cache->fRegion.first * 512;
-        int const bz = cache->fRegion.second * 512;
-        Point<float> topLeft = getViewCoordinateFromMap(Point<float>(bx, bz), lookAt);
-        Rectangle<float> textureBoundsInView(topLeft.x, topLeft.y, 512.0f / lookAt.fBlocksPerPixel, 512.0f / lookAt.fBlocksPerPixel);
-        if (!viewport.intersects(textureBoundsInView)) {
-            continue;
-        }
-        
         if (fUniforms->blocksPerPixel.get() != nullptr) {
             fUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
         }
         if (fUniforms->Xr.get() != nullptr) {
-            fUniforms->Xr->set((GLfloat)bx);
+            fUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
         }
         if (fUniforms->Zr.get() != nullptr) {
-            fUniforms->Zr->set((GLfloat)bz);
+            fUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
         }
         if (fUniforms->width.get() != nullptr) {
             fUniforms->width->set((GLfloat)width);
