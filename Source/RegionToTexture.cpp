@@ -294,7 +294,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
 
     bool error = false;
     bool didset = false;
-    region.loadAllChunks(error, [pixelsPtr, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
+    region.loadAllChunks(error, [&pixels, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -305,6 +305,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                 int const idx = (z - minZ) * width + (x - minX);
                 assert(0 <= idx && idx < width * height);
                 if (job->shouldExit()) {
+                    pixels.reset();
                     return false;
                 }
                 uint8_t waterDepth = 0;
@@ -355,13 +356,13 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     } else {
                         uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
                         Biome biome = ToBiome(chunk.biomeAt(x, z));
-                        pixelsPtr[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block);
+                        pixels[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block);
                         didset = true;
                         break;
                     }
                 }
                 if (all_transparent) {
-                    pixelsPtr[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air);
+                    pixels[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air);
                     didset = true;
                 }
             }
@@ -424,6 +425,9 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
     Load(*region, this, fDimension, [this](PixelARGB *pixels) {
         fPixels.reset(pixels);
     });
+    if (shouldExit()) {
+        return ThreadPoolJob::jobHasFinished;
+    }
     FileOutputStream out(cache);
     out.truncate();
     out.setPosition(0);
