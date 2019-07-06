@@ -86,7 +86,7 @@ private:
     LookAt clampedLookAt() const;
 
     static ThreadPool* CreateThreadPool();
-    static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region);
+    static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
 
     struct Uniforms
     {

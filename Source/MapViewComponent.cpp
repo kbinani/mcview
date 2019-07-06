@@ -555,14 +555,26 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
     {
         bool loadingFinished = false;
-        for (long i = (long)fJobs.size() - 1; i >= 0; i--) {
+
+        long idx = -1;
+        float minDistance = FLT_MAX;
+        for (long i = 0; i < fJobs.size(); i++) {
             auto& job = fJobs[i];
             if (fPool->contains(job.get())) {
                 continue;
             }
+            float distance = DistanceSqBetweenRegionAndLookAt(lookAt, job->fRegion);
+            if (distance < minDistance) {
+                minDistance = distance;
+                idx = i;
+            }
+        }
+        
+        if (idx >= 0) {
+            auto& job = fJobs[idx];
             fPool->removeJob(job.get(), false, 0);
             ScopedPointer<RegionToTexture> j(job.release());
-            fJobs.erase(fJobs.begin() + i);
+            fJobs.erase(fJobs.begin() + idx);
             auto before = fTextures.find(j->fRegion);
             if (j->fPixels) {
                 auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
@@ -587,8 +599,6 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
                 loadingFinished = true;
             }
             fLoadingRegionsLock.exit();
-            
-            break; // load only one textrue per frame
         }
         
         if (loadingFinished) {
@@ -862,10 +872,10 @@ void MapViewComponent::openGLContextClosing()
     fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->iBuffer);
 }
 
-float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, mcfile::Region const& region)
+float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region)
 {
-    float const regionCenterX = region.fX * 512 - 256;
-    float const regionCenterZ = region.fZ * 512 - 256;
+    float const regionCenterX = region.first * 512 - 256;
+    float const regionCenterZ = region.second * 512 - 256;
     float const dx = regionCenterX - lookAt.fX;
     float const dz = regionCenterZ - lookAt.fZ;
     return dx * dx + dz * dz;
@@ -931,8 +941,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
             auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
             auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
-            auto distanceA = DistanceSqBetweenRegionAndLookAt(next, *rA);
-            auto distanceB = DistanceSqBetweenRegionAndLookAt(next, *rB);
+            auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
+            auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
             return distanceA < distanceB;
         });
         
