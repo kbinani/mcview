@@ -1280,7 +1280,10 @@ void MapViewComponent::handleAsyncUpdate()
 
 void MapViewComponent::timerCallback()
 {
-    fOpenGLContext.executeOnGLThread([](OpenGLContext &ctx) {
+    fOpenGLContext.executeOnGLThread([this](OpenGLContext &ctx) {
+        if (fPool->getNumJobs() || !fLoadingFinished.get()) {
+            return;
+        }
         ctx.setContinuousRepainting(false);
     }, false);
     stopTimer();
