@@ -393,8 +393,8 @@ void MapViewComponent::updateShader()
         if (enableBiome == 0) {
             return waterColorFromBiome(-1);
         }
-        vec4 sumColor = vec4(0.0, 0.0, 0.0, 0.0);
         vec2 center = textureCoordOut;
+        vec4 sumColor = vec4(0.0, 0.0, 0.0, 0.0);
         int count = 0;
         for (int dx = -biomeBlend; dx <= biomeBlend; dx++) {
             for (int dz = -biomeBlend; dz <= biomeBlend; dz++) {
@@ -447,7 +447,12 @@ void MapViewComponent::updateShader()
 
         vec4 c;
         if (waterDepth > 0.0) {
-            vec4 wc = waterColor();
+            vec4 wc;
+            if (info.biomeRadius >= biomeBlend) {
+                wc = waterColorFromBiome(info.biomeId);
+            } else {
+                wc = waterColor();
+            }
             if (waterTranslucent) {
                 float intensity = pow(10.0, -waterOpticalDensity * waterDepth);
                 c = vec4(wc.r * intensity, wc.g * intensity, wc.b* intensity, alpha);

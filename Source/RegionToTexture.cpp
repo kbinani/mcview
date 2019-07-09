@@ -289,20 +289,26 @@ static PixelARGB ToPixelInfo(uint8_t height, uint8_t waterDepth, uint8_t biome, 
     return p;
 }
 
+struct PixelInfo {
+    int height;
+    int waterDepth;
+    mcfile::blocks::BlockId blockId;
+};
+
 void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
 
-    std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
-    PixelARGB * const pixelsPtr = pixels.get();
-    std::fill_n(pixelsPtr, width * height, PixelARGB(0, 0, 0, 0));
-
+    std::vector<PixelInfo> pixelInfo(width * height);
+    std::fill(pixelInfo.begin(), pixelInfo.end(), PixelInfo { -1, 0, 0 });
+    std::vector<Biome> biomes(width * height);
+    
     int const minX = region.minBlockX();
     int const minZ = region.minBlockZ();
 
     bool error = false;
     bool didset = false;
-    region.loadAllChunks(error, [&pixels, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
+    region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -310,11 +316,16 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
         int const eX = chunk.maxBlockX();
         for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
-                int biomeRadius = 0; //TODO
+                Biome biome = ToBiome(chunk.biomeAt(x, z));
+                int i = (z - minZ) * width + (x - minX);
+                biomes[i] = biome;
+            }
+        }
+        for (int z = sZ; z <= eZ; z++) {
+            for (int x = sX; x <= eX; x++) {
                 int const idx = (z - minZ) * width + (x - minX);
                 assert(0 <= idx && idx < width * height);
                 if (job->shouldExit()) {
-                    pixels.reset();
                     return false;
                 }
                 uint8_t waterDepth = 0;
@@ -364,14 +375,21 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
 #endif
                     } else {
                         uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
-                        Biome biome = ToBiome(chunk.biomeAt(x, z));
-                        pixels[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block, biomeRadius);
+                        PixelInfo info;
+                        info.height = h;
+                        info.waterDepth = waterDepth;
+                        info.blockId = block;
+                        pixelInfo[idx] = info;
                         didset = true;
                         break;
                     }
                 }
                 if (all_transparent) {
-                    pixels[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air, biomeRadius);
+                    PixelInfo info;
+                    info.height = 0;
+                    info.waterDepth = 0;
+                    info.blockId = mcfile::blocks::minecraft::air;
+                    pixelInfo[idx] = info;
                     didset = true;
                 }
             }
@@ -379,11 +397,41 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
         return true;
     });
 
-    if (didset) {
-        completion(pixels.release());
-    } else {
+    if (!didset) {
         completion(nullptr);
+        return;
     }
+    
+    std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
+    std::fill_n(pixels.get(), width * height, PixelARGB(0, 0, 0, 0));
+    for (int z = 0; z < height; z++) {
+        for (int x = 0; x < width; x++) {
+            int idx = z * width + x;
+            PixelInfo info = pixelInfo[idx];
+            if (info.height < 0) {
+                continue;
+            }
+            Biome biome = biomes[idx];
+            int biomeRadius;
+            if (7 <= x && x < width - 7 && 7 <= z && z < height - 7) {
+                biomeRadius = 7;
+                for (int iz = -7; iz <= 7; iz++) {
+                    for (int ix = -7; ix <= 7; ix++) {
+                        int i = (z + iz) * width + x + ix;
+                        Biome b = biomes[i];
+                        if (b != biome) {
+                            biomeRadius = std::min(std::min(biomeRadius, abs(ix)), abs(iz));
+                        }
+                    }
+                }
+            } else {
+                biomeRadius = 0;
+            }
+            pixels[idx] = ToPixelInfo(info.height, info.waterDepth, (uint8_t)biome, (uint32_t)info.blockId, biomeRadius);
+        }
+    }
+
+    completion(pixels.release());
 }
 
 File RegionToTexture::CacheFile(File const& file)
