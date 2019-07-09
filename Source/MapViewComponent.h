@@ -5,26 +5,11 @@
 #include "RegionTextureCache.h"
 #include "OverScroller.hpp"
 #include "Dimension.h"
+#include "TimerInstance.h"
 #include <map>
 #include <vector>
 #include <set>
 #include <deque>
-
-class TimerInstance : public Timer
-{
-public:
-    TimerInstance() = default;
-    
-    std::function<void(TimerInstance &timer)> fTimerCallback;
-
-private:
-    void timerCallback() override {
-        if (!fTimerCallback) {
-            return;
-        }
-        fTimerCallback(*this);
-    }
-};
 
 class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer
 {
