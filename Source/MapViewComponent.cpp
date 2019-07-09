@@ -709,7 +709,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
         if (fUniforms->fade.get() != nullptr) {
             if (enableUI) {
-                int const ms = Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
+                int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
                 GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
                 fUniforms->fade->set(a);
             } else {
@@ -1360,8 +1360,8 @@ MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
 
 MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)
     : Thread("RegionUpdateChecker")
+    , fDim(Dimension::Overworld)
     , fMapView(comp)
-	, fDim(Dimension::Overworld)
 {
 }
 
