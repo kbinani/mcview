@@ -264,18 +264,26 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-static PixelARGB ToPixelInfo(uint8_t height, uint8_t waterDepth, uint8_t biome, uint32_t block)
+static PixelARGB ToPixelInfo(uint8_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius)
 {
-    // h:           8bit
-    // waterDepth:  8bit
-    // biome:       4bit
-    // block:      12bit
+    // h:            8bit
+    // waterDepth:   7bit
+    // biome:        4bit
+    // block:       10bit
+    // biomeRadius:  3bit
     static_assert((int)Biome::max_Biome <= 1 << 4, "");
-    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 12, "");
+    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
+
+    uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
+    if (waterDepth > 0 && depth == 0) {
+        depth = 1;
+    }
+    
     uint32_t const num = ((0xFF & (uint32_t)height) << 24)
-        | ((0xFF & (uint32_t)waterDepth) << 16)
-        | ((0xF & (uint32_t)biome) << 12)
-        | (0xFFF & (uint32_t)block);
+        | ((0x7F & (uint32_t)depth) << 17)
+        | ((0xF & (uint32_t)biome) << 13)
+        | ((0x3FF & (uint32_t)block) << 3)
+        | (0x7 & (uint32_t)biomeRadius);
     PixelARGB p;
     p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
     return p;
@@ -302,6 +310,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
         int const eX = chunk.maxBlockX();
         for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
+                int biomeRadius = 0; //TODO
                 int const idx = (z - minZ) * width + (x - minX);
                 assert(0 <= idx && idx < width * height);
                 if (job->shouldExit()) {
@@ -356,13 +365,13 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     } else {
                         uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
                         Biome biome = ToBiome(chunk.biomeAt(x, z));
-                        pixels[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block);
+                        pixels[idx] = ToPixelInfo(h, waterDepth, (uint8_t)biome, block, biomeRadius);
                         didset = true;
                         break;
                     }
                 }
                 if (all_transparent) {
-                    pixels[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air);
+                    pixels[idx] = ToPixelInfo(0, 0, 0, mcfile::blocks::minecraft::air, biomeRadius);
                     didset = true;
                 }
             }
@@ -387,7 +396,7 @@ File RegionToTexture::CacheFile(File const& file)
 	if (!tmp.exists()) {
         tmp.createDirectory();
     }
-    String hash = String("v0.") + String(file.getParentDirectory().getFullPathName().hashCode64());
+    String hash = String("v1.") + String(file.getParentDirectory().getFullPathName().hashCode64());
     File dir = tmp.getChildFile(hash);
     if (!dir.exists()) {
         dir.createDirectory();

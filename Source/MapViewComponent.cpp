@@ -253,24 +253,40 @@ void MapViewComponent::updateShader()
             float waterDepth;
             int biomeId;
             int blockId;
+            int biomeRadius;
         };
     
+        int imod(int x, int y) {
+            return x - y * int(floor(float(x) / float(y)) + 0.1);
+        }
+    
         BlockInfo pixelInfo(vec4 color) {
-            // h:           8bit
-            // waterDepth:  8bit
-            // biome:       4bit
-            // block:      12bit
+            // h:            8bit
+            // waterDepth:   7bit
+            // biome:        4bit
+            // block:       10bit
+            // biomeRadius:  3bit
+            
+            /*
+             AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
+             hhhhhhhhwwwwwwwbbbboooooooooorrr
+             */
+            
+            int shift2 = 4;
+            int shift3 = 8;
+            int shift5 = 32;
+            
             int h = int(color.a * 255.0);
-            int waterDepth = int(color.r * 255.0);
-            int g = int(color.g * 255.0);
-            int b = int(color.b * 255.0);
-            int biome = g / 16;
-            int block = (g - biome * 16) * 256 + b;
+            int depth = int(color.r * 255.0) / 2;
+            int biome = imod(int(color.r * 255.0), 2) * shift2 + int(color.g * 255.0) / shift5;
+            int block = imod(int(color.g * 255.0), 0x20) * shift5 + int(color.b * 255.0) / shift3;
+            int biomeRadius = imod(int(color.b * 255.0), 8);
             BlockInfo info;
             info.height = float(h);
-            info.waterDepth = float(waterDepth);
+            info.waterDepth = float(depth) / 127.0 * 255.0;
             info.biomeId = biome;
             info.blockId = block;
+            info.biomeRadius = biomeRadius;
             return info;
         }
     
