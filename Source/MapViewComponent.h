@@ -191,7 +191,6 @@ private:
         CriticalSection fSection;
         File fDirectory;
         Dimension fDim;
-        HashMap<String, Time> fUpdated;
         MapViewComponent * const fMapView;
     };
 

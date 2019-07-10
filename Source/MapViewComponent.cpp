@@ -1388,6 +1388,8 @@ MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* com
 
 void MapViewComponent::RegionUpdateChecker::run()
 {
+    std::map<std::string, int64_t> updated;
+    
     while (!currentThreadShouldExit()) {
         Thread::sleep(1000);
         File d;
@@ -1403,14 +1405,13 @@ void MapViewComponent::RegionUpdateChecker::run()
         }
 
         File const root = DimensionDirectory(d, dim);
-        
-        auto i = fUpdated.begin();
-        while (i.next()) {
-            File f(i.getKey());
-            if (f.getParentDirectory().getFullPathName() != root.getFullPathName()) {
-                fUpdated.remove(i.getKey());
-            }
-        }
+
+        std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
+            std::string s = it.first;
+            String path(s);
+            File f(path);
+            return f.getParentDirectory().getFullPathName() == root.getFullPathName();
+        }), updated.end());
         
         DirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
         std::vector<File> files;
@@ -1421,16 +1422,20 @@ void MapViewComponent::RegionUpdateChecker::run()
                 continue;
             }
             Time modified = f.getLastModificationTime();
-            String fullpath = f.getFullPathName();
-            if (fUpdated.contains(fullpath)) {
-                if (fUpdated[fullpath].toMilliseconds() < modified.toMilliseconds()) {
-                    fUpdated.set(fullpath, modified);
+            std::string fullpath = f.getFullPathName().toStdString();
+
+            auto j = copy.find(fullpath);
+            if (j == copy.end()) {
+                copy[fullpath] = modified.toMilliseconds();
+            } else {
+                if (j->second < modified.toMilliseconds()) {
+                    copy[fullpath] = modified.toMilliseconds();
                     files.push_back(f);
                 }
-            } else {
-                fUpdated.set(fullpath, modified);
             }
         }
+        
+        copy.swap(updated);
         
         if (!files.empty()) {
             fMapView->queueTextureLoading(files, dim, false);
