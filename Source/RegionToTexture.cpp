@@ -320,6 +320,9 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                 int i = (z - minZ) * width + (x - minX);
                 biomes[i] = biome;
             }
+            if (job->shouldExit()) {
+                return false;
+            }
         }
         for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {

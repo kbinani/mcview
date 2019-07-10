@@ -232,7 +232,7 @@ void MapViewComponent::updateShader()
         uniform float waterOpticalDensity;
         uniform bool waterTranslucent;
         uniform int biomeBlend;
-        uniform int enableBiome;
+        uniform bool enableBiome;
         uniform vec4 background;
     
         uniform sampler2D north;
@@ -390,9 +390,6 @@ void MapViewComponent::updateShader()
     fragment << R"#(
 
     vec4 waterColor() {
-        if (enableBiome == 0) {
-            return waterColorFromBiome(-1);
-        }
         vec2 center = textureCoordOut;
         vec4 sumColor = vec4(0.0, 0.0, 0.0, 0.0);
         int count = 0;
@@ -448,10 +445,14 @@ void MapViewComponent::updateShader()
         vec4 c;
         if (waterDepth > 0.0) {
             vec4 wc;
-            if (info.biomeRadius >= biomeBlend) {
-                wc = waterColorFromBiome(info.biomeId);
+            if (enableBiome) {
+                if (info.biomeRadius >= biomeBlend) {
+                    wc = waterColorFromBiome(info.biomeId);
+                } else {
+                    wc = waterColor();
+                }
             } else {
-                wc = waterColor();
+                wc = waterColorFromBiome(-1);
             }
             if (waterTranslucent) {
                 float intensity = pow(10.0, -waterOpticalDensity * waterDepth);
@@ -460,7 +461,7 @@ void MapViewComponent::updateShader()
                 c = wc;
             }
         } else if (blockId == foliageBlockId) {
-            vec4 lc = foliageColorFromBiome(enableBiome == 0 ? -1 : biomeId);
+            vec4 lc = foliageColorFromBiome(enableBiome ? biomeId : -1);
             c = vec4(lc.rgb, alpha);
         } else if (blockId == grassBlockId) {
             float v = (height - 63.0) / 193.0;
@@ -718,7 +719,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
             fUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
         }
         if (fUniforms->enableBiome) {
-            fUniforms->enableBiome->set((GLint)(fEnableBiome.get() ? 1 : 0));
+            fUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
         }
         if (fUniforms->background) {
             if (fDimension == Dimension::TheEnd) {
