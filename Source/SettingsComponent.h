@@ -27,4 +27,5 @@ public:
 private:
     ScopedPointer<GroupComponent> fGroupWater;
     ScopedPointer<GroupComponent> fGroupBiome;
+    ScopedPointer<HyperlinkButton> fAboutButton;
 };

@@ -14,6 +14,7 @@
 #include "GraphicsHelper.h"
 #include "LookAndFeel.h"
 #include "LocalizationHelper.h"
+#include "AboutComponent.h"
 
 //==============================================================================
 class mcviewApplication  : public JUCEApplication
@@ -52,7 +53,7 @@ public:
         // request and let the app carry on running, or call quit() to allow the app to close.
         quit();
     }
-
+    
     void anotherInstanceStarted (const String&) override
     {
         // When another instance of the app is launched while this one is running,
@@ -91,7 +92,9 @@ public:
             // This is called when the user tries to close this window. Here, we'll just
             // ask the app to quit when this happens, but you can change this to do
             // whatever you need.
-            JUCEApplication::getInstance()->systemRequestedQuit();
+            if (!isPresentingAboutDialog()) {
+                JUCEApplication::getInstance()->systemRequestedQuit();
+            }
         }
 
         /* Note: Be careful if you override any DocumentWindow methods - the base
@@ -100,6 +103,28 @@ public:
            you really have to override any DocumentWindow methods, make sure your
            subclass also calls the superclass's method.
         */
+
+    private:
+        bool isPresentingAboutDialog() const
+        {
+            TopLevelWindow *top = TopLevelWindow::getActiveTopLevelWindow();
+            if (!top) {
+                return false;
+            }
+            DocumentWindow *doc = dynamic_cast<DocumentWindow *>(top);
+            if (!doc) {
+                return false;
+            }
+            Component *content = doc->getContentComponent();
+            if (!content) {
+                return false;
+            }
+            AboutComponent *about = dynamic_cast<AboutComponent *>(content);
+            if (!about) {
+                return false;
+            }
+            return true;
+        }
 
     private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)

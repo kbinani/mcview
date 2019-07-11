@@ -1,5 +1,6 @@
 #include "SettingsComponent.h"
 #include "defer.h"
+#include "AboutComponent.h"
 
 float const SettingsComponent::kDefaultWaterOpticalDensity = 0.02f;
 float const SettingsComponent::kMaxWaterOpticalDensity = 0.04f;
@@ -176,35 +177,45 @@ SettingsComponent::SettingsComponent(Settings const& settings)
     fGroupBiome.reset(biome.release());
     addAndMakeVisible(fGroupBiome);
     
+    fAboutButton = new HyperlinkButton("About", URL());
+    fAboutButton->setJustificationType(Justification::centredRight);
+    addAndMakeVisible(fAboutButton);
+    fAboutButton->onClick = [this]() {
+        DialogWindow::LaunchOptions options;
+        options.content.setOwned(new AboutComponent());
+        options.dialogTitle = "About";
+        options.useNativeTitleBar = true;
+        options.escapeKeyTriggersCloseButton = true;
+        options.resizable = false;
+        options.dialogBackgroundColour = getLookAndFeel().findColour(ResizableWindow::backgroundColourId);
+        options.runModal();
+    };
+    
     setSize(250, 600);
 }
 
 void SettingsComponent::paint(Graphics &g)
 {
-    g.saveState();
-    defer {
-        g.restoreState();
-    };
-
-    int const width = getWidth();
-    int const height = getHeight();
-    int const margin = 10;
-    
-    g.setColour(Colours::white);
-    g.drawText(String("Version: ") + String(ProjectInfo::versionString), 0, 0, width - margin, height - margin, Justification::bottomRight);
 }
 
 void SettingsComponent::resized()
 {
     int const margin = 10;
     int const width = getWidth();
+    int const height = getHeight();
     int const rowMargin = 10;
     
-    int y = margin;
-    fGroupWater->setBounds(margin, y, width - 2 * margin, fGroupWater->getHeight());
-    y += fGroupWater->getHeight();
-    y += rowMargin;
-    fGroupBiome->setBounds(margin, y, width - 2 * margin, fGroupBiome->getHeight());
-    y += fGroupBiome->getHeight();
-    y += rowMargin;
+    {
+        int y = margin;
+        fGroupWater->setBounds(margin, y, width - 2 * margin, fGroupWater->getHeight());
+        y += fGroupWater->getHeight();
+        y += rowMargin;
+        fGroupBiome->setBounds(margin, y, width - 2 * margin, fGroupBiome->getHeight());
+        y += fGroupBiome->getHeight();
+        y += rowMargin;
+    }
+    {
+        int buttonHeight = 20;
+        fAboutButton->setBounds(margin, height - margin - buttonHeight, width - 2 * margin, buttonHeight);
+    }
 }

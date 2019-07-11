@@ -33,6 +33,10 @@
       <FILE id="N0iTMy" name="japanese.lang" compile="0" resource="1" file="Resource/japanese.lang"/>
     </GROUP>
     <GROUP id="{3AB404AD-994C-6C9C-0E0F-326922675DA3}" name="Source">
+      <FILE id="o0N2qF" name="AboutComponent.cpp" compile="1" resource="0"
+            file="Source/AboutComponent.cpp"/>
+      <FILE id="mbv8MM" name="AboutComponent.h" compile="0" resource="0"
+            file="Source/AboutComponent.h"/>
       <FILE id="D9uNQU" name="BrowserComponent.cpp" compile="1" resource="0"
             file="Source/BrowserComponent.cpp"/>
       <FILE id="mzRNGl" name="BrowserComponent.h" compile="0" resource="0"
