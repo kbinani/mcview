@@ -188,6 +188,9 @@ private:
         void setDirectory(File f, Dimension dim);
 
     private:
+        void checkUpdatedFiles(std::map<std::string, int64_t> &updated);
+        
+    private:
         CriticalSection fSection;
         File fDirectory;
         Dimension fDim;

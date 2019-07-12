@@ -470,34 +470,44 @@ RegionToTexture::~RegionToTexture()
 
 ThreadPoolJob::JobStatus RegionToTexture::runJob()
 {
-    File cache = CacheFile(fRegionFile);
-    if (fUseCache && cache.existsAsFile()) {
-        FileInputStream stream(cache);
-        GZIPDecompressorInputStream ungzip(stream);
-        fPixels.reset(new PixelARGB[512 * 512]);
-        int expectedBytes = sizeof(PixelARGB) * 512 * 512;
-        if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
-            fPixels.reset();
+    try {
+        File cache = CacheFile(fRegionFile);
+        if (fUseCache && cache.existsAsFile()) {
+            FileInputStream stream(cache);
+            GZIPDecompressorInputStream ungzip(stream);
+            fPixels.reset(new PixelARGB[512 * 512]);
+            int expectedBytes = sizeof(PixelARGB) * 512 * 512;
+            if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
+                fPixels.reset();
+            }
+            return ThreadPoolJob::jobHasFinished;
+        }
+
+        auto region = mcfile::Region::MakeRegion(fRegionFile.getFullPathName().toStdString());
+        if (!region) {
+            return ThreadPoolJob::jobHasFinished;
+        }
+        Load(*region, this, fDimension, [this](PixelARGB *pixels) {
+            fPixels.reset(pixels);
+        });
+        if (shouldExit()) {
+            return ThreadPoolJob::jobHasFinished;
+        }
+        FileOutputStream out(cache);
+        out.truncate();
+        out.setPosition(0);
+        GZIPCompressorOutputStream gzip(out, 9);
+        if (fPixels) {
+            gzip.write(fPixels.get(), sizeof(PixelARGB) * 512 * 512);
         }
         return ThreadPoolJob::jobHasFinished;
-    }
-
-    auto region = mcfile::Region::MakeRegion(fRegionFile.getFullPathName().toStdString());
-    if (!region) {
+    } catch (std::exception &e) {
+        Logger::writeToLog(e.what());
+        fPixels.reset();
+        return ThreadPoolJob::jobHasFinished;
+    } catch (...) {
+        Logger::writeToLog("Unknown error");
+        fPixels.reset();
         return ThreadPoolJob::jobHasFinished;
     }
-    Load(*region, this, fDimension, [this](PixelARGB *pixels) {
-        fPixels.reset(pixels);
-    });
-    if (shouldExit()) {
-        return ThreadPoolJob::jobHasFinished;
-    }
-    FileOutputStream out(cache);
-    out.truncate();
-    out.setPosition(0);
-    GZIPCompressorOutputStream gzip(out, 9);
-    if (fPixels) {
-        gzip.write(fPixels.get(), sizeof(PixelARGB) * 512 * 512);
-    }
-    return ThreadPoolJob::jobHasFinished;
 }

@@ -1404,54 +1404,10 @@ void MapViewComponent::RegionUpdateChecker::run()
     std::map<std::string, int64_t> updated;
     
     while (!currentThreadShouldExit()) {
-        Thread::sleep(1000);
-        File d;
-        Dimension dim;
-        {
-			ScopedLock lk(fSection);
-            d = fDirectory;
-            dim = fDim;
-        }
-        
-        if (!d.exists()) {
-            continue;
-        }
-
-        File const root = DimensionDirectory(d, dim);
-
-        std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
-            std::string s = it.first;
-            String path(s);
-            File f(path);
-            return f.getParentDirectory().getFullPathName() == root.getFullPathName();
-        }), updated.end());
-        
-        DirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
-        std::vector<File> files;
-        while (it.next()) {
-            File f = it.getFile();
-            auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
-            if (!r) {
-                continue;
-            }
-            Time modified = f.getLastModificationTime();
-            std::string fullpath = f.getFullPathName().toStdString();
-
-            auto j = copy.find(fullpath);
-            if (j == copy.end()) {
-                copy[fullpath] = modified.toMilliseconds();
-            } else {
-                if (j->second < modified.toMilliseconds()) {
-                    copy[fullpath] = modified.toMilliseconds();
-                    files.push_back(f);
-                }
-            }
-        }
-        
-        copy.swap(updated);
-        
-        if (!files.empty()) {
-            fMapView->queueTextureLoading(files, dim, false);
+        try {
+            Thread::sleep(1000);
+            checkUpdatedFiles(updated);
+        } catch (...) {
         }
     }
 }
@@ -1461,4 +1417,56 @@ void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim)
 	ScopedLock lk(fSection);
 	fDirectory = f;
     fDim = dim;
+}
+
+void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::string, int64_t> &updated)
+{
+    File d;
+    Dimension dim;
+    {
+        ScopedLock lk(fSection);
+        d = fDirectory;
+        dim = fDim;
+    }
+    
+    if (!d.exists()) {
+        return;
+    }
+    
+    File const root = DimensionDirectory(d, dim);
+    
+    std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
+        std::string s = it.first;
+        String path(s);
+        File f(path);
+        return f.getParentDirectory().getFullPathName() == root.getFullPathName();
+    }), updated.end());
+    
+    DirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
+    std::vector<File> files;
+    while (it.next()) {
+        File f = it.getFile();
+        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+        if (!r) {
+            continue;
+        }
+        Time modified = f.getLastModificationTime();
+        std::string fullpath = f.getFullPathName().toStdString();
+        
+        auto j = copy.find(fullpath);
+        if (j == copy.end()) {
+            copy[fullpath] = modified.toMilliseconds();
+        } else {
+            if (j->second < modified.toMilliseconds()) {
+                copy[fullpath] = modified.toMilliseconds();
+                files.push_back(f);
+            }
+        }
+    }
+    
+    copy.swap(updated);
+    
+    if (!files.empty()) {
+        fMapView->queueTextureLoading(files, dim, false);
+    }
 }
