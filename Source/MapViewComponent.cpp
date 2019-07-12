@@ -1014,14 +1014,26 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
         fLoadingRegionsLock.exit();
     };
     fLoadingFinished = false;
-    
+
+    Rectangle<int> visibleRegions = fVisibleRegions.get();
+    int minX = visibleRegions.getX();
+    int maxX = visibleRegions.getRight();
+    int minY = visibleRegions.getY();
+    int maxY = visibleRegions.getBottom();
+
     for (File const& f : files) {
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
         RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), dim, useCache);
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
         fLoadingRegions.insert(job->fRegion);
+        minX = std::min(minX, r->fX);
+        maxX = std::max(maxX, r->fX + 1);
+        minY = std::min(minY, r->fZ);
+        maxY = std::max(maxY, r->fZ + 1);
     }
+    
+    fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
     
     ctx.setContinuousRepainting(true);
 }
