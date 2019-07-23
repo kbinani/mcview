@@ -447,7 +447,7 @@ File RegionToTexture::CacheFile(File const& file)
 	if (!tmp.exists()) {
         tmp.createDirectory();
     }
-    String hash = String("v1.") + String(file.getParentDirectory().getFullPathName().hashCode64());
+    String hash = String("v2.") + String(file.getParentDirectory().getFullPathName().hashCode64());
     File dir = tmp.getChildFile(hash);
     if (!dir.exists()) {
         dir.createDirectory();
@@ -471,16 +471,23 @@ RegionToTexture::~RegionToTexture()
 ThreadPoolJob::JobStatus RegionToTexture::runJob()
 {
     try {
+        int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();
         File cache = CacheFile(fRegionFile);
         if (fUseCache && cache.existsAsFile()) {
             FileInputStream stream(cache);
             GZIPDecompressorInputStream ungzip(stream);
-            fPixels.reset(new PixelARGB[512 * 512]);
             int expectedBytes = sizeof(PixelARGB) * 512 * 512;
-            if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
-                fPixels.reset();
+            int64 cachedModificationTime = 0;
+            if (ungzip.read(&cachedModificationTime, sizeof(cachedModificationTime)) != sizeof(cachedModificationTime)) {
+                return ThreadPoolJob::jobHasFinished;
             }
-            return ThreadPoolJob::jobHasFinished;
+            if (cachedModificationTime >= modified) {
+                fPixels.reset(new PixelARGB[512 * 512]);
+                if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
+                    fPixels.reset();
+                }
+                return ThreadPoolJob::jobHasFinished;
+            }
         }
 
         auto region = mcfile::Region::MakeRegion(fRegionFile.getFullPathName().toStdString());
@@ -498,6 +505,7 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
         out.setPosition(0);
         GZIPCompressorOutputStream gzip(out, 9);
         if (fPixels) {
+            gzip.write(&modified, sizeof(modified));
             gzip.write(fPixels.get(), sizeof(PixelARGB) * 512 * 512);
         }
         return ThreadPoolJob::jobHasFinished;
