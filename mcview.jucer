@@ -87,6 +87,8 @@
       <FILE id="tFrICH" name="SettingsComponent.h" compile="0" resource="0"
             file="Source/SettingsComponent.h"/>
       <FILE id="CQbYb3" name="TimerInstance.h" compile="0" resource="0" file="Source/TimerInstance.h"/>
+      <FILE id="cuZUAf" name="WorldData.cpp" compile="1" resource="0" file="Source/WorldData.cpp"/>
+      <FILE id="jOXBIL" name="WorldData.h" compile="0" resource="0" file="Source/WorldData.h"/>
       <FILE id="WcR7oH" name="zlib.cpp" compile="1" resource="0" file="Source/zlib.cpp"/>
     </GROUP>
   </MAINGROUP>

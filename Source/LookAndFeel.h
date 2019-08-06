@@ -26,7 +26,7 @@ class LookAndFeel : public juce::LookAndFeel_V4
             g.setColour (label.findColour (Label::textColourId).withMultipliedAlpha (alpha));
             g.setFont (font);
             
-            auto textArea = getLabelBorderSize (label).subtractedFrom (label.getLocalBounds());
+            Rectangle<float> textArea = getLabelBorderSize (label).subtractedFrom (label.getLocalBounds()).toFloat();
             
             GraphicsHelper::DrawFittedText(g, label.getText(), textArea, label.getJustificationType(),
                                            jmax (1, (int) (textArea.getHeight() / font.getHeight())),
@@ -119,7 +119,7 @@ class LookAndFeel : public juce::LookAndFeel_V4
         
         GraphicsHelper::DrawFittedText(g, button.getButtonText(),
                                        button.getLocalBounds().withTrimmedLeft (roundToInt (tickWidth) + 10)
-                                       .withTrimmedRight (2),
+                                       .withTrimmedRight (2).toFloat(),
                                        Justification::centredLeft, 10);
     }
 };

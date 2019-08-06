@@ -6,6 +6,7 @@
 #include "PNGWriter.h"
 #include "SettingsComponent.h"
 #include "defer.h"
+#include "GraphicsHelper.h"
 #include <set>
 #include <cassert>
 #include <cmath>
@@ -164,6 +165,47 @@ void MapViewComponent::paint(Graphics &g)
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
     y += lineHeight;
+
+    LookAt lookAt = fLookAt.get();
+    Dimension dim = fDimension;
+
+    int const pinHeadRadius = 6;
+    Colour const pinHeadColour = Colours::red;
+    Colour const pinHeadHilightColour = pinHeadColour.brighter().brighter();
+    Point<float> const pinHilightOffset(-2, -2);
+    int const pinHeadHilightRadius = 3;
+    int const stemLength = 16;
+    Point<float> const pinHeadShadowOffset(3, 3);
+    float const pinHeadShadowAlpha = 0.5f;
+    Colour const stemColour = Colours::white;
+    float const stemThickness = 2;
+    
+    for (Pin pin : fWorldData.fPins) {
+        if (pin.fDim != dim) {
+            continue;
+        }
+        Point<float> pos = getViewCoordinateFromMap(Point<float>(pin.fX, pin.fZ), lookAt);
+        g.setColour(Colours::black.withAlpha(pinHeadShadowAlpha));
+        g.fillEllipse(pos.x + pinHeadShadowOffset.x - pinHeadRadius, pos.y + pinHeadShadowOffset.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
+        
+        g.setColour(stemColour);
+        g.drawLine(pos.x, pos.y - stemLength, pos.x, pos.y, stemThickness);
+        
+        g.setColour(pinHeadColour);
+        g.fillEllipse(pos.x - pinHeadRadius, pos.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
+
+        g.setColour(pinHeadHilightColour);
+        g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
+        
+        int const pad = 4;
+        Font font = g.getCurrentFont();
+        float stringWidth = font.getStringWidthFloat(pin.fMessage);
+        Rectangle<float> stringBounds(pos.x + pinHeadRadius + pad, pos.y - stemLength - font.getHeight() / 2 - pad, pad + stringWidth + pad, pad + font.getHeight() + pad);
+        g.setColour(Colours::black.withAlpha(0.5f));
+        g.fillRect(stringBounds);
+        g.setColour(Colours::white);
+        GraphicsHelper::DrawText(g, pin.fMessage, stringBounds, Justification::centred);
+    }
 }
 
 void MapViewComponent::newOpenGLContextCreated()
@@ -937,6 +979,10 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     
     fLoadingFinished = false;
     fCaptureButton->setEnabled(false);
+
+    File worldDataFile = WorldData::WorldDataPath(directory);
+    WorldData data = WorldData::Load(worldDataFile);
+    
     
     fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
         ScopedPointer<ThreadPool> prev(fPool.release());
@@ -952,6 +998,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fLoadingRegions.clear();
         fWorldDirectory = directory;
         fDimension = dim;
+        fWorldData = data;
 
         int minX = 0;
         int maxX = 0;

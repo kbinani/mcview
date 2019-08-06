@@ -13,6 +13,8 @@ public:
     void load();
     void save();
 
+    static File ConfigDirectory();
+
 public:
     float fWaterOpticalDensity;
     bool fWaterTranslucent = true;
@@ -20,7 +22,6 @@ public:
     int fBiomeBlend;
 
 private:
-    static File ConfigDirectory();
     static File ConfigFile();
     
     Array<File> fDirectories;

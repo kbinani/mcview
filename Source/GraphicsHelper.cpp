@@ -21,7 +21,7 @@ static void ReplaceFontIfNeeded(Graphics &g, String const& text)
     g.setFont(f);
 }
 
-void GraphicsHelper::DrawText(Graphics &g, String const& text, int x, int y, int width, int height,
+void GraphicsHelper::DrawText(Graphics &g, String const& text, float x, float y, float width, float height,
                               Justification justificationType, bool const useEllipsesIfTooBig)
 {
     g.saveState();
@@ -32,7 +32,7 @@ void GraphicsHelper::DrawText(Graphics &g, String const& text, int x, int y, int
     g.drawText(text, x, y, width, height, justificationType, useEllipsesIfTooBig);
 }
 
-void GraphicsHelper::DrawFittedText(Graphics &g, String const& text, int x, int y, int width, int height,
+void GraphicsHelper::DrawFittedText(Graphics &g, String const& text, float x, float y, float width, float height,
                                     Justification justification,
                                     int const maximumNumberOfLines,
                                     float const minimumHorizontalScale)

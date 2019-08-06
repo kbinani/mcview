@@ -6,6 +6,7 @@
 #include "OverScroller.hpp"
 #include "Dimension.h"
 #include "TimerInstance.h"
+#include "WorldData.h"
 #include <map>
 #include <vector>
 #include <set>
@@ -200,6 +201,7 @@ private:
 private:
     OpenGLContext fOpenGLContext;
     File fWorldDirectory;
+    WorldData fWorldData;
     Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
     std::unique_ptr<OpenGLShaderProgram> fShader;
