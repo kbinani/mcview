@@ -1201,6 +1201,14 @@ public:
     {
         fInputLabel = new Label();
         fInputLabel->setEditable(true);
+        String name
+#if JUCE_WINDOWS
+            = "Yu Gothic UI";
+#else
+            = "Hiragino Kaku Gothic Pro";
+#endif
+        Font font(name, 14, 0);
+        fInputLabel->setFont(font);
         addAndMakeVisible(fInputLabel);
         fOkButton = new TextButton();
         fOkButton->setButtonText("OK");
