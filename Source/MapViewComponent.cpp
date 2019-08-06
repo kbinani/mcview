@@ -164,6 +164,39 @@ void MapViewComponent::paint(Graphics &g)
     static Colour const stemColour = Colours::white;
     static float const stemThickness = 2;
 
+    LookAt lookAt = fLookAt.get();
+    Dimension dim = fDimension;
+    Font font = Font(pinNameFontSize);
+    
+    for (Pin pin : fWorldData.fPins) {
+        if (pin.fDim != dim) {
+            continue;
+        }
+        g.saveState();
+        defer {
+            g.restoreState();
+        };
+        Point<float> pos = getViewCoordinateFromMap(Point<float>(pin.fX, pin.fZ), lookAt);
+        g.setColour(Colours::black.withAlpha(pinHeadShadowAlpha));
+        g.fillEllipse(pos.x + pinHeadShadowOffset.x - pinHeadRadius, pos.y + pinHeadShadowOffset.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
+        
+        g.setColour(stemColour);
+        g.drawLine(pos.x, pos.y - stemLength, pos.x, pos.y, stemThickness);
+        
+        g.setColour(pinHeadColour);
+        g.fillEllipse(pos.x - pinHeadRadius, pos.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
+        
+        g.setColour(pinHeadHilightColour);
+        g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
+        
+        g.setColour(Colours::black.withAlpha(0.5f));
+        auto stringBounds = PinNameBounds(pin, font, pos);
+        g.fillRect(stringBounds);
+        g.setColour(Colours::white);
+        g.setFont(pinNameFontSize);
+        GraphicsHelper::DrawText(g, pin.fMessage, stringBounds, Justification::centred);
+    }
+
     Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
     g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
     g.fillRoundedRectangle(border, 6.0f);
@@ -186,35 +219,6 @@ void MapViewComponent::paint(Graphics &g)
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
     y += lineHeight;
-
-    LookAt lookAt = fLookAt.get();
-    Dimension dim = fDimension;
-    Font font = Font(pinNameFontSize);
-    
-    for (Pin pin : fWorldData.fPins) {
-        if (pin.fDim != dim) {
-            continue;
-        }
-        Point<float> pos = getViewCoordinateFromMap(Point<float>(pin.fX, pin.fZ), lookAt);
-        g.setColour(Colours::black.withAlpha(pinHeadShadowAlpha));
-        g.fillEllipse(pos.x + pinHeadShadowOffset.x - pinHeadRadius, pos.y + pinHeadShadowOffset.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
-        
-        g.setColour(stemColour);
-        g.drawLine(pos.x, pos.y - stemLength, pos.x, pos.y, stemThickness);
-        
-        g.setColour(pinHeadColour);
-        g.fillEllipse(pos.x - pinHeadRadius, pos.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
-
-        g.setColour(pinHeadHilightColour);
-        g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
-        
-        g.setColour(Colours::black.withAlpha(0.5f));
-        auto stringBounds = PinNameBounds(pin, font, pos);
-        g.fillRect(stringBounds);
-        g.setColour(Colours::white);
-        g.setFont(pinNameFontSize);
-        GraphicsHelper::DrawText(g, pin.fMessage, stringBounds, Justification::centred);
-    }
 }
 
 void MapViewComponent::newOpenGLContextCreated()
