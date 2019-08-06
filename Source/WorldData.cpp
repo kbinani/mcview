@@ -60,7 +60,7 @@ var Pin::toVar() const
     obj->setProperty(kZ, fZ);
     obj->setProperty(kMessage, fMessage);
     obj->setProperty(kDimension, DimensionToString(fDim));
-    return var(obj);
+    return var(obj.release());
 }
 
 void WorldData::save(File path) const
@@ -72,6 +72,7 @@ void WorldData::save(File path) const
     ScopedPointer<DynamicObject> obj = new DynamicObject();
     obj->setProperty(kPins, pins);
 
+    path.deleteFile();
     FileOutputStream stream(path);
     stream.truncate();
     stream.setPosition(0);
@@ -104,5 +105,5 @@ File WorldData::WorldDataPath(File worldDirectory)
 {
     File dir = Settings::ConfigDirectory();
     int64 id = worldDirectory.getFullPathName().hashCode64();
-    return dir.getChildFile(String(id));
+    return dir.getChildFile(String(id) + ".json");
 }

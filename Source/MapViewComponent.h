@@ -72,7 +72,10 @@ private:
     LookAt clampedLookAt() const;
     void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
     void instantiateTextures(LookAt lookAt);
-
+    void mouseRightClicked(MouseEvent const& e);
+    int hitTestPin(Point<int> pos, LookAt lookAt) const;
+    void saveWorldData();
+    
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
 

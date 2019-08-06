@@ -21,6 +21,10 @@ static int const kMargin = 10;
 static int const kButtonSize = 40;
 static int const kFadeDurationMS = 300;
 
+static int const pinHeadRadius = 6;
+static int const pinNameFontSize = 14;
+static int const stemLength = 16;
+
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
     , fVisibleRegions({0, 0, 0, 0})
@@ -131,6 +135,14 @@ MapViewComponent::~MapViewComponent()
     fRegionUpdateChecker->waitForThreadToExit(-1);
 }
 
+static Rectangle<float> PinNameBounds(Pin pin, Font font, Point<float> pos)
+{
+    int const pad = 4;
+    float stringWidth = font.getStringWidthFloat(pin.fMessage);
+    Rectangle<float> stringBounds(pos.x + pinHeadRadius + pad, pos.y - stemLength - font.getHeight() / 2 - pad, pad + stringWidth + pad, pad + font.getHeight() + pad);
+    return stringBounds;
+}
+
 void MapViewComponent::paint(Graphics &g)
 {
     g.saveState();
@@ -142,6 +154,15 @@ void MapViewComponent::paint(Graphics &g)
     int const lineHeight = 24;
     int const coordLabelWidth = 100;
     int const coordLabelHeight = 2 * lineHeight;
+
+    static Colour const pinHeadColour = Colours::red;
+    static Colour const pinHeadHilightColour = pinHeadColour.brighter().brighter();
+    static Point<float> const pinHilightOffset(-2, -2);
+    static int const pinHeadHilightRadius = 3;
+    static Point<float> const pinHeadShadowOffset(3, 3);
+    static float const pinHeadShadowAlpha = 0.5f;
+    static Colour const stemColour = Colours::white;
+    static float const stemThickness = 2;
 
     Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
     g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
@@ -168,17 +189,7 @@ void MapViewComponent::paint(Graphics &g)
 
     LookAt lookAt = fLookAt.get();
     Dimension dim = fDimension;
-
-    int const pinHeadRadius = 6;
-    Colour const pinHeadColour = Colours::red;
-    Colour const pinHeadHilightColour = pinHeadColour.brighter().brighter();
-    Point<float> const pinHilightOffset(-2, -2);
-    int const pinHeadHilightRadius = 3;
-    int const stemLength = 16;
-    Point<float> const pinHeadShadowOffset(3, 3);
-    float const pinHeadShadowAlpha = 0.5f;
-    Colour const stemColour = Colours::white;
-    float const stemThickness = 2;
+    Font font = Font(pinNameFontSize);
     
     for (Pin pin : fWorldData.fPins) {
         if (pin.fDim != dim) {
@@ -197,13 +208,11 @@ void MapViewComponent::paint(Graphics &g)
         g.setColour(pinHeadHilightColour);
         g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
         
-        int const pad = 4;
-        Font font = g.getCurrentFont();
-        float stringWidth = font.getStringWidthFloat(pin.fMessage);
-        Rectangle<float> stringBounds(pos.x + pinHeadRadius + pad, pos.y - stemLength - font.getHeight() / 2 - pad, pad + stringWidth + pad, pad + font.getHeight() + pad);
         g.setColour(Colours::black.withAlpha(0.5f));
+        auto stringBounds = PinNameBounds(pin, font, pos);
         g.fillRect(stringBounds);
         g.setColour(Colours::white);
+        g.setFont(pinNameFontSize);
         GraphicsHelper::DrawText(g, pin.fMessage, stringBounds, Justification::centred);
     }
 }
@@ -983,7 +992,6 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     File worldDataFile = WorldData::WorldDataPath(directory);
     WorldData data = WorldData::Load(worldDataFile);
     
-    
     fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
         ScopedPointer<ThreadPool> prev(fPool.release());
         fPool = CreateThreadPool();
@@ -1183,12 +1191,90 @@ void MapViewComponent::mouseMove(MouseEvent const& event)
     triggerRepaint();
 }
 
-void MapViewComponent::mouseUp(MouseEvent const&)
+class TextInputDialog : public Component {
+public:
+    TextInputDialog()
+    {
+        fInputLabel = new Label();
+        fInputLabel->setEditable(true);
+        addAndMakeVisible(fInputLabel);
+        fOkButton = new TextButton();
+        fOkButton->setButtonText("OK");
+        fOkButton->onClick = [this]() {
+            close(1);
+        };
+        addAndMakeVisible(fOkButton);
+        fCancelButton = new TextButton();
+        fCancelButton->setButtonText(TRANS("Cancel"));
+        fCancelButton->onClick = [this]() {
+            close(-1);
+        };
+        addAndMakeVisible(fCancelButton);
+        setSize(300, 160);
+    }
+    
+    void resized() override
+    {
+        int const pad = 20;
+        int const width = getWidth();
+        int const height = getHeight();
+        int const buttonWidth = 100;
+        int const buttonHeight = 40;
+        int const inputHeight = height - 3 * pad - buttonHeight;
+        
+        if (fInputLabel) {
+            fInputLabel->setBounds(pad, pad, width - 2 * pad, inputHeight);
+        }
+        if (fOkButton) {
+            fOkButton->setBounds(width - pad - buttonWidth - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
+        }
+        if (fCancelButton) {
+            fCancelButton->setBounds(width - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
+        }
+    }
+
+    static std::pair<int, String> show(Component *target, String title, String init)
+    {
+        ScopedPointer<TextInputDialog> component = new TextInputDialog();
+        component->fInputLabel->setText(init, dontSendNotification);
+        DialogWindow::showModalDialog(title, component, target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
+        return std::make_pair(component->fResultMenuId, component->fInputLabel->getText());
+    }
+    
+private:
+    void close(int result)
+    {
+        fResultMenuId = result;
+        Component *pivot = this;
+        while (pivot) {
+            DialogWindow *dlg = dynamic_cast<DialogWindow *>(pivot);
+            if (dlg) {
+                dlg->closeButtonPressed();
+                return;
+            }
+            pivot = pivot->getParentComponent();
+        }
+    }
+    
+private:
+    String fMessage;
+    String fResult;
+    int fResultMenuId = -1;
+    
+    ScopedPointer<Label> fInputLabel;
+    ScopedPointer<TextButton> fOkButton;
+    ScopedPointer<TextButton> fCancelButton;
+};
+
+void MapViewComponent::mouseUp(MouseEvent const& e)
 {
+    if (e.mods.isRightButtonDown()) {
+        mouseRightClicked(e);
+        return;
+    }
     if (fLastDragPosition.size() != 2) {
         return;
     }
-    LookAt current = clampedLookAt();
 
     MouseEvent p0 = fLastDragPosition.front();
     MouseEvent p1 = fLastDragPosition.back();
@@ -1202,7 +1288,8 @@ void MapViewComponent::mouseUp(MouseEvent const&)
     float const dz = p1.y - p0.y;
     float const vx = -dx / dt;
     float const vz = -dz / dt;
-    
+    LookAt current = clampedLookAt();
+
     Rectangle<int> visible = fVisibleRegions.get();
     fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
                     vx, vz,
@@ -1210,6 +1297,86 @@ void MapViewComponent::mouseUp(MouseEvent const&)
                     visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
     fScrollerTimer.stopTimer();
     fScrollerTimer.startTimerHz(50);
+}
+
+int MapViewComponent::hitTestPin(Point<int> pos, LookAt lookAt) const
+{
+    Font font = Font(pinNameFontSize);
+    for (int i = 0; i < fWorldData.fPins.size(); i++) {
+        Pin p = fWorldData.fPins[i];
+        auto pinPos = getViewCoordinateFromMap(Point<float>(p.fX, p.fZ), lookAt);
+        auto bounds = Rectangle<float>(pinPos.x - pinHeadRadius, pinPos.y - stemLength - pinHeadRadius, pinHeadRadius, pinHeadRadius * 2 + stemLength);
+        if (bounds.contains(pos.toFloat())) {
+            return i;
+        }
+        auto stringBounds = PinNameBounds(p, font, pinPos);
+        if (stringBounds.contains(pos.toFloat())) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void MapViewComponent::mouseRightClicked(MouseEvent const& e)
+{
+    if (!fWorldDirectory.exists()) {
+        return;
+    }
+    LookAt current = clampedLookAt();
+    int hitPinIndex = hitTestPin(e.getPosition(), current);
+    if (hitPinIndex >= 0) {
+        PopupMenu menu;
+        menu.addItem(1, TRANS("Remove pin"));
+        menu.addItem(2, TRANS("Rename pin"));
+        Point<int> pos = e.getScreenPosition();
+        int menuId = menu.showAt(Rectangle<int>(pos, pos));
+        if (menuId == 1) {
+            fWorldData.fPins.erase(fWorldData.fPins.begin() + hitPinIndex);
+            saveWorldData();
+            triggerRepaint();
+        } else if (menuId == 2) {
+            Pin pin = fWorldData.fPins[hitPinIndex];
+            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin.fMessage);
+            if (result.first != 1) {
+                return;
+            }
+            String message = result.second;
+            pin.fMessage = message;
+            fWorldData.fPins[hitPinIndex] = pin;
+            saveWorldData();
+            triggerRepaint();
+        }
+    } else {
+        Dimension dim = fDimension;
+        
+        PopupMenu menu;
+        menu.addItem(1, TRANS("Put a pin here"));
+        Point<int> pos = e.getScreenPosition();
+        int menuId = menu.showAt(Rectangle<int>(pos, pos));
+        if (menuId != 1) {
+            return;
+        }
+        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
+        if (result.first != 1) {
+            return;
+        }
+        String message = result.second;
+        Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
+        Pin p;
+        p.fX = round(pinPos.x);
+        p.fZ = round(pinPos.y);
+        p.fDim = dim;
+        p.fMessage = message;
+        fWorldData.fPins.push_back(p);
+        saveWorldData();
+        triggerRepaint();
+    }
+}
+
+void MapViewComponent::saveWorldData()
+{
+    File f = WorldData::WorldDataPath(fWorldDirectory);
+    fWorldData.save(f);
 }
 
 ThreadPool* MapViewComponent::CreateThreadPool()
