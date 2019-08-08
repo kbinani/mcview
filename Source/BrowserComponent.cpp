@@ -113,8 +113,13 @@ BrowserComponent::BrowserComponent()
 
 void BrowserComponent::browse()
 {
-    FileChooser dialog(TRANS("Select Minecraft \"saves\" directory"));
-    if (!dialog.browseForDirectory()) {
+    String message = TRANS("Select Minecraft \"saves\" directory");
+#if JUCE_MAC
+    message += String(":\n/Users/yourname/Library/Application Support/minecraft/saves");
+#endif
+    FileChooser dialog(message);
+    int const flags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories | FileBrowserComponent::showsHiddenFiles;
+    if (!dialog.showDialog(flags, nullptr)) {
         return;
     }
     File directory = dialog.getResult();
