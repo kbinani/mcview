@@ -1209,6 +1209,10 @@ public:
 #endif
         Font font(name, 14, 0);
         fInputLabel->setFont(font);
+        fInputLabel->setColour(Label::ColourIds::backgroundColourId, Colours::white);
+        fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
+        fInputLabel->setColour(Label::ColourIds::textWhenEditingColourId, Colours::black);
+        fInputLabel->setJustificationType(Justification::topLeft);
         addAndMakeVisible(fInputLabel);
         fOkButton = new TextButton();
         fOkButton->setButtonText("OK");
@@ -1338,8 +1342,8 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
     int hitPinIndex = hitTestPin(e.getPosition(), current);
     if (hitPinIndex >= 0) {
         PopupMenu menu;
-        menu.addItem(1, TRANS("Remove pin"));
-        menu.addItem(2, TRANS("Rename pin"));
+        menu.addItem(1, TRANS("Delete"));
+        menu.addItem(2, TRANS("Rename"));
         Point<int> pos = e.getScreenPosition();
         int menuId = menu.showAt(Rectangle<int>(pos, pos));
         if (menuId == 1) {
