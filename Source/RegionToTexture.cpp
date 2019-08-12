@@ -28,7 +28,6 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::gravel, Colour(111, 111, 111)},
     {mcfile::blocks::minecraft::oak_log, Colour(141, 118, 71)},
     {mcfile::blocks::minecraft::oak_planks, Colour(127, 85, 48)},
-    {mcfile::blocks::minecraft::wall_torch, Colour(255, 255, 255)},
     {mcfile::blocks::minecraft::farmland, Colour(149, 108, 76)},
     {mcfile::blocks::minecraft::oak_fence, Colour(127, 85, 48)},
     {mcfile::blocks::minecraft::cobblestone_stairs, Colour(111, 111, 111)},
@@ -231,7 +230,6 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::acacia_pressure_plate, Colour(184, 98, 55)},
     {mcfile::blocks::minecraft::redstone_wire, Colour(75, 1, 0)},
     {mcfile::blocks::minecraft::redstone_block, Colour(162, 24, 8)},
-    {mcfile::blocks::minecraft::redstone_torch, Colour(184, 0, 0)},
     {mcfile::blocks::minecraft::redstone_lamp, Colour(173, 104, 58)},
     {mcfile::blocks::minecraft::hopper, Colour(70, 70, 70)},
     {mcfile::blocks::minecraft::crafting_table, Colour(156, 88, 49)},
@@ -274,7 +272,6 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::smoker, Colour(131, 131, 131)},
     {mcfile::blocks::minecraft::hay_block, Colour(203, 176, 7)},
     {mcfile::blocks::minecraft::birch_log, Colour(252, 252, 252)},
-    {mcfile::blocks::minecraft::torch, Colour(252, 252, 149)},
     {mcfile::blocks::minecraft::iron_trapdoor, Colour(227, 227, 227)},
     {mcfile::blocks::minecraft::bell, Colour(250, 211, 56)},
     {mcfile::blocks::minecraft::white_glazed_terracotta, Colour(246, 252, 251)},
@@ -829,7 +826,6 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::moving_piston, Colour(0, 0, 0)},
     {mcfile::blocks::minecraft::nether_portal, Colour(0, 0, 0)},
     {mcfile::blocks::minecraft::end_gateway, Colour(0, 0, 0)},
-    {mcfile::blocks::minecraft::redstone_wall_torch, Colour(0, 0, 0)},
     {mcfile::blocks::minecraft::tripwire, Colour(0, 0, 0)},
     {mcfile::blocks::minecraft::frosted_ice, Colour(0, 0, 0)},
     {mcfile::blocks::minecraft::bubble_column, Colour(0, 0, 0)},
@@ -968,6 +964,10 @@ static std::set<mcfile::blocks::BlockId> transparentBlocks = {
     mcfile::blocks::minecraft::glass_pane,
     mcfile::blocks::minecraft::glass,
     mcfile::blocks::minecraft::brown_wall_banner,
+    mcfile::blocks::minecraft::redstone_wall_torch,
+    mcfile::blocks::minecraft::wall_torch,
+    mcfile::blocks::minecraft::redstone_torch,
+    mcfile::blocks::minecraft::torch,
 };
 
 Colour const RegionToTexture::kDefaultOceanColor(51, 89, 162);
@@ -1071,7 +1071,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                 bool all_transparent = true;
                 for (int y = yini; y >= 0; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
-                    if (!block) {
+                    if (block == mcfile::blocks::unknown) {
                         continue;
                     }
                     if (block == mcfile::blocks::minecraft::water || block == mcfile::blocks::minecraft::bubble_column) {
