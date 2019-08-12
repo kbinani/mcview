@@ -278,6 +278,7 @@ void MapViewComponent::updateShader()
 
 	std::ostringstream fragment;
     fragment << R"#(
+        #version 120
         varying vec2 textureCoordOut;
         uniform sampler2D texture;
         uniform float fade;
@@ -393,19 +394,24 @@ void MapViewComponent::updateShader()
     fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
     fragment << "        return background;" << std::endl;
     fragment << "    }" << std::endl;
-    for (auto it : RegionToTexture::kBlockToColor) {
-        auto id = it.first;
-        Colour c = it.second;
-        GLfloat r = c.getRed() / 255.0f;
-        GLfloat g = c.getGreen() / 255.0f;
-        GLfloat b = c.getBlue() / 255.0f;
-        fragment << "    if (blockId == " << id << ") {" << std::endl;
-        fragment << "        return vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0);" << std::endl;
-        fragment << "    } else" << std::endl;
+    fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
+    for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+        auto it = RegionToTexture::kBlockToColor.find(id);
+        if (it != RegionToTexture::kBlockToColor.end()) {
+            Colour c = it->second;
+            GLfloat r = c.getRed() / 255.0f;
+            GLfloat g = c.getGreen() / 255.0f;
+            GLfloat b = c.getBlue() / 255.0f;
+            fragment << "        vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0)";
+        } else {
+            fragment << "        vec4(0.0, 0.0, 0.0, 0.0)";
+        }
+        if (id < mcfile::blocks::minecraft::minecraft_max_block_id - 1) {
+            fragment << "," << std::endl;
+        }
     }
-    fragment << "    { " << std::endl;
-    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
-    fragment << "    }" << std::endl;
+    fragment << "    );" << std::endl;
+    fragment << "    return mapping[blockId - 1];" << std::endl;
     fragment << "}" << std::endl;
 
     fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
