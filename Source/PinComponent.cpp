@@ -81,6 +81,13 @@ void PinComponent::mouseUp(MouseEvent const& e)
     }
 }
 
+void PinComponent::mouseDoubleClick(MouseEvent const& e)
+{
+    if (onDoubleClick) {
+        onDoubleClick(fPin, e.getScreenPosition());
+    }
+}
+
 void PinComponent::updatePinPosition(Point<float> pos)
 {
     int const h = stemLength + pinHeadRadius * 2;

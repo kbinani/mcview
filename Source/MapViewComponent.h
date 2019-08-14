@@ -77,9 +77,11 @@ private:
     void instantiateTextures(LookAt lookAt);
     void mouseRightClicked(MouseEvent const& e);
     void saveWorldData();
+    void addPinComponent(std::shared_ptr<Pin>);
     void updateAllPinComponentPosition();
     void handlePinRightClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
-    
+    void handlePinDoubleClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
+
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
 

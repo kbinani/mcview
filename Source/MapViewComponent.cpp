@@ -979,13 +979,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fWorldData = data;
         fPinComponents.clear();
         for (auto const& p : fWorldData.fPins) {
-            PinComponent* pin = new PinComponent(p);
-            pin->updatePinPosition(getViewCoordinateFromMap(pin->getMapCoordinate(), lookAt));
-            pin->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
-                handlePinRightClicked(pin, screenPos);
-            };
-            addAndMakeVisible(pin);
-            fPinComponents.emplace_back(pin);
+            addPinComponent(p);
         }
 
         int minX = 0;
@@ -1011,8 +1005,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         LookAt next = lookAt;
         next.fX = 0;
         next.fZ = 0;
-        setLookAt(next);
         fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+        setLookAt(next);
 
         std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
             auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
@@ -1322,16 +1316,24 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
     p->fZ = round(pinPos.y);
     p->fDim = dim;
     p->fMessage = message;
-    PinComponent *pinComponent = new PinComponent(p);
+    addPinComponent(p);
+    fWorldData.fPins.push_back(p);
+    saveWorldData();
+    triggerRepaint();
+}
+
+void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin)
+{
+    PinComponent *pinComponent = new PinComponent(pin);
     pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
     pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
         handlePinRightClicked(pin, screenPos);
     };
+    pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+        handlePinDoubleClicked(pin, screenPos);
+    };
     addAndMakeVisible(pinComponent);
     fPinComponents.emplace_back(pinComponent);
-    fWorldData.fPins.push_back(p);
-    saveWorldData();
-    triggerRepaint();
 }
 
 void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
@@ -1366,9 +1368,21 @@ void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Po
     }
 }
 
+void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
+{
+    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
+    if (result.first != 1) {
+        return;
+    }
+    String message = result.second;
+    pin->fMessage = message;
+    saveWorldData();
+    triggerRepaint();
+}
+
 void MapViewComponent::updateAllPinComponentPosition()
 {
-    LookAt const lookAt = fLookAt.get();
+    LookAt const lookAt = clampedLookAt();
     for (auto const& pin : fPinComponents) {
         pin->updatePinPosition(getViewCoordinateFromMap(Point<float>(pin->getMapCoordinate()), lookAt));
     }

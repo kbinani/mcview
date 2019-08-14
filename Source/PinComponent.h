@@ -9,6 +9,7 @@ public:
 
     void paint(Graphics &g) override;
     void mouseUp(MouseEvent const&) override;
+    void mouseDoubleClick(MouseEvent const&) override;
 
     void updatePinPosition(Point<float> pos);
     bool isPresenting(std::shared_ptr<Pin> const& p) const
@@ -22,6 +23,7 @@ public:
 
 public:
     std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onRightClick;
+    std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onDoubleClick;
 
 private:
     std::shared_ptr<Pin> fPin;
