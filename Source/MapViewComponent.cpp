@@ -976,8 +976,14 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fWorldData = data;
         fPinComponents.clear();
         for (auto const& p : fWorldData.fPins) {
-            if (p->fDim != dim) {
-                continue;
+            if (dim == Dimension::TheEnd) {
+                if (p->fDim != dim) {
+                    continue;
+                }
+            } else {
+                if (p->fDim == Dimension::TheEnd) {
+                    continue;
+                }
             }
             addPinComponent(p);
         }
@@ -1384,7 +1390,24 @@ void MapViewComponent::updateAllPinComponentPosition()
 {
     LookAt const lookAt = clampedLookAt();
     for (auto const& pin : fPinComponents) {
-        pin->updatePinPosition(getViewCoordinateFromMap(Point<float>(pin->getMapCoordinate()), lookAt));
+        Point<float> pos = pin->getMapCoordinate();
+        if (fDimension == Dimension::TheNether) {
+            if (pin->getDimension() != Dimension::TheNether) {
+                pos = Point<float>(pos.x / 8, pos.y / 8);
+                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+            } else {
+                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+            }
+        } else if (fDimension == Dimension::Overworld) {
+            if (pin->getDimension() != Dimension::Overworld) {
+                pos = Point<float>(pos.x * 8, pos.y * 8);
+                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+            } else {
+                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+            }
+        } else {
+            pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+        }
     }
 }
 

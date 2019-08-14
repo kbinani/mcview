@@ -20,6 +20,10 @@ public:
     {
         return Point<float>(fPin->fX + 0.5f, fPin->fZ - 0.5f);
     }
+    Dimension getDimension() const
+    {
+        return fPin->fDim;
+    }
 
 public:
     std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onRightClick;
