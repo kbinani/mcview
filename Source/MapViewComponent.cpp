@@ -1316,8 +1316,8 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
     String message = result.second;
     Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
     std::shared_ptr<Pin> p = std::make_shared<Pin>();
-    p->fX = round(pinPos.x);
-    p->fZ = round(pinPos.y);
+    p->fX = floor(pinPos.x);
+    p->fZ = floor(pinPos.y) + 1;
     p->fDim = dim;
     p->fMessage = message;
     addPinComponent(p);
