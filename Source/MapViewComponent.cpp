@@ -20,6 +20,7 @@ float const MapViewComponent::kMinScale = 1.0f / 32.0f;
 static int const kMargin = 10;
 static int const kButtonSize = 40;
 static int const kFadeDurationMS = 300;
+static int const kScrollUpdateHz = 50;
 
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
@@ -112,7 +113,11 @@ MapViewComponent::MapViewComponent()
         setLookAt(next);
         triggerRepaint();
     };
-    
+
+    fAnimationTimer.fTimerCallback = [this](TimerInstance &timer) {
+        updateAllPinComponentPosition();
+    };
+
     fTooltipWindow.reset(new TooltipWindow());
     addAndMakeVisible(*fTooltipWindow);
     
@@ -1279,7 +1284,7 @@ void MapViewComponent::mouseUp(MouseEvent const& e)
                     visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
                     visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
     fScrollerTimer.stopTimer();
-    fScrollerTimer.startTimerHz(50);
+    fScrollerTimer.startTimerHz(kScrollUpdateHz);
 }
 
 void MapViewComponent::mouseRightClicked(MouseEvent const& e)
@@ -1388,7 +1393,16 @@ void MapViewComponent::saveWorldData()
 
 void MapViewComponent::changeListenerCallback(ChangeBroadcaster *source)
 {
+    ComponentAnimator *animator = dynamic_cast<ComponentAnimator *>(source);
+    if (!animator) {
+        return;
+    }
     updateAllPinComponentPosition();
+    if (animator->isAnimating()) {
+        fAnimationTimer.startTimerHz(kScrollUpdateHz);
+    } else {
+        fAnimationTimer.stopTimer();
+    }
 }
 
 ThreadPool* MapViewComponent::CreateThreadPool()

@@ -266,6 +266,7 @@ private:
     OverScroller fScroller;
     std::deque<MouseEvent> fLastDragPosition;
     TimerInstance fScrollerTimer;
+    TimerInstance fAnimationTimer;
     
     Atomic<float> fWaterOpticalDensity;
     Atomic<bool> fWaterTranslucent;
