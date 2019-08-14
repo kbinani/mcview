@@ -981,6 +981,9 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         for (auto const& p : fWorldData.fPins) {
             PinComponent* pin = new PinComponent(p);
             pin->updatePinPosition(getViewCoordinateFromMap(pin->getMapCoordinate(), lookAt));
+            pin->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+                handlePinRightClicked(pin, screenPos);
+            };
             addAndMakeVisible(pin);
             fPinComponents.emplace_back(pin);
         }
@@ -1134,6 +1137,9 @@ void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails
 
 void MapViewComponent::mouseDrag(MouseEvent const& event)
 {
+    if (event.mods.isRightButtonDown()) {
+        return;
+    }
     LookAt const current = clampedLookAt();
     float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
     float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
@@ -1152,8 +1158,11 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     }
 }
 
-void MapViewComponent::mouseDown(MouseEvent const&)
+void MapViewComponent::mouseDown(MouseEvent const& e)
 {
+    if (e.mods.isRightButtonDown()) {
+        return;
+    }
     LookAt const current = clampedLookAt();
     fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
     
@@ -1162,6 +1171,7 @@ void MapViewComponent::mouseDown(MouseEvent const&)
 
 void MapViewComponent::mouseMove(MouseEvent const& event)
 {
+
     fMouse = event.position;
     triggerRepaint();
 }
@@ -1286,87 +1296,71 @@ void MapViewComponent::mouseUp(MouseEvent const& e)
     fScrollerTimer.startTimerHz(50);
 }
 
-int MapViewComponent::hitTestPin(Point<int> pos, LookAt lookAt) const
-{
-    Font font = Font(pinNameFontSize);
-    for (int i = 0; i < fWorldData.fPins.size(); i++) {
-        std::shared_ptr<Pin> const& p = fWorldData.fPins[i];
-        auto pinPos = getViewCoordinateFromMap(Point<float>(p->fX, p->fZ), lookAt);
-        auto bounds = Rectangle<float>(pinPos.x - pinHeadRadius, pinPos.y - stemLength - pinHeadRadius, pinHeadRadius, pinHeadRadius * 2 + stemLength);
-        if (bounds.contains(pos.toFloat())) {
-            return i;
-        }
-        auto stringBounds = PinNameBounds(*p, font, pinPos);
-        if (stringBounds.contains(pos.toFloat())) {
-            return i;
-        }
-    }
-    return -1;
-}
-
 void MapViewComponent::mouseRightClicked(MouseEvent const& e)
 {
     if (!fWorldDirectory.exists()) {
         return;
     }
     LookAt current = clampedLookAt();
-    int hitPinIndex = hitTestPin(e.getPosition(), current);
-    if (hitPinIndex >= 0) {
-        PopupMenu menu;
-        menu.addItem(1, TRANS("Delete"));
-        menu.addItem(2, TRANS("Rename"));
-        Point<int> pos = e.getScreenPosition();
-        int menuId = menu.showAt(Rectangle<int>(pos, pos));
-        if (menuId == 1) {
-            std::shared_ptr<Pin> const pin = fWorldData.fPins[hitPinIndex];
-            for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
-                if (!(*it)->isPresenting(pin)) {
-                    continue;
-                }
-                removeChildComponent(it->get());
-                fPinComponents.erase(it);
-                break;
+    Dimension dim = fDimension;
+
+    PopupMenu menu;
+    menu.addItem(1, TRANS("Put a pin here"));
+    Point<int> pos = e.getScreenPosition();
+    int menuId = menu.showAt(Rectangle<int>(pos, pos));
+    if (menuId != 1) {
+        return;
+    }
+    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
+    if (result.first != 1) {
+        return;
+    }
+    String message = result.second;
+    Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
+    std::shared_ptr<Pin> p = std::make_shared<Pin>();
+    p->fX = round(pinPos.x);
+    p->fZ = round(pinPos.y);
+    p->fDim = dim;
+    p->fMessage = message;
+    PinComponent *pinComponent = new PinComponent(p);
+    pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
+    pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+        handlePinRightClicked(pin, screenPos);
+    };
+    addAndMakeVisible(pinComponent);
+    fPinComponents.emplace_back(pinComponent);
+    fWorldData.fPins.push_back(p);
+    saveWorldData();
+    triggerRepaint();
+}
+
+void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
+{
+    PopupMenu menu;
+    menu.addItem(1, TRANS("Delete"));
+    menu.addItem(2, TRANS("Rename"));
+    int menuId = menu.showAt(Rectangle<int>(screenPos, screenPos));
+    if (menuId == 1) {
+        for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
+            if (!(*it)->isPresenting(pin)) {
+                continue;
             }
-            fWorldData.fPins.erase(fWorldData.fPins.begin() + hitPinIndex);
-            saveWorldData();
-            triggerRepaint();
-        } else if (menuId == 2) {
-            std::shared_ptr<Pin> const& pin = fWorldData.fPins[hitPinIndex];
-            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
-            if (result.first != 1) {
-                return;
-            }
-            String message = result.second;
-            pin->fMessage = message;
-            saveWorldData();
-            triggerRepaint();
+            removeChildComponent(it->get());
+            fPinComponents.erase(it);
+            break;
         }
-    } else {
-        Dimension dim = fDimension;
-        
-        PopupMenu menu;
-        menu.addItem(1, TRANS("Put a pin here"));
-        Point<int> pos = e.getScreenPosition();
-        int menuId = menu.showAt(Rectangle<int>(pos, pos));
-        if (menuId != 1) {
-            return;
-        }
-        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
+        fWorldData.fPins.erase(std::remove_if(fWorldData.fPins.begin(), fWorldData.fPins.end(), [pin](auto it) {
+            return it.get() == pin.get();
+        }), fWorldData.fPins.end());
+        saveWorldData();
+        triggerRepaint();
+    } else if (menuId == 2) {
+        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
         if (result.first != 1) {
             return;
         }
         String message = result.second;
-        Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
-        std::shared_ptr<Pin> p = std::make_shared<Pin>();
-        p->fX = round(pinPos.x);
-        p->fZ = round(pinPos.y);
-        p->fDim = dim;
-        p->fMessage = message;
-        PinComponent *pinComponent = new PinComponent(p);
-        pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
-        addAndMakeVisible(pinComponent);
-        fPinComponents.emplace_back(pinComponent);
-        fWorldData.fPins.push_back(p);
+        pin->fMessage = message;
         saveWorldData();
         triggerRepaint();
     }

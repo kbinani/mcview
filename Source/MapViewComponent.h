@@ -76,9 +76,9 @@ private:
     void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
     void instantiateTextures(LookAt lookAt);
     void mouseRightClicked(MouseEvent const& e);
-    int hitTestPin(Point<int> pos, LookAt lookAt) const;
     void saveWorldData();
     void updateAllPinComponentPosition();
+    void handlePinRightClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
     
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);

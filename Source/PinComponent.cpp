@@ -65,9 +65,28 @@ void PinComponent::paint(Graphics &g)
     GraphicsHelper::DrawText(g, fPin->fMessage, stringBounds, Justification::centred);
 }
 
+void PinComponent::mouseUp(MouseEvent const& e)
+{
+    if (e.getNumberOfClicks() != 1) {
+        return;
+    }
+    if (!e.mouseWasClicked()) {
+        return;
+    }
+    if (!e.mods.isRightButtonDown()) {
+        return;
+    }
+    if (onRightClick) {
+        onRightClick(fPin, e.getScreenPosition());
+    }
+}
+
 void PinComponent::updatePinPosition(Point<float> pos)
 {
-    int const width = getWidth();
-    int const height = getHeight();
+    int const h = stemLength + pinHeadRadius * 2;
+    Font font(pinNameFontSize);
+    Rectangle<float> nameBounds = PinNameBounds(*fPin, font, pos);
+    int const width = nameBounds.getRight();
+    int const height = jmax(h, h - (int)nameBounds.getY());
     setBounds(pos.x - pinHeadRadius, pos.y - height, width, height);
 }
