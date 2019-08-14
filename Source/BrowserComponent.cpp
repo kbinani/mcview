@@ -14,13 +14,14 @@ public:
         , fFile(file)
     {
         if (removable) {
-            fButtonIcon = Drawable::createFromImageData(BinaryData::baseline_remove_white_18dp_png, BinaryData::baseline_remove_white_18dp_pngSize);
-            fButton = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-            fButton->setImages(fButtonIcon);
+            fButtonIcon.reset(Drawable::createFromImageData(BinaryData::baseline_remove_white_18dp_png,
+                                                            BinaryData::baseline_remove_white_18dp_pngSize).release());
+            fButton.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+            fButton->setImages(fButtonIcon.get());
             fButton->onClick = [this]() {
                 onRemoveButtonClicked(fFile);
             };
-            addAndMakeVisible(fButton);
+            addAndMakeVisible(*fButton);
         }
     }
     
@@ -84,26 +85,26 @@ private:
     bool fMouseOver;
     ConcertinaPanel *const fParent;
     String fTitle;
-    ScopedPointer<DrawableButton> fButton;
-    ScopedPointer<Drawable> fButtonIcon;
+    std::unique_ptr<DrawableButton> fButton;
+    std::unique_ptr<Drawable> fButtonIcon;
     File fFile;
 };
 
 BrowserComponent::BrowserComponent()
 {
-    fConstrainer = new ComponentBoundsConstrainer();
+    fConstrainer.reset(new ComponentBoundsConstrainer());
     fConstrainer->setMinimumWidth(100);
-    fResizer = new ResizableEdgeComponent(this, fConstrainer, ResizableEdgeComponent::Edge::rightEdge);
-    addAndMakeVisible(fResizer);
+    fResizer.reset(new ResizableEdgeComponent(this, fConstrainer.get(), ResizableEdgeComponent::Edge::rightEdge));
+    addAndMakeVisible(*fResizer);
     
-    fPanel = new ConcertinaPanel();
-    addAndMakeVisible(fPanel);
+    fPanel.reset(new ConcertinaPanel());
+    addAndMakeVisible(*fPanel);
     
-    fAddButtonImage = Drawable::createFromImageData(BinaryData::baseline_add_white_18dp_png,
-                                                                BinaryData::baseline_add_white_18dp_pngSize);
-    fAddButton = new DrawableButton("Add", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fAddButton->setImages(fAddButtonImage);
-    addAndMakeVisible(fAddButton);
+    fAddButtonImage.reset(Drawable::createFromImageData(BinaryData::baseline_add_white_18dp_png,
+                                                        BinaryData::baseline_add_white_18dp_pngSize).release());
+    fAddButton.reset(new DrawableButton("Add", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fAddButton->setImages(fAddButtonImage.get());
+    addAndMakeVisible(*fAddButton);
     fAddButton->onClick = [this]() {
         browse();
     };
@@ -146,7 +147,7 @@ void BrowserComponent::addDirectory(File directory)
 #else
     bool const fixed = directory.getFullPathName() == MainComponent::DefaultMinecraftSaveDirectory().getFullPathName();
 #endif
-    Header *header = new Header(fPanel, directory, fixed ? "Default" : directory.getFileName(), !fixed);
+    Header *header = new Header(fPanel.get(), directory, fixed ? "Default" : directory.getFileName(), !fixed);
     DirectoryBrowserComponent* browser = new DirectoryBrowserComponent(directory);
     browser->onSelect = [this](File f) {
         onSelect(f);

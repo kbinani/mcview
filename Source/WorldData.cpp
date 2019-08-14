@@ -55,7 +55,7 @@ bool Pin::Parse(var pin, Pin &dest)
 
 var Pin::toVar() const
 {
-    ScopedPointer<DynamicObject> obj = new DynamicObject();
+    std::unique_ptr<DynamicObject> obj(new DynamicObject());
     obj->setProperty(kX, fX);
     obj->setProperty(kZ, fZ);
     obj->setProperty(kMessage, fMessage);
@@ -69,7 +69,7 @@ void WorldData::save(File path) const
     for (int i = 0; i < fPins.size(); i++) {
         pins.append(fPins[i].toVar());
     }
-    ScopedPointer<DynamicObject> obj = new DynamicObject();
+    std::unique_ptr<DynamicObject> obj(new DynamicObject());
     obj->setProperty(kPins, pins);
 
     path.deleteFile();

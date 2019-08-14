@@ -68,8 +68,8 @@ void DirectoryBrowserModel::listBoxItemDoubleClicked (int row, const MouseEvent 
 DirectoryBrowserComponent::DirectoryBrowserComponent(File directory)
     : fDirectory(directory)
 {
-    fModel = new DirectoryBrowserModel(this, directory, getLookAndFeel());
-    setModel(fModel);
+    fModel.reset(new DirectoryBrowserModel(this, directory, getLookAndFeel()));
+    setModel(fModel.get());
 }
 
 void DirectoryBrowserComponent::lookAndFeelChanged()

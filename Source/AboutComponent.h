@@ -8,6 +8,6 @@ public:
     void paint(Graphics &g) override;
 
 private:
-    ScopedPointer<Drawable> fLogo;
-    Array<ScopedPointer<Component>> fLines;
+    std::unique_ptr<Drawable> fLogo;
+    Array<std::unique_ptr<Component>> fLines;
 };

@@ -25,7 +25,7 @@ public:
     void resized() override;
 
 private:
-    ScopedPointer<GroupComponent> fGroupWater;
-    ScopedPointer<GroupComponent> fGroupBiome;
-    ScopedPointer<HyperlinkButton> fAboutButton;
+    std::unique_ptr<GroupComponent> fGroupWater;
+    std::unique_ptr<GroupComponent> fGroupBiome;
+    std::unique_ptr<HyperlinkButton> fAboutButton;
 };

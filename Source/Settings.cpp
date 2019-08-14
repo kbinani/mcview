@@ -146,7 +146,7 @@ void Settings::save()
     stream.truncate();
     stream.setPosition(0);
 
-    ScopedPointer<DynamicObject> obj = new DynamicObject();
+    std::unique_ptr<DynamicObject> obj(new DynamicObject());
     
     // directories
     Array<var> dirs;

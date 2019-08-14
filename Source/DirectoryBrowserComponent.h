@@ -38,7 +38,7 @@ public:
     File const fDirectory;
 
 private:
-    ScopedPointer<DirectoryBrowserModel> fModel;
+    std::unique_ptr<DirectoryBrowserModel> fModel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserComponent);
 };

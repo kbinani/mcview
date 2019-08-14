@@ -11,6 +11,7 @@
 #include <vector>
 #include <set>
 #include <deque>
+#include <memory>
 
 class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer
 {
@@ -223,7 +224,7 @@ private:
 
     Point<float> fMouse;
     
-    ScopedPointer<ThreadPool> fPool;
+    std::unique_ptr<ThreadPool> fPool;
     std::vector<std::unique_ptr<RegionToTexture>> fJobs;
 
     static int constexpr kCheckeredPatternSize = 16;
@@ -231,26 +232,26 @@ private:
     std::set<Region> fLoadingRegions;
     CriticalSection fLoadingRegionsLock;
 
-    ScopedPointer<DrawableButton> fBrowserOpenButton;
-    ScopedPointer<Drawable> fBrowserOpenButtonImageOpen;
-    ScopedPointer<Drawable> fBrowserOpenButtonImageClose;
+    std::unique_ptr<DrawableButton> fBrowserOpenButton;
+    std::unique_ptr<Drawable> fBrowserOpenButtonImageOpen;
+    std::unique_ptr<Drawable> fBrowserOpenButtonImageClose;
 
-    ScopedPointer<DrawableButton> fOverworld;
-    ScopedPointer<Drawable> fOverworldImage;
+    std::unique_ptr<DrawableButton> fOverworld;
+    std::unique_ptr<Drawable> fOverworldImage;
     
-    ScopedPointer<DrawableButton> fNether;
-    ScopedPointer<Drawable> fNetherImage;
+    std::unique_ptr<DrawableButton> fNether;
+    std::unique_ptr<Drawable> fNetherImage;
     
-    ScopedPointer<DrawableButton> fEnd;
-    ScopedPointer<Drawable> fEndImage;
+    std::unique_ptr<DrawableButton> fEnd;
+    std::unique_ptr<Drawable> fEndImage;
     
-    ScopedPointer<DrawableButton> fCaptureButton;
-    ScopedPointer<Drawable> fCaptureButtonImage;
+    std::unique_ptr<DrawableButton> fCaptureButton;
+    std::unique_ptr<Drawable> fCaptureButtonImage;
     
-    ScopedPointer<DrawableButton> fSettingsButton;
-    ScopedPointer<Drawable> fSettingsButtonImage;
+    std::unique_ptr<DrawableButton> fSettingsButton;
+    std::unique_ptr<Drawable> fSettingsButtonImage;
     
-    ScopedPointer<TooltipWindow> fTooltipWindow;
+    std::unique_ptr<TooltipWindow> fTooltipWindow;
     
     Atomic<bool> fLoadingFinished;
     
@@ -264,7 +265,7 @@ private:
     Atomic<bool> fEnableBiome;
     Atomic<int> fBiomeBlend;
     
-    ScopedPointer<RegionUpdateChecker> fRegionUpdateChecker;
+    std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

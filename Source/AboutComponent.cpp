@@ -53,7 +53,7 @@ AboutComponent::AboutComponent()
         createLink("https://github.com/AndroidSDKSources/android-sdk-sources-for-api-level-28"),
     };
     for (auto const& line : fLines) {
-        addAndMakeVisible(line);
+        addAndMakeVisible(*line);
     }
     fLogo = Drawable::createFromImageData(BinaryData::icon_large_png, BinaryData::icon_large_pngSize);
     setSize(400, 500);

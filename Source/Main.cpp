@@ -34,8 +34,8 @@ public:
 
         LocalisedStrings::setCurrentMappings(LocalizationHelper::CurrentLocalisedStrings());
 
-        fLookAndFeel = new mcview::LookAndFeel();
-        LookAndFeel::setDefaultLookAndFeel(fLookAndFeel);
+        fLookAndFeel.reset(new mcview::LookAndFeel());
+        LookAndFeel::setDefaultLookAndFeel(fLookAndFeel.get());
         mainWindow.reset (new MainWindow (getApplicationName()));
     }
 
@@ -132,7 +132,7 @@ public:
 
 private:
     std::unique_ptr<MainWindow> mainWindow;
-    ScopedPointer<mcview::LookAndFeel> fLookAndFeel;
+    std::unique_ptr<mcview::LookAndFeel> fLookAndFeel;
 };
 
 //==============================================================================

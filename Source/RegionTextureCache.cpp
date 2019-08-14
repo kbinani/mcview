@@ -5,7 +5,7 @@
 
 void RegionTextureCache::load(PixelARGB* pixels)
 {
-    ScopedPointer<OpenGLTexture> p = new OpenGLTexture();
+    std::unique_ptr<OpenGLTexture> p(new OpenGLTexture());
     p->loadARGB(pixels, 512, 512);
     fTexture.reset(p.release());
 

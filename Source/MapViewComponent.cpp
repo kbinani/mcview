@@ -44,63 +44,63 @@ MapViewComponent::MapViewComponent()
     fBrowserOpenButtonImageOpen = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
                                                                 BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize);
     
-    fBrowserOpenButton = new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground);
+    fBrowserOpenButton.reset(new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     setBrowserOpened(true);
     fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
     fBrowserOpenButton->onClick = [this]() {
         onOpenButtonClicked();
     };
-    addAndMakeVisible(fBrowserOpenButton);
+    addAndMakeVisible(*fBrowserOpenButton);
 
     fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_landscape_white_18dp_png,
                                                     BinaryData::baseline_landscape_white_18dp_pngSize);
-    fOverworld = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fOverworld->setImages(fOverworldImage);
+    fOverworld.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fOverworld->setImages(fOverworldImage.get());
     fOverworld->onClick = [this]() {
         setWorldDirectory(fWorldDirectory, Dimension::Overworld);
     };
     fOverworld->setEnabled(false);
     fOverworld->setTooltip(TRANS("Overworld"));
-    addAndMakeVisible(fOverworld);
+    addAndMakeVisible(*fOverworld);
     
     fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
-    fNether = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fNether->setImages(fNetherImage);
+    fNether.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fNether->setImages(fNetherImage.get());
     fNether->onClick = [this]() {
         setWorldDirectory(fWorldDirectory, Dimension::TheNether);
     };
     fNether->setEnabled(false);
     fNether->setTooltip(TRANS("The Nether"));
-    addAndMakeVisible(fNether);
+    addAndMakeVisible(*fNether);
     
     fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
-    fEnd = new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fEnd->setImages(fEndImage);
+    fEnd.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fEnd->setImages(fEndImage.get());
     fEnd->onClick = [this]() {
         setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
     };
     fEnd->setEnabled(false);
     fEnd->setTooltip(TRANS("The End"));
-    addAndMakeVisible(fEnd);
+    addAndMakeVisible(*fEnd);
     
     fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
                                                         BinaryData::baseline_camera_white_18dp_pngSize);
-    fCaptureButton = new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fCaptureButton->setImages(fCaptureButtonImage);
+    fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fCaptureButton->setImages(fCaptureButtonImage.get());
     fCaptureButton->onClick = [this]() {
         captureToImage();
     };
-    addAndMakeVisible(fCaptureButton);
+    addAndMakeVisible(*fCaptureButton);
     fCaptureButton->setEnabled(false);
 
     fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
                                                          BinaryData::baseline_settings_white_18dp_pngSize);
-    fSettingsButton = new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground);
-    fSettingsButton->setImages(fSettingsButtonImage);
+    fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fSettingsButton->setImages(fSettingsButtonImage.get());
     fSettingsButton->onClick = [this]() {
         onSettingsButtonClicked();
     };
-    addAndMakeVisible(fSettingsButton);
+    addAndMakeVisible(*fSettingsButton);
     
     setOpaque(true);
     fOpenGLContext.setRenderer(this);
@@ -117,10 +117,10 @@ MapViewComponent::MapViewComponent()
         triggerRepaint();
     };
     
-    fTooltipWindow = new TooltipWindow();
-    addAndMakeVisible(fTooltipWindow);
+    fTooltipWindow.reset(new TooltipWindow());
+    addAndMakeVisible(*fTooltipWindow);
     
-    fRegionUpdateChecker = new RegionUpdateChecker(this);
+    fRegionUpdateChecker.reset(new RegionUpdateChecker(this));
     fRegionUpdateChecker->startThread();
     
     fSize = Point<int>(600, 400);
@@ -223,7 +223,7 @@ void MapViewComponent::paint(Graphics &g)
 
 void MapViewComponent::newOpenGLContextCreated()
 {
-    ScopedPointer<Buffer> buffer = new Buffer();
+    std::unique_ptr<Buffer> buffer(new Buffer());
 
     fOpenGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
 	fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
@@ -245,7 +245,7 @@ void MapViewComponent::newOpenGLContextCreated()
 
 void MapViewComponent::updateShader()
 {
-    ScopedPointer<OpenGLShaderProgram> newShader = new OpenGLShaderProgram(fOpenGLContext);
+    std::unique_ptr<OpenGLShaderProgram> newShader(new OpenGLShaderProgram(fOpenGLContext));
 
     newShader->addVertexShader(R"#(
         attribute vec2 textureCoordIn;
@@ -663,7 +663,7 @@ void MapViewComponent::instantiateTextures(LookAt lookAt)
         RegionToTexture* job = distances[i].first;
         fPool->removeJob(job, false, 0);
 
-        ScopedPointer<RegionToTexture> j;
+        std::unique_ptr<RegionToTexture> j;
         for (auto it = fJobs.begin(); it != fJobs.end(); it++) {
             if (it->get() == job) {
                 j.reset(it->release());
@@ -1003,8 +1003,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     WorldData data = WorldData::Load(worldDataFile);
     
     fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
-        ScopedPointer<ThreadPool> prev(fPool.release());
-        fPool = CreateThreadPool();
+        std::unique_ptr<ThreadPool> prev(fPool.release());
+        fPool.reset(CreateThreadPool());
         prev->removeAllJobs(true, -1);
         fJobs.clear();
         fTextures.clear();
@@ -1205,7 +1205,7 @@ class TextInputDialog : public Component {
 public:
     TextInputDialog()
     {
-        fInputLabel = new Label();
+        fInputLabel.reset(new Label());
         fInputLabel->setEditable(true);
         String name
 #if JUCE_WINDOWS
@@ -1219,19 +1219,19 @@ public:
         fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
         fInputLabel->setColour(Label::ColourIds::textWhenEditingColourId, Colours::black);
         fInputLabel->setJustificationType(Justification::topLeft);
-        addAndMakeVisible(fInputLabel);
-        fOkButton = new TextButton();
+        addAndMakeVisible(*fInputLabel);
+        fOkButton.reset(new TextButton());
         fOkButton->setButtonText("OK");
         fOkButton->onClick = [this]() {
             close(1);
         };
-        addAndMakeVisible(fOkButton);
-        fCancelButton = new TextButton();
+        addAndMakeVisible(*fOkButton);
+        fCancelButton.reset(new TextButton());
         fCancelButton->setButtonText(TRANS("Cancel"));
         fCancelButton->onClick = [this]() {
             close(-1);
         };
-        addAndMakeVisible(fCancelButton);
+        addAndMakeVisible(*fCancelButton);
         setSize(300, 160);
     }
     
@@ -1257,9 +1257,9 @@ public:
 
     static std::pair<int, String> show(Component *target, String title, String init)
     {
-        ScopedPointer<TextInputDialog> component = new TextInputDialog();
+        std::unique_ptr<TextInputDialog> component(new TextInputDialog());
         component->fInputLabel->setText(init, dontSendNotification);
-        DialogWindow::showModalDialog(title, component, target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
+        DialogWindow::showModalDialog(title, component.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
         return std::make_pair(component->fResultMenuId, component->fInputLabel->getText());
     }
     
@@ -1283,9 +1283,9 @@ private:
     String fResult;
     int fResultMenuId = -1;
     
-    ScopedPointer<Label> fInputLabel;
-    ScopedPointer<TextButton> fOkButton;
-    ScopedPointer<TextButton> fCancelButton;
+    std::unique_ptr<Label> fInputLabel;
+    std::unique_ptr<TextButton> fOkButton;
+    std::unique_ptr<TextButton> fCancelButton;
 };
 
 void MapViewComponent::mouseUp(MouseEvent const& e)
@@ -1439,9 +1439,9 @@ void MapViewComponent::resized()
 void MapViewComponent::setBrowserOpened(bool opened)
 {
     if (opened) {
-        fBrowserOpenButton->setImages(fBrowserOpenButtonImageClose);
+        fBrowserOpenButton->setImages(fBrowserOpenButtonImageClose.get());
     } else {
-        fBrowserOpenButton->setImages(fBrowserOpenButtonImageOpen);
+        fBrowserOpenButton->setImages(fBrowserOpenButtonImageOpen.get());
     }
 }
 
@@ -1508,7 +1508,7 @@ public:
             for (int i = 0; i < numFrames; i++) {
                 std::fill_n(pixelsPtr, width, PixelARGB());
                 
-                ScopedPointer<OpenGLFrameBuffer> buffer = new OpenGLFrameBuffer();
+                std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
                 buffer->initialise(ctx, width, row);
                 buffer->makeCurrentRenderingTarget();
                 

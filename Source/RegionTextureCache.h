@@ -16,7 +16,7 @@ public:
 public:
     Region const fRegion;
     String const fFile;
-    ScopedPointer<OpenGLTexture> fTexture;
+    std::unique_ptr<OpenGLTexture> fTexture;
     Time fLoadTime;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionTextureCache);

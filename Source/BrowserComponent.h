@@ -25,11 +25,11 @@ private:
     void timerCallback() override;
     
 private:
-    ScopedPointer<ResizableEdgeComponent> fResizer;
-    ScopedPointer<ComponentBoundsConstrainer> fConstrainer;
-    ScopedPointer<ConcertinaPanel> fPanel;
-    ScopedPointer<DrawableButton> fAddButton;
-    ScopedPointer<Drawable> fAddButtonImage;
+    std::unique_ptr<ResizableEdgeComponent> fResizer;
+    std::unique_ptr<ComponentBoundsConstrainer> fConstrainer;
+    std::unique_ptr<ConcertinaPanel> fPanel;
+    std::unique_ptr<DrawableButton> fAddButton;
+    std::unique_ptr<Drawable> fAddButtonImage;
     
     Array<DirectoryBrowserComponent *> fBrowsers;
     Time fTimerStarted;

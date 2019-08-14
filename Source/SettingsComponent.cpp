@@ -19,7 +19,7 @@ public:
 public:
     GroupWater(Settings const& settings)
     {
-        fWaterOpticalDensity = new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow);
+        fWaterOpticalDensity.reset(new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow));
         fWaterOpticalDensity->setRange(SettingsComponent::kMinWaterOpticalDensity, SettingsComponent::kMaxWaterOpticalDensity);
         fWaterOpticalDensity->setValue(settings.fWaterOpticalDensity);
         fWaterOpticalDensity->onValueChange = [this]() {
@@ -27,15 +27,15 @@ public:
                 onWaterOpticalDensityChanged((float)fWaterOpticalDensity->getValue());
             }
         };
-        addAndMakeVisible(fWaterOpticalDensity);
+        addAndMakeVisible(*fWaterOpticalDensity);
         
-        fWaterOpticalDensityLabel = new Label();
+        fWaterOpticalDensityLabel.reset(new Label());
         fWaterOpticalDensityLabel->setText(TRANS("Optical Density"), NotificationType::dontSendNotification);
-        addAndMakeVisible(fWaterOpticalDensityLabel);
+        addAndMakeVisible(*fWaterOpticalDensityLabel);
         
-        fTranslucentWater = new ToggleButton(TRANS("Translucent"));
+        fTranslucentWater.reset(new ToggleButton(TRANS("Translucent")));
         fTranslucentWater->setToggleState(settings.fWaterTranslucent, NotificationType::dontSendNotification);
-        addAndMakeVisible(fTranslucentWater);
+        addAndMakeVisible(*fTranslucentWater);
         fTranslucentWater->onStateChange = [this]() {
             auto translucent = fTranslucentWater->getToggleState();
             if (onWaterTranslucentChanged) {
@@ -67,10 +67,10 @@ public:
     }
     
 private:
-    ScopedPointer<Slider> fWaterOpticalDensity;
-    ScopedPointer<Label> fWaterOpticalDensityLabel;
+    std::unique_ptr<Slider> fWaterOpticalDensity;
+    std::unique_ptr<Label> fWaterOpticalDensityLabel;
     
-    ScopedPointer<ToggleButton> fTranslucentWater;
+    std::unique_ptr<ToggleButton> fTranslucentWater;
 };
 
 class GroupBiome : public GroupComponent
@@ -84,7 +84,7 @@ public:
     {
         setText(TRANS("Biome"));
 
-        fEnableBiome = new ToggleButton(TRANS("Enable"));
+        fEnableBiome.reset(new ToggleButton(TRANS("Enable")));
         fEnableBiome->onStateChange = [this]() {
             bool const enable = fEnableBiome->getToggleState();
             if (onEnableChanged) {
@@ -93,13 +93,13 @@ public:
             fBlend->setEnabled(enable);
         };
         fEnableBiome->setToggleState(settings.fBiomeEnabled, NotificationType::dontSendNotification);
-        addAndMakeVisible(fEnableBiome);
+        addAndMakeVisible(*fEnableBiome);
         
-        fBlendTitle = new Label();
+        fBlendTitle.reset(new Label());
         fBlendTitle->setText(TRANS("Blend"), NotificationType::dontSendNotification);
-        addAndMakeVisible(fBlendTitle);
+        addAndMakeVisible(*fBlendTitle);
         
-        fBlend = new Slider(Slider::LinearHorizontal, Slider::NoTextBox);
+        fBlend.reset(new Slider(Slider::LinearHorizontal, Slider::NoTextBox));
         fBlend->setRange(SettingsComponent::kMinBiomeBlend, SettingsComponent::kMaxBiomeBlend, 1);
         fBlend->setValue(settings.fBiomeBlend);
         fBlend->onValueChange = [this]() {
@@ -117,11 +117,11 @@ public:
                 onBiomeBlendChanged(v);
             }
         };
-        addAndMakeVisible(fBlend);
+        addAndMakeVisible(*fBlend);
         
-        fBlendLabel = new Label();
+        fBlendLabel.reset(new Label());
         fBlendLabel->setText("3x3", NotificationType::dontSendNotification);
-        addAndMakeVisible(fBlendLabel);
+        addAndMakeVisible(*fBlendLabel);
         
         setSize(400, 150);
     }
@@ -145,15 +145,15 @@ public:
     }
 
 private:
-    ScopedPointer<ToggleButton> fEnableBiome;
-    ScopedPointer<Label> fBlendTitle;
-    ScopedPointer<Slider> fBlend;
-    ScopedPointer<Label> fBlendLabel;
+    std::unique_ptr<ToggleButton> fEnableBiome;
+    std::unique_ptr<Label> fBlendTitle;
+    std::unique_ptr<Slider> fBlend;
+    std::unique_ptr<Label> fBlendLabel;
 };
 
 SettingsComponent::SettingsComponent(Settings const& settings)
 {
-    ScopedPointer<GroupWater> water = new GroupWater(settings);
+    std::unique_ptr<GroupWater> water(new GroupWater(settings));
     water->onWaterTranslucentChanged = [this](bool translucent) {
         onWaterTranslucentChanged(translucent);
     };
@@ -161,9 +161,9 @@ SettingsComponent::SettingsComponent(Settings const& settings)
         onWaterOpticalDensityChanged(v);
     };
     fGroupWater.reset(water.release());
-    addAndMakeVisible(fGroupWater);
+    addAndMakeVisible(*fGroupWater);
     
-    ScopedPointer<GroupBiome> biome = new GroupBiome(settings);
+    std::unique_ptr<GroupBiome> biome(new GroupBiome(settings));
     biome->onEnableChanged = [this](bool enable) {
         if (onBiomeEnableChanged) {
             onBiomeEnableChanged(enable);
@@ -175,11 +175,11 @@ SettingsComponent::SettingsComponent(Settings const& settings)
         }
     };
     fGroupBiome.reset(biome.release());
-    addAndMakeVisible(fGroupBiome);
+    addAndMakeVisible(*fGroupBiome);
     
-    fAboutButton = new HyperlinkButton("About", URL());
+    fAboutButton.reset(new HyperlinkButton("About", URL()));
     fAboutButton->setJustificationType(Justification::centredRight);
-    addAndMakeVisible(fAboutButton);
+    addAndMakeVisible(*fAboutButton);
     fAboutButton->onClick = [this]() {
         DialogWindow::LaunchOptions options;
         options.content.setOwned(new AboutComponent());
