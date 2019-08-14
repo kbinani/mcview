@@ -1331,8 +1331,8 @@ void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin)
 void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
 {
     PopupMenu menu;
-    menu.addItem(1, TRANS("Delete"));
-    menu.addItem(2, TRANS("Rename"));
+    menu.addItem(1, TRANS("Delete") + " \"" + pin->fMessage + "\"");
+    menu.addItem(2, TRANS("Rename") + " \"" + pin->fMessage + "\"");
     int menuId = menu.showAt(Rectangle<int>(screenPos, screenPos));
     if (menuId == 1) {
         for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
