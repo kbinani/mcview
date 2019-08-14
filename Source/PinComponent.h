@@ -8,8 +8,10 @@ public:
     explicit PinComponent(std::shared_ptr<Pin> const& pin);
 
     void paint(Graphics &g) override;
+    void mouseDown(MouseEvent const&) override;
     void mouseUp(MouseEvent const&) override;
     void mouseDoubleClick(MouseEvent const&) override;
+    void mouseDrag(MouseEvent const&) override;
 
     void updatePinPosition(Point<float> pos);
     bool isPresenting(std::shared_ptr<Pin> const& p) const
@@ -28,9 +30,12 @@ public:
 public:
     std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onRightClick;
     std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onDoubleClick;
+    std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onDrag;
+    std::function<void(std::shared_ptr<Pin>)> onDragEnd;
 
 private:
     std::shared_ptr<Pin> fPin;
+    Point<int> fMouseDownToPinOffset;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PinComponent)
 };

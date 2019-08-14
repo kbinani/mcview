@@ -83,6 +83,7 @@ private:
     void updateAllPinComponentPosition();
     void handlePinRightClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
     void handlePinDoubleClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
+    void handlePinDrag(std::shared_ptr<Pin> const&, Point<int> screenPos);
 
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);

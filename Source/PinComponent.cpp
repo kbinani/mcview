@@ -66,19 +66,33 @@ void PinComponent::paint(Graphics &g)
     GraphicsHelper::DrawText(g, fPin->fMessage, stringBounds, Justification::centred);
 }
 
+void PinComponent::mouseDown(MouseEvent const& e)
+{
+    Point<int> localPinPos(pinHeadRadius, getHeight());
+    fMouseDownToPinOffset = Point<int>(e.x - localPinPos.x, e.y - localPinPos.y);
+}
+
 void PinComponent::mouseUp(MouseEvent const& e)
 {
-    if (e.getNumberOfClicks() != 1) {
+    if (e.mods.isRightButtonDown()) {
+        if (onRightClick && e.getNumberOfClicks() == 1 && e.mouseWasClicked()) {
+            onRightClick(fPin, e.getScreenPosition());
+        }
+    } else if (e.mouseWasDraggedSinceMouseDown()) {
+        if (onDragEnd) {
+            onDragEnd(fPin);
+        }
+    }
+}
+
+void PinComponent::mouseDrag(MouseEvent const& e)
+{
+    if (e.mods.isRightButtonDown()) {
         return;
     }
-    if (!e.mouseWasClicked()) {
-        return;
-    }
-    if (!e.mods.isRightButtonDown()) {
-        return;
-    }
-    if (onRightClick) {
-        onRightClick(fPin, e.getScreenPosition());
+    if (onDrag) {
+        Point<int> pos(e.getScreenX() - fMouseDownToPinOffset.x, e.getScreenY() - fMouseDownToPinOffset.y);
+        onDrag(fPin, pos);
     }
 }
 

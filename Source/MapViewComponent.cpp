@@ -1338,6 +1338,12 @@ void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin)
     pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
         handlePinDoubleClicked(pin, screenPos);
     };
+    pinComponent->onDrag = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+        handlePinDrag(pin, screenPos);
+    };
+    pinComponent->onDragEnd = [this](std::shared_ptr<Pin> pin) {
+        saveWorldData();
+    };
     addAndMakeVisible(pinComponent);
     fPinComponents.emplace_back(pinComponent);
 }
@@ -1384,6 +1390,23 @@ void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const& pin, P
     pin->fMessage = message;
     saveWorldData();
     triggerRepaint();
+}
+
+void MapViewComponent::handlePinDrag(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
+{
+    Point<int> p = getScreenPosition();
+    LookAt lookAt = fLookAt.get();
+    Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
+    Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
+    pin->fX = floor(mapPos.x);
+    pin->fZ = floor(mapPos.y) + 1;
+    for (auto const& comp : fPinComponents) {
+        if (!comp->isPresenting(pin)) {
+            continue;
+        }
+        comp->updatePinPosition(getViewCoordinateFromMap(comp->getMapCoordinate(), lookAt));
+        break;
+    }
 }
 
 void MapViewComponent::updateAllPinComponentPosition()
