@@ -7,6 +7,7 @@
 #include "Dimension.h"
 #include "TimerInstance.h"
 #include "WorldData.h"
+#include "PinComponent.h"
 #include <map>
 #include <vector>
 #include <set>
@@ -71,11 +72,13 @@ private:
     void captureToImage();
     LookAt clampLookAt(LookAt lookAt) const;
     LookAt clampedLookAt() const;
+    void setLookAt(LookAt next);
     void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
     void instantiateTextures(LookAt lookAt);
     void mouseRightClicked(MouseEvent const& e);
     int hitTestPin(Point<int> pos, LookAt lookAt) const;
     void saveWorldData();
+    void updateAllPinComponentPosition();
     
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
@@ -206,6 +209,7 @@ private:
     OpenGLContext fOpenGLContext;
     File fWorldDirectory;
     WorldData fWorldData;
+    std::vector<std::unique_ptr<PinComponent>> fPinComponents;
     Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
     std::unique_ptr<OpenGLShaderProgram> fShader;

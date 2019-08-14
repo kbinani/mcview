@@ -113,7 +113,7 @@ MapViewComponent::MapViewComponent()
         LookAt next = clampedLookAt();
         next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
         next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
-        fLookAt = clampLookAt(next);
+        setLookAt(next);
         triggerRepaint();
     };
     
@@ -154,48 +154,6 @@ void MapViewComponent::paint(Graphics &g)
     int const lineHeight = 24;
     int const coordLabelWidth = 100;
     int const coordLabelHeight = 2 * lineHeight;
-
-    static Colour const pinHeadColour = Colours::red;
-    static Colour const pinHeadHilightColour = pinHeadColour.brighter().brighter();
-    static Point<float> const pinHilightOffset(-2, -2);
-    static int const pinHeadHilightRadius = 3;
-    static Point<float> const pinHeadShadowOffset(3, 3);
-    static float const pinHeadShadowAlpha = 0.5f;
-    static Colour const stemColour = Colours::white;
-    static float const stemThickness = 2;
-
-    LookAt lookAt = fLookAt.get();
-    Dimension dim = fDimension;
-    Font font = Font(pinNameFontSize);
-    
-    for (Pin pin : fWorldData.fPins) {
-        if (pin.fDim != dim) {
-            continue;
-        }
-        g.saveState();
-        defer {
-            g.restoreState();
-        };
-        Point<float> pos = getViewCoordinateFromMap(Point<float>(pin.fX, pin.fZ), lookAt);
-        g.setColour(Colours::black.withAlpha(pinHeadShadowAlpha));
-        g.fillEllipse(pos.x + pinHeadShadowOffset.x - pinHeadRadius, pos.y + pinHeadShadowOffset.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
-        
-        g.setColour(stemColour);
-        g.drawLine(pos.x, pos.y - stemLength, pos.x, pos.y, stemThickness);
-        
-        g.setColour(pinHeadColour);
-        g.fillEllipse(pos.x - pinHeadRadius, pos.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
-        
-        g.setColour(pinHeadHilightColour);
-        g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
-        
-        g.setColour(Colours::black.withAlpha(0.5f));
-        auto stringBounds = PinNameBounds(pin, font, pos);
-        g.fillRect(stringBounds);
-        g.setColour(Colours::white);
-        g.setFont(pinNameFontSize);
-        GraphicsHelper::DrawText(g, pin.fMessage, stringBounds, Justification::centred);
-    }
 
     Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
     g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
@@ -1013,10 +971,19 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     {
         ScopedLock lk(fLoadingRegionsLock);
 
+        LookAt const lookAt = fLookAt.get();
+
         fLoadingRegions.clear();
         fWorldDirectory = directory;
         fDimension = dim;
         fWorldData = data;
+        fPinComponents.clear();
+        for (auto const& p : fWorldData.fPins) {
+            PinComponent* pin = new PinComponent(p);
+            pin->updatePinPosition(getViewCoordinateFromMap(pin->getMapCoordinate(), lookAt));
+            addAndMakeVisible(pin);
+            fPinComponents.emplace_back(pin);
+        }
 
         int minX = 0;
         int maxX = 0;
@@ -1038,11 +1005,10 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
             files.push_back(f);
         }
         
-        LookAt const lookAt = fLookAt.get();
         LookAt next = lookAt;
         next.fX = 0;
         next.fZ = 0;
-        fLookAt = next;
+        setLookAt(next);
         fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
 
         std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
@@ -1150,7 +1116,7 @@ void MapViewComponent::magnify(Point<float> p, float rate)
     next.fX = pivot.x - dx * next.fBlocksPerPixel;
     next.fZ = pivot.y - dz * next.fBlocksPerPixel;
 
-    fLookAt = clampLookAt(next);
+    setLookAt(next);
 
     triggerRepaint();
 }
@@ -1174,13 +1140,12 @@ void MapViewComponent::mouseDrag(MouseEvent const& event)
     LookAt next = current;
     next.fX = fCenterWhenDragStart.x - dx;
     next.fZ = fCenterWhenDragStart.y - dy;
-    next = clampLookAt(next);
-    fLookAt = next;
+    setLookAt(next);
 
     fMouse = event.position;
 
     triggerRepaint();
-    
+
     fLastDragPosition.push_back(event);
     if (fLastDragPosition.size() > 2) {
         fLastDragPosition.pop_front();
@@ -1325,13 +1290,13 @@ int MapViewComponent::hitTestPin(Point<int> pos, LookAt lookAt) const
 {
     Font font = Font(pinNameFontSize);
     for (int i = 0; i < fWorldData.fPins.size(); i++) {
-        Pin p = fWorldData.fPins[i];
-        auto pinPos = getViewCoordinateFromMap(Point<float>(p.fX, p.fZ), lookAt);
+        std::shared_ptr<Pin> const& p = fWorldData.fPins[i];
+        auto pinPos = getViewCoordinateFromMap(Point<float>(p->fX, p->fZ), lookAt);
         auto bounds = Rectangle<float>(pinPos.x - pinHeadRadius, pinPos.y - stemLength - pinHeadRadius, pinHeadRadius, pinHeadRadius * 2 + stemLength);
         if (bounds.contains(pos.toFloat())) {
             return i;
         }
-        auto stringBounds = PinNameBounds(p, font, pinPos);
+        auto stringBounds = PinNameBounds(*p, font, pinPos);
         if (stringBounds.contains(pos.toFloat())) {
             return i;
         }
@@ -1353,18 +1318,26 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
         Point<int> pos = e.getScreenPosition();
         int menuId = menu.showAt(Rectangle<int>(pos, pos));
         if (menuId == 1) {
+            std::shared_ptr<Pin> const pin = fWorldData.fPins[hitPinIndex];
+            for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
+                if (!(*it)->isPresenting(pin)) {
+                    continue;
+                }
+                removeChildComponent(it->get());
+                fPinComponents.erase(it);
+                break;
+            }
             fWorldData.fPins.erase(fWorldData.fPins.begin() + hitPinIndex);
             saveWorldData();
             triggerRepaint();
         } else if (menuId == 2) {
-            Pin pin = fWorldData.fPins[hitPinIndex];
-            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin.fMessage);
+            std::shared_ptr<Pin> const& pin = fWorldData.fPins[hitPinIndex];
+            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
             if (result.first != 1) {
                 return;
             }
             String message = result.second;
-            pin.fMessage = message;
-            fWorldData.fPins[hitPinIndex] = pin;
+            pin->fMessage = message;
             saveWorldData();
             triggerRepaint();
         }
@@ -1384,14 +1357,26 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
         }
         String message = result.second;
         Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
-        Pin p;
-        p.fX = round(pinPos.x);
-        p.fZ = round(pinPos.y);
-        p.fDim = dim;
-        p.fMessage = message;
+        std::shared_ptr<Pin> p = std::make_shared<Pin>();
+        p->fX = round(pinPos.x);
+        p->fZ = round(pinPos.y);
+        p->fDim = dim;
+        p->fMessage = message;
+        PinComponent *pinComponent = new PinComponent(p);
+        pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
+        addAndMakeVisible(pinComponent);
+        fPinComponents.emplace_back(pinComponent);
         fWorldData.fPins.push_back(p);
         saveWorldData();
         triggerRepaint();
+    }
+}
+
+void MapViewComponent::updateAllPinComponentPosition()
+{
+    LookAt const lookAt = fLookAt.get();
+    for (auto const& pin : fPinComponents) {
+        pin->updatePinPosition(getViewCoordinateFromMap(Point<float>(pin->getMapCoordinate()), lookAt));
     }
 }
 
@@ -1626,6 +1611,12 @@ MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
     l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
 
     return l;
+}
+
+void MapViewComponent::setLookAt(LookAt next)
+{
+    fLookAt = clampLookAt(next);
+    updateAllPinComponentPosition();
 }
 
 MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)

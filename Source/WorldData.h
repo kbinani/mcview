@@ -23,5 +23,5 @@ public:
     static File WorldDataPath(File worldDirectory);
 
 public:
-    std::vector<Pin> fPins;
+    std::vector<std::shared_ptr<Pin>> fPins;
 };

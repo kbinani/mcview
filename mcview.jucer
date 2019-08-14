@@ -68,6 +68,9 @@
             file="Source/mcview.entitlements"/>
       <FILE id="lK838W" name="OverScroller.hpp" compile="0" resource="0"
             file="Source/OverScroller.hpp"/>
+      <FILE id="ozQCZP" name="PinComponent.cpp" compile="1" resource="0"
+            file="Source/PinComponent.cpp"/>
+      <FILE id="hwekw0" name="PinComponent.h" compile="0" resource="0" file="Source/PinComponent.h"/>
       <FILE id="AQJMO6" name="PNGWriter.cpp" compile="1" resource="0" file="Source/PNGWriter.cpp"/>
       <FILE id="yTsaWN" name="PNGWriter.h" compile="0" resource="0" file="Source/PNGWriter.h"/>
       <FILE id="gaqahe" name="Region.h" compile="0" resource="0" file="Source/Region.h"/>

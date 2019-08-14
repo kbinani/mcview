@@ -67,7 +67,7 @@ void WorldData::save(File path) const
 {
     var pins = var(Array<var>());
     for (int i = 0; i < fPins.size(); i++) {
-        pins.append(fPins[i].toVar());
+        pins.append(fPins[i]->toVar());
     }
     std::unique_ptr<DynamicObject> obj(new DynamicObject());
     obj->setProperty(kPins, pins);
@@ -91,8 +91,8 @@ WorldData WorldData::Load(File path)
     if (pins.isArray()) {
         for (int i = 0; i < pins.size(); i++) {
             var pin = pins[i];
-            Pin p;
-            if (!Pin::Parse(pin, p)) {
+            std::shared_ptr<Pin> p = std::make_shared<Pin>();
+            if (!Pin::Parse(pin, *p)) {
                 continue;
             }
             data.fPins.push_back(p);
