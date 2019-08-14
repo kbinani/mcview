@@ -976,6 +976,9 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fWorldData = data;
         fPinComponents.clear();
         for (auto const& p : fWorldData.fPins) {
+            if (p->fDim != dim) {
+                continue;
+            }
             addPinComponent(p);
         }
 

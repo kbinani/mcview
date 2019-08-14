@@ -34,7 +34,7 @@ PinComponent::PinComponent(std::shared_ptr<Pin> const& pin)
 void PinComponent::paint(Graphics &g)
 {
     static Colour const pinHeadColour = Colours::red;
-    static Colour const pinHeadHilightColour = pinHeadColour.brighter().brighter();
+    static Colour const pinHeadColourNether = Colours::blue;
     static Colour const stemColour = Colours::white;
 
     g.saveState();
@@ -51,10 +51,11 @@ void PinComponent::paint(Graphics &g)
     g.setColour(stemColour);
     g.drawLine(pos.x, pos.y - stemLength, pos.x, pos.y, stemThickness);
 
-    g.setColour(pinHeadColour);
+    Colour const headColor = fPin->fDim == Dimension::TheNether ? pinHeadColourNether : pinHeadColour;
+    g.setColour(headColor);
     g.fillEllipse(pos.x - pinHeadRadius, pos.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
 
-    g.setColour(pinHeadHilightColour);
+    g.setColour(headColor.brighter().brighter());
     g.fillEllipse(pos.x + pinHilightOffset.x - pinHeadHilightRadius, pos.y + pinHilightOffset.y - pinHeadHilightRadius - stemLength, pinHeadHilightRadius * 2, pinHeadHilightRadius * 2);
 
     g.setColour(Colours::black.withAlpha(0.5f));
