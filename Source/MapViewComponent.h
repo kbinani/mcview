@@ -14,7 +14,7 @@
 #include <deque>
 #include <memory>
 
-class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer
+class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer, public ChangeListener
 {
 public:
     std::function<void()> onOpenButtonClicked;
@@ -37,6 +37,8 @@ public:
     void mouseDown(MouseEvent const& event) override;
     void mouseMove(MouseEvent const& event) override;
     void mouseUp(MouseEvent const& event) override;
+
+    void changeListenerCallback(ChangeBroadcaster *) override;
 
     void setWorldDirectory(File directory, Dimension dim);
     void queueTextureLoading(std::vector<File> files, Dimension dim, bool useCache);

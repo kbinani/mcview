@@ -122,13 +122,17 @@ MapViewComponent::MapViewComponent()
     
     fRegionUpdateChecker.reset(new RegionUpdateChecker(this));
     fRegionUpdateChecker->startThread();
-    
+
+    Desktop::getInstance().getAnimator().addChangeListener(this);
+
     fSize = Point<int>(600, 400);
     setSize (600, 400);
 }
 
 MapViewComponent::~MapViewComponent()
 {
+    Desktop::getInstance().getAnimator().removeChangeListener(this);
+
     fOpenGLContext.detach();
     fPool->removeAllJobs(true, -1);
     fRegionUpdateChecker->signalThreadShouldExit();
@@ -1392,6 +1396,11 @@ void MapViewComponent::saveWorldData()
 {
     File f = WorldData::WorldDataPath(fWorldDirectory);
     fWorldData.save(f);
+}
+
+void MapViewComponent::changeListenerCallback(ChangeBroadcaster *source)
+{
+    updateAllPinComponentPosition();
 }
 
 ThreadPool* MapViewComponent::CreateThreadPool()
