@@ -21,10 +21,6 @@ static int const kMargin = 10;
 static int const kButtonSize = 40;
 static int const kFadeDurationMS = 300;
 
-static int const pinHeadRadius = 6;
-static int const pinNameFontSize = 14;
-static int const stemLength = 16;
-
 MapViewComponent::MapViewComponent()
     : fLookAt({0, 0, 5})
     , fVisibleRegions({0, 0, 0, 0})
@@ -137,14 +133,6 @@ MapViewComponent::~MapViewComponent()
     fPool->removeAllJobs(true, -1);
     fRegionUpdateChecker->signalThreadShouldExit();
     fRegionUpdateChecker->waitForThreadToExit(-1);
-}
-
-static Rectangle<float> PinNameBounds(Pin pin, Font font, Point<float> pos)
-{
-    int const pad = 4;
-    float stringWidth = font.getStringWidthFloat(pin.fMessage);
-    Rectangle<float> stringBounds(pos.x + pinHeadRadius + pad, pos.y - stemLength - font.getHeight() / 2 - pad, pad + stringWidth + pad, pad + font.getHeight() + pad);
-    return stringBounds;
 }
 
 void MapViewComponent::paint(Graphics &g)
