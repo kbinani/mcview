@@ -68,6 +68,8 @@
             file="Source/mcview.entitlements"/>
       <FILE id="lK838W" name="OverScroller.hpp" compile="0" resource="0"
             file="Source/OverScroller.hpp"/>
+      <FILE id="ny5afl" name="Pin.cpp" compile="1" resource="0" file="Source/Pin.cpp"/>
+      <FILE id="HzXLp6" name="Pin.h" compile="0" resource="0" file="Source/Pin.h"/>
       <FILE id="ozQCZP" name="PinComponent.cpp" compile="1" resource="0"
             file="Source/PinComponent.cpp"/>
       <FILE id="hwekw0" name="PinComponent.h" compile="0" resource="0" file="Source/PinComponent.h"/>

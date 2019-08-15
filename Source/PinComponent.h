@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "WorldData.h"
+#include "Pin.h"
 
 class PinComponent : public Component {
 public:
