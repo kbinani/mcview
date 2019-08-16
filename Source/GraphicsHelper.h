@@ -27,6 +27,8 @@ public:
         DrawFittedText(g, text, area.getX(), area.getY(), area.getWidth(), area.getHeight(), justification, maximumNumberOfLines, minimumHorizontalScale);
     }
 
+    static Font FallbackFont(Font font, String text);
+
 private:
     GraphicsHelper() = delete;
 };

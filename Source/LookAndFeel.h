@@ -205,6 +205,57 @@ class LookAndFeel : public juce::LookAndFeel_V4
             }
         }
     }
+
+    void drawDocumentWindowTitleBar (DocumentWindow& window, Graphics& g,
+                                                     int w, int h, int titleSpaceX, int titleSpaceW,
+                                                     const Image* icon, bool drawTitleTextOnLeft) override
+    {
+        if (w * h == 0)
+            return;
+
+        auto isActive = window.isActiveWindow();
+
+        g.setColour (getCurrentColourScheme().getUIColour (ColourScheme::widgetBackground));
+        g.fillAll();
+
+
+        Font f (h * 0.65f, Font::plain);
+        Font font = GraphicsHelper::FallbackFont(f, window.getName());
+        g.setFont(f);
+
+        auto textW = font.getStringWidth (window.getName());
+        auto iconW = 0;
+        auto iconH = 0;
+
+        if (icon != nullptr)
+        {
+            iconH = static_cast<int> (font.getHeight());
+            iconW = icon->getWidth() * iconH / icon->getHeight() + 4;
+        }
+
+        textW = jmin (titleSpaceW, textW + iconW);
+        auto textX = drawTitleTextOnLeft ? titleSpaceX
+        : jmax (titleSpaceX, (w - textW) / 2);
+
+        if (textX + textW > titleSpaceX + titleSpaceW)
+            textX = titleSpaceX + titleSpaceW - textW;
+
+        if (icon != nullptr)
+        {
+            g.setOpacity (isActive ? 1.0f : 0.6f);
+            g.drawImageWithin (*icon, textX, (h - iconH) / 2, iconW, iconH,
+                               RectanglePlacement::centred, false);
+            textX += iconW;
+            textW -= iconW;
+        }
+
+        if (window.isColourSpecified (DocumentWindow::textColourId) || isColourSpecified (DocumentWindow::textColourId))
+            g.setColour (window.findColour (DocumentWindow::textColourId));
+        else
+            g.setColour (getCurrentColourScheme().getUIColour (ColourScheme::defaultText));
+
+        GraphicsHelper::DrawText(g, window.getName(), textX, 0, textW, h, Justification::centredLeft, true);
+    }
 };
     
 }
