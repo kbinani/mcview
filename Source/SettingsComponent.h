@@ -9,6 +9,7 @@ public:
     std::function<void(bool)> onWaterTranslucentChanged;
     std::function<void(bool)> onBiomeEnableChanged;
     std::function<void(int)> onBiomeBlendChanged;
+    std::function<void(bool)> onShowPinChanged;
 
     static float const kDefaultWaterOpticalDensity;
     static float const kMaxWaterOpticalDensity;
@@ -27,5 +28,6 @@ public:
 private:
     std::unique_ptr<GroupComponent> fGroupWater;
     std::unique_ptr<GroupComponent> fGroupBiome;
+    std::unique_ptr<GroupComponent> fGroupPin;
     std::unique_ptr<HyperlinkButton> fAboutButton;
 };

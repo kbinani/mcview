@@ -6,6 +6,7 @@ static const Identifier kWaterTranslucent("water_translucent");
 static const Identifier kWaterOpticalDensity("water_optical_density");
 static const Identifier kBiomeEnabled("biome_enabled");
 static const Identifier kBiomeBlend("biome_blend");
+static const Identifier kShowPin("show_pin");
 
 static bool GetInt(var &v, Identifier key, int *r, int min, int max)
 {
@@ -90,6 +91,7 @@ Settings::Settings()
     , fWaterTranslucent(true)
     , fBiomeEnabled(true)
     , fBiomeBlend(SettingsComponent::kDefaultBiomeBlend)
+    , fShowPin(true)
 {
 }
 
@@ -132,6 +134,9 @@ void Settings::load()
     GetInt(v, kBiomeBlend, &fBiomeBlend,
            SettingsComponent::kMinBiomeBlend,
            SettingsComponent::kMaxBiomeBlend);
+
+    // show_pin
+    GetBool(v, kShowPin, &fShowPin);
 }
 
 void Settings::save()
@@ -175,7 +180,10 @@ void Settings::save()
     
     // biome_blend
     obj->setProperty(kBiomeBlend, var(fBiomeBlend));
-    
+
+    // show_pin
+    obj->setProperty(kShowPin, var(fShowPin));
+
     obj->writeAsJSON(stream, 4, false, 16);
 }
 

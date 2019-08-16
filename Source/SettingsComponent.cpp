@@ -151,6 +151,37 @@ private:
     std::unique_ptr<Label> fBlendLabel;
 };
 
+class GroupPin : public GroupComponent {
+public:
+    std::function<void(bool)> onShowPinChanged;
+
+    explicit GroupPin(Settings const& settings) {
+        setText(TRANS("Pin"));
+        fShowPin.reset(new ToggleButton(TRANS("Show")));
+        fShowPin->setToggleState(settings.fShowPin, dontSendNotification);
+        fShowPin->onStateChange = [this]() {
+            if (onShowPinChanged) {
+                onShowPinChanged(fShowPin->getToggleState());
+            }
+        };
+        addAndMakeVisible(*fShowPin);
+        setSize(400, 55);
+    }
+
+    void resized() override {
+        int const margin = 10;
+        int const width = getWidth();
+        int const rowHeight = 40;
+
+        int y = margin;
+        fShowPin->setBounds(margin, margin, width - 2 * margin, rowHeight);
+        y += rowHeight;
+    }
+
+private:
+    std::unique_ptr<ToggleButton> fShowPin;
+};
+
 SettingsComponent::SettingsComponent(Settings const& settings)
 {
     std::unique_ptr<GroupWater> water(new GroupWater(settings));
@@ -176,7 +207,16 @@ SettingsComponent::SettingsComponent(Settings const& settings)
     };
     fGroupBiome.reset(biome.release());
     addAndMakeVisible(*fGroupBiome);
-    
+
+    std::unique_ptr<GroupPin> pin(new GroupPin(settings));
+    pin->onShowPinChanged = [this](bool show) {
+        if (onShowPinChanged) {
+            onShowPinChanged(show);
+        }
+    };
+    fGroupPin.reset(pin.release());
+    addAndMakeVisible(*fGroupPin);
+
     fAboutButton.reset(new HyperlinkButton("About", URL()));
     fAboutButton->setJustificationType(Justification::centredRight);
     addAndMakeVisible(*fAboutButton);
@@ -212,6 +252,9 @@ void SettingsComponent::resized()
         y += rowMargin;
         fGroupBiome->setBounds(margin, y, width - 2 * margin, fGroupBiome->getHeight());
         y += fGroupBiome->getHeight();
+        y += rowMargin;
+        fGroupPin->setBounds(margin, y, width - 2 * margin, fGroupPin->getHeight());
+        y += fGroupPin->getHeight();
         y += rowMargin;
     }
     {

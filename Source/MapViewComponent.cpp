@@ -974,19 +974,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         fWorldDirectory = directory;
         fDimension = dim;
         fWorldData = data;
-        fPinComponents.clear();
-        for (auto const& p : fWorldData.fPins) {
-            if (dim == Dimension::TheEnd) {
-                if (p->fDim != dim) {
-                    continue;
-                }
-            } else {
-                if (p->fDim == Dimension::TheEnd) {
-                    continue;
-                }
-            }
-            addPinComponent(p);
-        }
+        resetPinComponents();
 
         int minX = 0;
         int maxX = 0;
@@ -1301,6 +1289,9 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
     if (!fWorldDirectory.exists()) {
         return;
     }
+    if (!fShowPin) {
+        return;
+    }
     LookAt current = clampedLookAt();
     Dimension dim = fDimension;
 
@@ -1431,6 +1422,26 @@ void MapViewComponent::updateAllPinComponentPosition()
         } else {
             pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
         }
+    }
+}
+
+void MapViewComponent::resetPinComponents()
+{
+    fPinComponents.clear();
+    if (!fShowPin) {
+        return;
+    }
+    for (auto const& p : fWorldData.fPins) {
+        if (fDimension == Dimension::TheEnd) {
+            if (p->fDim != fDimension) {
+                continue;
+            }
+        } else {
+            if (p->fDim == Dimension::TheEnd) {
+                continue;
+            }
+        }
+        addPinComponent(p);
     }
 }
 
@@ -1654,6 +1665,13 @@ void MapViewComponent::setBiomeEnable(bool enable)
 void MapViewComponent::setBiomeBlend(int blend)
 {
     fBiomeBlend = blend;
+    triggerRepaint();
+}
+
+void MapViewComponent::setShowPin(bool show)
+{
+    fShowPin = show;
+    resetPinComponents();
     triggerRepaint();
 }
 

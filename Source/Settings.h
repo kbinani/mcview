@@ -20,6 +20,7 @@ public:
     bool fWaterTranslucent = true;
     bool fBiomeEnabled = true;
     int fBiomeBlend;
+    bool fShowPin = true;
 
 private:
     static File ConfigFile();

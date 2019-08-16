@@ -45,6 +45,7 @@ public:
         fMapViewComponent->setWaterOpticalDensity(fSettings->fWaterOpticalDensity);
         fMapViewComponent->setBiomeEnable(fSettings->fBiomeEnabled);
         fMapViewComponent->setBiomeBlend(fSettings->fBiomeBlend);
+        fMapViewComponent->setShowPin(fSettings->fShowPin);
         
         addAndMakeVisible(fMapViewComponent.get());
 
@@ -92,6 +93,10 @@ public:
         fSettingsComponent->onBiomeBlendChanged = [this](int blend) {
             fMapViewComponent->setBiomeBlend(blend);
             fSettings->fBiomeBlend = blend;
+        };
+        fSettingsComponent->onShowPinChanged = [this](bool show) {
+            fMapViewComponent->setShowPin(show);
+            fSettings->fShowPin = show;
         };
         addAndMakeVisible(fSettingsComponent.get());
         

@@ -61,7 +61,8 @@ public:
     void setWaterTranslucent(bool translucent);
     void setBiomeEnable(bool enable);
     void setBiomeBlend(int blend);
-    
+    void setShowPin(bool show);
+
 private:
     void updateShader();
     Point<float> getMapCoordinateFromView(Point<float> p) const;
@@ -84,6 +85,7 @@ private:
     void handlePinRightClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
     void handlePinDoubleClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
     void handlePinDrag(std::shared_ptr<Pin> const&, Point<int> screenPos);
+    void resetPinComponents();
 
     static ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
@@ -214,7 +216,10 @@ private:
     OpenGLContext fOpenGLContext;
     File fWorldDirectory;
     WorldData fWorldData;
+
     std::vector<std::unique_ptr<PinComponent>> fPinComponents;
+    bool fShowPin;
+
     Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
     std::unique_ptr<OpenGLShaderProgram> fShader;
