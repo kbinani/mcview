@@ -1,9 +1,9 @@
 [submodule "ext/libminecraft-file"]
 	path = ext/libminecraft-file
-	url = git@github.com:kbinani/libminecraft-file.git
+	url = https://github.com/kbinani/libminecraft-file.git
 [submodule "ext/colormap-shaders"]
 	path = ext/colormap-shaders
-	url = git@github.com:kbinani/colormap-shaders.git
+	url = https://github.com/kbinani/colormap-shaders.git
 [submodule "ext/JUCE"]
 	path = ext/JUCE
-	url = git@github.com:kbinani/JUCE.git
+	url = https://github.com/kbinani/JUCE.git
