@@ -902,6 +902,13 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     info.blockId = mcfile::blocks::minecraft::air;
                     pixelInfo[idx] = info;
                     didset = true;
+                } else if (waterDepth > 0) {
+                    PixelInfo info;
+                    info.height = 0;
+                    info.waterDepth = waterDepth;
+                    info.blockId = mcfile::blocks::minecraft::water;
+                    pixelInfo[idx] = info;
+                    didset = true;
                 }
             }
         }
