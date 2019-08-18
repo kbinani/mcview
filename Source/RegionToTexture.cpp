@@ -864,6 +864,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                     }
                 }
                 bool all_transparent = true;
+                bool found_opaque_block = false;
                 for (int y = yini; y >= 0; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
                     if (block == mcfile::blocks::unknown) {
@@ -892,21 +893,22 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
                         info.blockId = block;
                         pixelInfo[idx] = info;
                         didset = true;
+                        found_opaque_block = true;
                         break;
                     }
                 }
-                if (all_transparent) {
-                    PixelInfo info;
-                    info.height = 0;
-                    info.waterDepth = 0;
-                    info.blockId = mcfile::blocks::minecraft::air;
-                    pixelInfo[idx] = info;
-                    didset = true;
-                } else if (waterDepth > 0) {
+                if (!found_opaque_block && waterDepth > 0) {
                     PixelInfo info;
                     info.height = 0;
                     info.waterDepth = waterDepth;
                     info.blockId = mcfile::blocks::minecraft::water;
+                    pixelInfo[idx] = info;
+                    didset = true;
+                } else if (all_transparent) {
+                    PixelInfo info;
+                    info.height = 0;
+                    info.waterDepth = 0;
+                    info.blockId = mcfile::blocks::minecraft::air;
                     pixelInfo[idx] = info;
                     didset = true;
                 }
