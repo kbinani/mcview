@@ -6,6 +6,11 @@ Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.
 ![nether](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss2.png)
 ![the_end](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss3.png)
 
+# Install
+
+- Microsoft Store: https://www.microsoft.com/store/productId/9N91B7RLJV9F
+- App Store: https://apps.apple.com/us/app/mcview/id1471176644
+
 # License
 
 - GPLv3
