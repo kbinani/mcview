@@ -108,7 +108,8 @@ void PinComponent::updatePinPosition(Point<float> pos)
     int const h = stemLength + pinHeadRadius * 2;
     Font font(pinNameFontSize);
     Rectangle<float> nameBounds = PinNameBounds(*fPin, font, pos);
-    int const width = nameBounds.getRight();
+    int const left = pos.x - pinHeadRadius;
+    int const width = nameBounds.getRight() - left;
     int const height = jmax(h, h - (int)nameBounds.getY());
     setBounds(pos.x - pinHeadRadius, pos.y - height, width, height);
 }
