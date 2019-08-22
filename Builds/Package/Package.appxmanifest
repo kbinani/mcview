@@ -9,7 +9,7 @@
   <Identity
     Name="52186kbinani.mcview"
     Publisher="CN=B8976C2F-50D5-4CD4-A6C5-15D29097087E"
-    Version="3.0.0.0" />
+    Version="3.0.1.0" />
 
   <Properties>
     <DisplayName>mcview</DisplayName>
