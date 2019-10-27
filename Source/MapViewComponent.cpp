@@ -148,10 +148,57 @@ void MapViewComponent::paint(Graphics &g)
     };
 
     int const width = getWidth();
+    int const height = getHeight();
     int const lineHeight = 24;
     int const coordLabelWidth = 100;
     int const coordLabelHeight = 2 * lineHeight;
 
+    LookAt const lookAt = fLookAt.get();
+
+    Point<float> const topLeft = getMapCoordinateFromView(Point<float>(0, 0), lookAt);
+    Point<float> const bottomRight = getMapCoordinateFromView(Point<float>(width, height), lookAt);
+    int const minRegionX = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
+    int const maxRegionX = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.x)) + 1;
+    int const minRegionZ = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
+    int const maxRegionZ = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.y)) + 1;
+    int const numRegionsOnDisplay = (maxRegionX - minRegionX + 1) * (maxRegionZ - minRegionZ + 1);
+    
+    if (KeyPress::isKeyCurrentlyDown(KeyPress::F1Key)) {
+        g.setColour(Colours::black);
+        float const thickness = 1;
+        // vertical lines
+        for (int x = minRegionX; x <= maxRegionX; x++) {
+            int const bx = x * 512;
+            int const minBz = minRegionZ * 512;
+            int const maxBz = maxRegionZ * 512;
+            Point<float> const top = getViewCoordinateFromMap(Point<float>(bx, minBz), lookAt);
+            Point<float> const bottom = getViewCoordinateFromMap(Point<float>(bx, maxBz), lookAt);
+            g.drawLine(top.x, top.y, bottom.x, bottom.y, thickness);
+        }
+        for (int z = minRegionZ; z <= maxRegionZ; z++) {
+            int const bz = z * 512;
+            int const minBx = minRegionX * 512;
+            int const maxBx = maxRegionX * 512;
+            Point<float> const left = getViewCoordinateFromMap(Point<float>(minBx, bz), lookAt);
+            Point<float> const right = getViewCoordinateFromMap(Point<float>(maxBx, bz), lookAt);
+            g.drawLine(left.x, left.y, right.x, right.y, thickness);
+        }
+        if (numRegionsOnDisplay < 64) {
+            g.setFont(20);
+            for (int x = minRegionX; x <= maxRegionX; x++) {
+                for (int z = minRegionZ; z <= maxRegionZ; z++) {
+                    Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
+                    Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
+                    GraphicsHelper::DrawFittedText(g,
+                                                   String::formatted("r.%d.%d.mca", x, z),
+                                                   tl.x, tl.y,
+                                                   br.x - tl.x, br.y - tl.y,
+                                                   Justification::centred, 1);
+                }
+            }
+        }
+    }
+    
     Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
     g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
     g.fillRoundedRectangle(border, 6.0f);
