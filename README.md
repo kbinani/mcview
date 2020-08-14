@@ -17,7 +17,7 @@ Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.
 
 # Acknowlegement
 
-- JUCE: https://github.com/WeAreROLI/JUCE
+- JUCE: https://github.com/juce-framework/JUCE
 - Google Material Design Icon: https://material.io/tools/icons
 - colormap-shaders: https://github.com/kbinani/colormap-shaders
 - libminecraft-file: https://github.com/kbinani/libminecraft-file
