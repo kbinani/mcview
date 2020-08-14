@@ -706,7 +706,9 @@ void MapViewComponent::instantiateTextures(LookAt lookAt)
     }
 
     if (loadingFinished) {
-        startTimer(kFadeDurationMS);
+        callAfterDelay(kFadeDurationMS, [this](){
+            stopTimer();
+        });
         triggerAsyncUpdate();
     }
 }
@@ -1103,8 +1105,9 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
     }
     
     fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
-    
-    ctx.setContinuousRepainting(true);
+    if (!isTimerRunning()) {
+        startTimer(16); // 60fps
+    }
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
@@ -1682,13 +1685,7 @@ void MapViewComponent::handleAsyncUpdate()
 
 void MapViewComponent::timerCallback()
 {
-    fOpenGLContext.executeOnGLThread([this](OpenGLContext &ctx) {
-        if (fPool->getNumJobs() || !fLoadingFinished.get()) {
-            return;
-        }
-        ctx.setContinuousRepainting(false);
-    }, false);
-    stopTimer();
+    fOpenGLContext.triggerRepaint();
 }
 
 void MapViewComponent::setWaterOpticalDensity(float v)
