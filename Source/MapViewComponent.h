@@ -227,9 +227,9 @@ private:
     std::unique_ptr<Attributes> fAttributes;
     std::unique_ptr<Buffer> fBuffer;
 
-    Atomic<LookAt> fLookAt;
-    Atomic<Rectangle<int>> fVisibleRegions;
-    Atomic<Point<int>> fSize;
+    std::atomic<LookAt> fLookAt;
+    std::atomic<Rectangle<int>> fVisibleRegions;
+    std::atomic<Point<int>> fSize;
 
     static float const kMaxScale;
     static float const kMinScale;

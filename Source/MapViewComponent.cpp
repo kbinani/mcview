@@ -153,7 +153,7 @@ void MapViewComponent::paint(Graphics &g)
     int const coordLabelWidth = 100;
     int const coordLabelHeight = 2 * lineHeight;
 
-    LookAt const lookAt = fLookAt.get();
+    LookAt const lookAt = fLookAt.load();
 
     Point<float> const topLeft = getMapCoordinateFromView(Point<float>(0, 0), lookAt);
     Point<float> const bottomRight = getMapCoordinateFromView(Point<float>(width, height), lookAt);
@@ -612,7 +612,7 @@ void MapViewComponent::renderOpenGL()
 {
     LookAt lookAt = clampedLookAt();
     auto desktopScale = (float)fOpenGLContext.getRenderingScale();
-    Point<int> size = fSize.get();
+    Point<int> size = fSize.load();
     int const width = size.x * desktopScale;
     int const height = size.y * desktopScale;
     lookAt.fBlocksPerPixel /= desktopScale;
@@ -914,7 +914,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
 void MapViewComponent::drawBackground()
 {
-    Point<int> size = fSize.get();
+    Point<int> size = fSize.load();
     const int width = size.x;
     const int height = size.y;
     const float desktopScale = (float)fOpenGLContext.getRenderingScale();
@@ -1015,7 +1015,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     {
         ScopedLock lk(fLoadingRegionsLock);
 
-        LookAt const lookAt = fLookAt.get();
+        LookAt const lookAt = fLookAt.load();
 
         fLoadingRegions.clear();
         fWorldDirectory = directory;
@@ -1084,7 +1084,7 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
     };
     fLoadingFinished = false;
 
-    Rectangle<int> visibleRegions = fVisibleRegions.get();
+    Rectangle<int> visibleRegions = fVisibleRegions.load();
     int minX = visibleRegions.getX();
     int maxX = visibleRegions.getRight();
     int minY = visibleRegions.getY();
@@ -1109,7 +1109,7 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
 {
-    Point<int> size = fSize.get();
+    Point<int> size = fSize.load();
     float const width = size.x;
     float const height = size.y;
     float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
@@ -1119,7 +1119,7 @@ Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt l
 
 Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const
 {
-    Point<int> size = fSize.get();
+    Point<int> size = fSize.load();
     float const width = size.x;
     float const height = size.y;
     float const x = (p.x - lookAt.fX) / lookAt.fBlocksPerPixel + width / 2;
@@ -1322,7 +1322,7 @@ void MapViewComponent::mouseUp(MouseEvent const& e)
     float const vz = -dz / dt;
     LookAt current = clampedLookAt();
 
-    Rectangle<int> visible = fVisibleRegions.get();
+    Rectangle<int> visible = fVisibleRegions.load();
     fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
                     vx, vz,
                     visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
@@ -1433,7 +1433,7 @@ void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const& pin, P
 void MapViewComponent::handlePinDrag(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
 {
     Point<int> p = getScreenPosition();
-    LookAt lookAt = fLookAt.get();
+    LookAt lookAt = fLookAt.load();
     Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
     Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
     pin->fX = floor(mapPos.x);
@@ -1724,12 +1724,12 @@ void MapViewComponent::setShowPin(bool show)
 
 MapViewComponent::LookAt MapViewComponent::clampedLookAt() const
 {
-    return clampLookAt(fLookAt.get());
+    return clampLookAt(fLookAt.load());
 }
 
 MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
 {
-    Rectangle<int> visibleRegions = fVisibleRegions.get();
+    Rectangle<int> visibleRegions = fVisibleRegions.load();
 
     if (visibleRegions.getWidth() == 0 && visibleRegions.getHeight() == 0) {
         return l;
