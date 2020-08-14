@@ -11,6 +11,8 @@ static Colour const kColorPlanksDarkOak(101, 75, 50);
 static Colour const kColorPlanksOak(127, 85, 48);
 static Colour const kColorPlanksJungle(149, 108, 76);
 static Colour const kColorPlanksSpruce(122, 89, 51);
+static Colour const kColorPlanksCrimson(125, 57, 85);
+static Colour const kColorPlanksWarped(56, 129, 128);
 static Colour const kColorBricks(175, 98, 76);
 static Colour const kColorAnvil(73, 73, 73);
 static Colour const kColorDeadCoral(115, 105, 102);
@@ -19,9 +21,12 @@ static Colour const kColorStoneDiorite(252, 249, 242);
 static Colour const kColorStoneGranite(149, 108, 76);
 static Colour const kColorStoneAndesite(165, 168, 151);
 static Colour const kColorStone(111, 111, 111);
+static Colour const kColorStoneBlack(48, 43, 53);
+static Colour const kColorStonePolishedBlack(59, 56, 70);
 static Colour const kColorNetherBricks(33, 17, 20);
 static Colour const kColorFurnace(131, 131, 131);
 static Colour const kColorEndStoneBricks(233, 248, 173);
+static Colour const kColorPolishedBlackStoneBricks(32, 28, 23);
 static Colour const kColorRedSandstone(184, 102, 33);
 static Colour const kColorSandstone(244, 230, 161);
 static Colour const kColorDragonHead(22, 22, 22);
@@ -630,6 +635,81 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::bamboo, Colour(67, 103, 8)},
     {mcfile::blocks::minecraft::sea_pickle, Colour(106, 113, 42)},
     {mcfile::blocks::minecraft::cocoa, Colour(109, 112, 52)},
+
+    // 1.15
+    
+    {mcfile::blocks::minecraft::bee_nest, Colour(198, 132, 67)},
+    {mcfile::blocks::minecraft::beehive, Colour(182, 146, 94)},
+    {mcfile::blocks::minecraft::honey_block, Colour(233, 145, 38)},
+    {mcfile::blocks::minecraft::honeycomb_block, Colour(229, 138, 8)},
+
+    // 1.16
+
+    {mcfile::blocks::minecraft::crimson_nylium, Colour(146, 24, 24)},
+    {mcfile::blocks::minecraft::warped_nylium, Colour(22, 125, 132)},
+    {mcfile::blocks::minecraft::crimson_planks, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_planks, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::nether_gold_ore, Colour(245, 173, 42)},
+    {mcfile::blocks::minecraft::crimson_stem, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_stem, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::stripped_crimson_stem, Colour(148, 61, 97)},
+    {mcfile::blocks::minecraft::stripped_warped_stem, Colour(67, 159, 157)},
+    {mcfile::blocks::minecraft::crimson_hyphae, Colour(148, 21, 21)},
+    {mcfile::blocks::minecraft::warped_hyphae, Colour(22, 96, 90)},
+    {mcfile::blocks::minecraft::crimson_slab, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_slab, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::cracked_nether_bricks, kColorNetherBricks},
+    {mcfile::blocks::minecraft::chiseled_nether_bricks, kColorNetherBricks},
+    {mcfile::blocks::minecraft::crimson_stairs, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_stairs, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::netherite_block, Colour(76, 72, 76)},
+    {mcfile::blocks::minecraft::soul_soil, Colour(90, 68, 55)},
+    {mcfile::blocks::minecraft::basalt, Colour(91, 91, 91)},
+    {mcfile::blocks::minecraft::polished_basalt, Colour(115, 115, 115)},
+    {mcfile::blocks::minecraft::ancient_debris, Colour(125, 95, 88)},
+    {mcfile::blocks::minecraft::crying_obsidian, Colour(42, 1, 119)},
+    {mcfile::blocks::minecraft::blackstone, kColorStoneBlack},
+    {mcfile::blocks::minecraft::blackstone_slab, kColorStoneBlack},
+    {mcfile::blocks::minecraft::blackstone_stairs, kColorStoneBlack},
+    {mcfile::blocks::minecraft::gilded_blackstone, Colour(125, 68, 14)},
+    {mcfile::blocks::minecraft::polished_blackstone, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_slab, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_stairs, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::chiseled_polished_blackstone, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_bricks, kColorPolishedBlackStoneBricks},
+    {mcfile::blocks::minecraft::polished_blackstone_brick_slab, kColorPolishedBlackStoneBricks},
+    {mcfile::blocks::minecraft::polished_blackstone_brick_stairs, kColorPolishedBlackStoneBricks},
+    {mcfile::blocks::minecraft::cracked_polished_blackstone_bricks, kColorPolishedBlackStoneBricks},
+    {mcfile::blocks::minecraft::crimson_fungus, Colour(162, 36, 40)},
+    {mcfile::blocks::minecraft::warped_fungus, Colour(20, 178, 131)},
+    {mcfile::blocks::minecraft::crimson_roots, Colour(171, 16, 28)},
+    {mcfile::blocks::minecraft::warped_roots, Colour(20, 178, 131)},
+    {mcfile::blocks::minecraft::nether_sprouts, Colour(20, 178, 131)},
+    {mcfile::blocks::minecraft::weeping_vines, Colour(171, 16, 28)},
+    {mcfile::blocks::minecraft::twisting_vines, Colour(20, 178, 131)},
+    {mcfile::blocks::minecraft::crimson_fence, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_fence, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::soul_torch, Colour(123, 239, 242)},
+    {mcfile::blocks::minecraft::chain, Colour(60, 65, 80)},
+    {mcfile::blocks::minecraft::blackstone_wall, kColorStoneBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_wall, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_brick_wall, kColorPolishedBlackStoneBricks},
+    {mcfile::blocks::minecraft::soul_lantern, Colour(123, 239, 242)},
+    {mcfile::blocks::minecraft::soul_campfire, Colour(123, 239, 242)},
+    {mcfile::blocks::minecraft::shroomlight, Colour(251, 170, 108)},
+    {mcfile::blocks::minecraft::lodestone, Colour(160, 162, 170)},
+    {mcfile::blocks::minecraft::respawn_anchor, Colour(129, 8, 225)},
+    {mcfile::blocks::minecraft::crimson_pressure_plate, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_pressure_plate, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::crimson_trapdoor, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_trapdoor, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::crimson_fence_gate, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_fence_gate, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::crimson_button, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_button, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::crimson_door, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_door, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::target, Colour(183, 49, 49)},
 };
 
 static std::set<mcfile::blocks::BlockId> plantBlocks = {
