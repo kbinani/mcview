@@ -1030,10 +1030,10 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         int minZ = 0;
         int maxZ = 0;
 
-        DirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
+        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
         std::vector<File> files;
-        while (it.next()) {
-            File f = it.getFile();
+        for (DirectoryEntry entry : it) {
+            File f = entry.getFile();
             auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
             if (!r) {
                 continue;
@@ -1799,10 +1799,10 @@ void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::stri
         return f.getParentDirectory().getFullPathName() == root.getFullPathName();
     }), updated.end());
     
-    DirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
+    RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
     std::vector<File> files;
-    while (it.next()) {
-        File f = it.getFile();
+    for (DirectoryEntry entry : it) {
+        File f = entry.getFile();
         auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
         if (!r) {
             continue;
