@@ -710,6 +710,17 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::crimson_door, kColorPlanksCrimson},
     {mcfile::blocks::minecraft::warped_door, kColorPlanksWarped},
     {mcfile::blocks::minecraft::target, Colour(183, 49, 49)},
+    
+    // bugfix for 1.16
+    {mcfile::blocks::minecraft::twisting_vines_plant, Colour(17, 153, 131)},
+    {mcfile::blocks::minecraft::warped_wart_block, Colour(17, 153, 131)},
+    {mcfile::blocks::minecraft::quartz_bricks, kColorQuartz},
+    {mcfile::blocks::minecraft::stripped_crimson_hyphae, Colour(148, 61, 97)},
+    {mcfile::blocks::minecraft::stripped_warped_hyphae, Colour(67, 159, 157)},
+    {mcfile::blocks::minecraft::crimson_sign, kColorPlanksCrimson},
+    {mcfile::blocks::minecraft::warped_sign, kColorPlanksWarped},
+    {mcfile::blocks::minecraft::polished_blackstone_pressure_plate, kColorStonePolishedBlack},
+    {mcfile::blocks::minecraft::polished_blackstone_button, kColorStonePolishedBlack},
 };
 
 static std::set<mcfile::blocks::BlockId> plantBlocks = {
