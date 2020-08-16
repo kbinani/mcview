@@ -291,8 +291,10 @@ void MapViewComponent::updateShader()
         uniform bool waterTranslucent;
         uniform int biomeBlend;
         uniform bool enableBiome;
-        uniform vec4 background;
-    
+        uniform float width;
+        uniform float height;
+        uniform int dimension;
+
         uniform sampler2D north;
         uniform sampler2D northEast;
         uniform sampler2D east;
@@ -390,11 +392,34 @@ void MapViewComponent::updateShader()
             float v = vmin + (vmax - vmin) * clamp(1.0 - x, 0.0, 1.0);
             return vec4(hsv2rgb(vec3(h, s, v)), 1.0);
         }
+
+        float rand(float n) {
+            return fract(sin(n) * 43758.5453123);
+        }
+
+        float noise(vec2 co){
+            return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+        }
+
+        vec4 voidColor() {
+            float s1 = (rand(gl_FragCoord.x) + rand(textureCoordOut.x)) * 0.5 * width;
+            float s2 = (rand(gl_FragCoord.y) + rand(textureCoordOut.y)) * 0.5 * height;
+            float x = noise(vec2(s1, s2));
+            float y = noise(vec2(s2, s1));
+            float h = 0.733309;
+            float s = 0.0810811 + (0.6 - 0.0810811) * x;
+            float v = 0.0117647 + (0.145098 - 0.0117647) * y;
+            vec3 c = hsv2rgb(vec3(h, s, v));
+            return vec4(c.rgb, 1);
+        }
     )#";
     
     fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
     fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
-    fragment << "        return background;" << std::endl;
+    fragment << "        if (dimension == 1) {" << std::endl;
+    fragment << "            return voidColor();" << std::endl;
+    fragment << "        }" << std::endl;
+    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
     fragment << "    }" << std::endl;
     fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
     for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
@@ -535,7 +560,11 @@ void MapViewComponent::updateShader()
             vec4 cc = netherrack_colormap(v);
             c = vec4(cc.rgb, alpha);
         } else if (blockId == 0) {
-            c = vec4(0.0, 0.0, 0.0, 0.0);
+            if (dimension == 1) {
+                c = voidColor();
+            } else {
+                c = vec4(0.0, 0.0, 0.0, 0.0);
+            }
         } else {
             vec4 cc = colorFromBlockId(blockId);
             if (cc.a == 0.0) {
@@ -786,12 +815,8 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
         if (fUniforms->enableBiome) {
             fUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
         }
-        if (fUniforms->background) {
-            if (fDimension == Dimension::TheEnd) {
-                fUniforms->background->set(13.0f / 255.0f, 10.0f / 255.0f, 18.0f / 255.0f, 1.0f);
-            } else {
-                fUniforms->background->set(0.0f, 0.0f, 0.0f, 0.0f);
-            }
+        if (fUniforms->dimension) {
+            fUniforms->dimension->set((GLint)fDimension);
         }
 
         if (fUniforms->fade.get() != nullptr) {

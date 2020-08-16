@@ -119,10 +119,10 @@ private:
             waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
             biomeBlend.reset(createUniform(openGLContext, shader, "biomeBlend"));
             enableBiome.reset(createUniform(openGLContext, shader, "enableBiome"));
-            background.reset(createUniform(openGLContext, shader, "background"));
+            dimension.reset(createUniform(openGLContext, shader, "dimension"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, background;
+        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, dimension;
         std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
         std::unique_ptr<OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
 
