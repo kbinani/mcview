@@ -406,9 +406,27 @@ void MapViewComponent::updateShader()
             float s2 = (rand(gl_FragCoord.y) + rand(textureCoordOut.y)) * 0.5 * height;
             float x = noise(vec2(s1, s2));
             float y = noise(vec2(s2, s1));
+            float bm1 = sqrt(-2 * log(x)) * cos(2 * 3.1415926 * y);
+            float bm2 = sqrt(-2 * log(y)) * sin(2 * 3.1415926 * x);
+
+            // H: average=0.733309; sigma=0.00610866; minmax=[0.666667, 0.766667]
+            // S: average=0.448486; sigma=0.0703466; minmax=[0.0810811, 0.6]
+            // B: average=0.0958848; sigma=0.0170297; minmax=[0.0117647, 0.145098]
+
             float h = 0.733309;
-            float s = 0.0810811 + (0.6 - 0.0810811) * x;
-            float v = 0.0117647 + (0.145098 - 0.0117647) * y;
+
+            float sAvg = 0.448486;
+            float sSigma = 0.0703466;
+            float sMin = 0.0810811;
+            float sMax = 0.6;
+            float s = clamp(sAvg + bm1 * sSigma, sMin, sMax);
+
+            float vAvg = 0.0958848;
+            float vSigma = 0.0170297;
+            float vMin = 0.0117647;
+            float vMax = 0.145098;
+
+            float v = clamp(vAvg + bm2 * vSigma, vMin, vMax);
             vec3 c = hsv2rgb(vec3(h, s, v));
             return vec4(c.rgb, 1);
         }
