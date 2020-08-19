@@ -433,10 +433,7 @@ void MapViewComponent::updateShader()
     )#";
     
     fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
-    fragment << "    if (blockId == " << mcfile::blocks::minecraft::air << ") {" << std::endl;
-    fragment << "        if (dimension == 1) {" << std::endl;
-    fragment << "            return voidColor();" << std::endl;
-    fragment << "        }" << std::endl;
+    fragment << "    if (blockId == #{airBlockId}) {" << std::endl;
     fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
     fragment << "    }" << std::endl;
     fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
@@ -547,6 +544,7 @@ void MapViewComponent::updateShader()
         float waterDepth = info.waterDepth;
         int biomeId = info.biomeId;
         int blockId = info.blockId;
+        bool isVoid = false;
 
         vec4 c;
         if (waterDepth > 0.0) {
@@ -580,9 +578,13 @@ void MapViewComponent::updateShader()
         } else if (blockId == 0) {
             if (dimension == 1) {
                 c = voidColor();
+                isVoid = true;
             } else {
                 c = vec4(0.0, 0.0, 0.0, 0.0);
             }
+        } else if (blockId == #{airBlockId} && dimension == 1) {
+            c = voidColor();
+            isVoid = true;
         } else {
             vec4 cc = colorFromBlockId(blockId);
             if (cc.a == 0.0) {
@@ -592,7 +594,7 @@ void MapViewComponent::updateShader()
             }
         }
 
-        if (waterDepth == 0.0 || (waterDepth > 0.0 && waterTranslucent)) {
+        if (!isVoid && (waterDepth == 0.0 || (waterDepth > 0.0 && waterTranslucent))) {
             float heightScore = 0.0; // +: bright, -: dark
             float d = 1.0 / 512.0;
             float tx = textureCoordOut.x;
@@ -644,7 +646,10 @@ void MapViewComponent::updateShader()
         }
     }
     )#";
-    newShader->addFragmentShader(fragment.str());
+    
+    String fragmentShaderTemplate = fragment.str();
+    String fragmentShader = fragmentShaderTemplate.replace("#{airBlockId}", String(mcfile::blocks::minecraft::air));
+    newShader->addFragmentShader(fragmentShader);
 
     newShader->link();
     newShader->use();
