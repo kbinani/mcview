@@ -225,6 +225,8 @@ void MapViewComponent::paint(Graphics &g)
 
 void MapViewComponent::newOpenGLContextCreated()
 {
+    using namespace juce::gl;
+    
     std::unique_ptr<Buffer> buffer(new Buffer());
 
     fOpenGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
@@ -767,6 +769,8 @@ void MapViewComponent::instantiateTextures(LookAt lookAt)
 
 void MapViewComponent::render(int const width, int const height, LookAt const lookAt, bool enableUI)
 {
+    using namespace juce::gl;
+
     if (enableUI) {
         OpenGLHelpers::clear(Colours::white);
     } else {
@@ -1082,7 +1086,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         std::vector<File> files;
         for (DirectoryEntry entry : it) {
             File f = entry.getFile();
-            auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+            auto r = mcfile::je::Region::MakeRegion(f.getFullPathName().toStdString());
             if (!r) {
                 continue;
             }
@@ -1100,8 +1104,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         setLookAt(next);
 
         std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
-            auto rA = mcfile::Region::MakeRegion(a.getFullPathName().toStdString());
-            auto rB = mcfile::Region::MakeRegion(b.getFullPathName().toStdString());
+            auto rA = mcfile::je::Region::MakeRegion(a.getFullPathName().toStdString());
+            auto rB = mcfile::je::Region::MakeRegion(b.getFullPathName().toStdString());
             auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
             auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
             return distanceA < distanceB;

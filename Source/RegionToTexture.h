@@ -52,7 +52,7 @@ public:
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
-    static void Load(mcfile::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(PixelARGB *)> completion);
+    static void Load(mcfile::je::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(PixelARGB *)> completion);
     static File CacheFile(File const& file);
     
 public:

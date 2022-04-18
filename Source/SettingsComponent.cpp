@@ -228,7 +228,8 @@ SettingsComponent::SettingsComponent(Settings const& settings)
         options.escapeKeyTriggersCloseButton = true;
         options.resizable = false;
         options.dialogBackgroundColour = getLookAndFeel().findColour(ResizableWindow::backgroundColourId);
-        options.runModal();
+        //TODO:resource
+        DialogWindow *dialog = options.launchAsync();
     };
     
     setSize(250, 600);

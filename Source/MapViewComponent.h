@@ -155,6 +155,8 @@ private:
 
         void enable (OpenGLContext& openGLContext)
         {
+            using namespace juce::gl;
+
             if (position.get() != nullptr)
             {
                 openGLContext.extensions.glVertexAttribPointer (position->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof (Vertex), nullptr);
