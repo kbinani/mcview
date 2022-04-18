@@ -28,13 +28,13 @@ AboutComponent::AboutComponent()
 {
     fLines = {
         createLabel(String("Version: ") + String::fromUTF8(ProjectInfo::versionString)),
-        createLabel("Copyright (C) 2019 kbinani"),
+        createLabel("Copyright (C) 2019, 2022 kbinani"),
         createLabel(""),
         createLabel("Acknowledgement"),
         createLabel(""),
         
         createLabel("JUCE"),
-        createLink("https://github.com/WeAreROLI/JUCE"),
+        createLink("https://github.com/juce-framework/JUCE"),
         createLabel(""),
         
         createLabel("Google Material Design Icon"),
