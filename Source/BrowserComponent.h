@@ -30,7 +30,8 @@ private:
     std::unique_ptr<ConcertinaPanel> fPanel;
     std::unique_ptr<DrawableButton> fAddButton;
     std::unique_ptr<Drawable> fAddButtonImage;
-    
+    std::unique_ptr<FileChooser> fFileChooser;
+
     Array<DirectoryBrowserComponent *> fBrowsers;
     Time fTimerStarted;
     

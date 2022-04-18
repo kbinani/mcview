@@ -7,6 +7,7 @@
 #include "SettingsComponent.h"
 #include "defer.h"
 #include "GraphicsHelper.h"
+#include "File.h"
 #include <set>
 #include <cassert>
 #include <cmath>
@@ -1086,7 +1087,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         std::vector<File> files;
         for (DirectoryEntry entry : it) {
             File f = entry.getFile();
-            auto r = mcfile::je::Region::MakeRegion(f.getFullPathName().toStdString());
+            auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
             if (!r) {
                 continue;
             }
@@ -1104,8 +1105,8 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
         setLookAt(next);
 
         std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
-            auto rA = mcfile::je::Region::MakeRegion(a.getFullPathName().toStdString());
-            auto rB = mcfile::je::Region::MakeRegion(b.getFullPathName().toStdString());
+            auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
+            auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
             auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
             auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
             return distanceA < distanceB;
@@ -1145,7 +1146,7 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
     int maxY = visibleRegions.getBottom();
 
     for (File const& f : files) {
-        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
         RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), dim, useCache);
         fJobs.emplace_back(job);
         fPool->addJob(job, false);
@@ -1324,7 +1325,7 @@ public:
     {
         std::unique_ptr<TextInputDialog> component(new TextInputDialog());
         component->fInputLabel->setText(init, dontSendNotification);
-        DialogWindow::showModalDialog(title, component.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
+        DialogWindow::showDialog(title, component.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
         return std::make_pair(component->fResultMenuId, component->fInputLabel->getText());
     }
     
@@ -1400,25 +1401,26 @@ void MapViewComponent::mouseRightClicked(MouseEvent const& e)
     PopupMenu menu;
     menu.addItem(1, TRANS("Put a pin here"));
     Point<int> pos = e.getScreenPosition();
-    int menuId = menu.showAt(Rectangle<int>(pos, pos));
-    if (menuId != 1) {
-        return;
-    }
-    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
-    if (result.first != 1) {
-        return;
-    }
-    String message = result.second;
-    Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
-    std::shared_ptr<Pin> p = std::make_shared<Pin>();
-    p->fX = floor(pinPos.x);
-    p->fZ = floor(pinPos.y) + 1;
-    p->fDim = dim;
-    p->fMessage = message;
-    addPinComponent(p);
-    fWorldData.fPins.push_back(p);
-    saveWorldData();
-    triggerRepaint();
+    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
+        if (menuId != 1) {
+            return;
+        }
+        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
+        if (result.first != 1) {
+            return;
+        }
+        String message = result.second;
+        Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
+        std::shared_ptr<Pin> p = std::make_shared<Pin>();
+        p->fX = floor(pinPos.x);
+        p->fZ = floor(pinPos.y) + 1;
+        p->fDim = dim;
+        p->fMessage = message;
+        addPinComponent(p);
+        fWorldData.fPins.push_back(p);
+        saveWorldData();
+        triggerRepaint();
+    });
 }
 
 void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin)
@@ -1446,31 +1448,32 @@ void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Po
     PopupMenu menu;
     menu.addItem(1, TRANS("Delete") + " \"" + pin->fMessage + "\"");
     menu.addItem(2, TRANS("Rename") + " \"" + pin->fMessage + "\"");
-    int menuId = menu.showAt(Rectangle<int>(screenPos, screenPos));
-    if (menuId == 1) {
-        for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
-            if (!(*it)->isPresenting(pin)) {
-                continue;
+    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(screenPos, screenPos)), [this, pin](int menuId) {
+        if (menuId == 1) {
+            for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
+                if (!(*it)->isPresenting(pin)) {
+                    continue;
+                }
+                removeChildComponent(it->get());
+                fPinComponents.erase(it);
+                break;
             }
-            removeChildComponent(it->get());
-            fPinComponents.erase(it);
-            break;
+            fWorldData.fPins.erase(std::remove_if(fWorldData.fPins.begin(), fWorldData.fPins.end(), [pin](auto it) {
+                return it.get() == pin.get();
+            }), fWorldData.fPins.end());
+            saveWorldData();
+            triggerRepaint();
+        } else if (menuId == 2) {
+            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
+            if (result.first != 1) {
+                return;
+            }
+            String message = result.second;
+            pin->fMessage = message;
+            saveWorldData();
+            triggerRepaint();
         }
-        fWorldData.fPins.erase(std::remove_if(fWorldData.fPins.begin(), fWorldData.fPins.end(), [pin](auto it) {
-            return it.get() == pin.get();
-        }), fWorldData.fPins.end());
-        saveWorldData();
-        triggerRepaint();
-    } else if (menuId == 2) {
-        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
-        if (result.first != 1) {
-            return;
-        }
-        String message = result.second;
-        pin->fMessage = message;
-        saveWorldData();
-        triggerRepaint();
-    }
+    });
 }
 
 void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
@@ -1713,21 +1716,19 @@ private:
 void MapViewComponent::captureToImage()
 {
     fCaptureButton->setEnabled(false);
-    defer {
-        fCaptureButton->setEnabled(true);
-    };
     
-    File file;
-    {
-        FileChooser dialog(TRANS("Choose file name"), File(), "*.png", true);
-        if (!dialog.browseForFileToSave(true)) {
+    fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
+    fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const& chooser) {
+        defer {
+            fCaptureButton->setEnabled(true);
+        };
+        File file = chooser.getResult();
+        if (file == File()) {
             return;
         }
-        file = dialog.getResult();
-    }
-    
-    SavePNGProgressWindow wnd(this, fOpenGLContext, file);
-    wnd.runThread();
+        SavePNGProgressWindow wnd(this, fOpenGLContext, file);
+        wnd.run();
+    });
 }
 
 void MapViewComponent::handleAsyncUpdate()
@@ -1855,7 +1856,7 @@ void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::stri
     std::vector<File> files;
     for (DirectoryEntry entry : it) {
         File f = entry.getFile();
-        auto r = mcfile::Region::MakeRegion(f.getFullPathName().toStdString());
+        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
         if (!r) {
             continue;
         }

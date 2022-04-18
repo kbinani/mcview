@@ -118,19 +118,21 @@ void BrowserComponent::browse()
 #if JUCE_MAC
     message += String(":\n/Users/yourname/Library/Application Support/minecraft/saves");
 #endif
-    FileChooser dialog(message);
+    fFileChooser.reset(new FileChooser(message));
     int const flags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories | FileBrowserComponent::showsHiddenFiles;
-    if (!dialog.showDialog(flags, nullptr)) {
-        return;
-    }
-    File directory = dialog.getResult();
-    for (int i = 0; i < fBrowsers.size(); i++) {
-        auto b = fBrowsers[i];
-        if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+    fFileChooser->launchAsync(flags, [this](FileChooser const& chooser){
+        File directory = chooser.getResult();
+        if (directory == File()) {
             return;
         }
-    }
-    addDirectory(directory);
+        for (int i = 0; i < fBrowsers.size(); i++) {
+            auto b = fBrowsers[i];
+            if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+                return;
+            }
+        }
+        addDirectory(directory);
+    });
 }
 
 BrowserComponent::~BrowserComponent()

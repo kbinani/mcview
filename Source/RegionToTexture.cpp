@@ -1,4 +1,5 @@
 #include "RegionToTexture.h"
+#include "File.h"
 #include <cassert>
 #include "minecraft-file.hpp"
 #include <colormap/colormap.h>
@@ -71,7 +72,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::farmland, Colour(149, 108, 76)},
     {mcfile::blocks::minecraft::oak_fence, kColorPlanksOak},
     {mcfile::blocks::minecraft::cobblestone_stairs, Colour(111, 111, 111)},
-    {mcfile::blocks::minecraft::grass_path, Colour(204, 204, 204)}, //
+    {mcfile::blocks::minecraft::dirt_path, Colour(204, 204, 204)}, //
     {mcfile::blocks::minecraft::birch_fence, kColorPlanksBirch},
     {mcfile::blocks::minecraft::birch_planks, kColorPlanksBirch},
     {mcfile::blocks::minecraft::birch_stairs, kColorPlanksBirch},
@@ -866,7 +867,7 @@ struct PixelInfo {
     mcfile::blocks::BlockId blockId;
 };
 
-void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
+void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
     int const width = 512;
     int const height = 512;
 
@@ -918,7 +919,7 @@ void RegionToTexture::Load(mcfile::Region const& region, ThreadPoolJob *job, Dim
 
     bool error = false;
     bool didset = false;
-    region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::Chunk const& chunk) {
+    region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const& chunk) {
         colormap::kbinani::Altitude altitude;
         int const sZ = chunk.minBlockZ();
         int const eZ = chunk.maxBlockZ();
@@ -1098,7 +1099,7 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
             }
         }
 
-        auto region = mcfile::Region::MakeRegion(fRegionFile.getFullPathName().toStdString());
+        auto region = mcfile::je::Region::MakeRegion(PathFromFile(fRegionFile));
         if (!region) {
             return ThreadPoolJob::jobHasFinished;
         }
