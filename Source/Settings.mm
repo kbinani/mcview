@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 #include "Settings.h"
 
+using namespace juce;
+
 String Settings::Bookmark(File f)
 {
     JUCE_AUTORELEASEPOOL {

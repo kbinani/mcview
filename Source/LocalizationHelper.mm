@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 #include "LocalizationHelper.h"
 
+using namespace juce;
+
 #if JUCE_MAC
 
 LocalisedStrings *LocalizationHelper::CurrentLocalisedStrings()
