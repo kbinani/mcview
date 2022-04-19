@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
 #include "OverScroller.hpp"
@@ -14,7 +13,7 @@
 #include <deque>
 #include <memory>
 
-class MapViewComponent : public Component, private OpenGLRenderer, private AsyncUpdater, private Timer, public ChangeListener
+class MapViewComponent : public juce::Component, private juce::OpenGLRenderer, private juce::AsyncUpdater, private juce::Timer, public juce::ChangeListener
 {
 public:
     std::function<void()> onOpenButtonClicked;
@@ -24,24 +23,24 @@ public:
     MapViewComponent();
     ~MapViewComponent();
 
-    void paint(Graphics &g) override;
+    void paint(juce::Graphics &g) override;
     void resized() override;
     
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
 
-    void mouseMagnify(MouseEvent const& event, float scaleFactor) override;
-    void mouseWheelMove(MouseEvent const& event, MouseWheelDetails const& wheel) override;
-    void mouseDrag(MouseEvent const& event) override;
-    void mouseDown(MouseEvent const& event) override;
-    void mouseMove(MouseEvent const& event) override;
-    void mouseUp(MouseEvent const& event) override;
+    void mouseMagnify(juce::MouseEvent const& event, float scaleFactor) override;
+    void mouseWheelMove(juce::MouseEvent const& event, juce::MouseWheelDetails const& wheel) override;
+    void mouseDrag(juce::MouseEvent const& event) override;
+    void mouseDown(juce::MouseEvent const& event) override;
+    void mouseMove(juce::MouseEvent const& event) override;
+    void mouseUp(juce::MouseEvent const& event) override;
 
-    void changeListenerCallback(ChangeBroadcaster *) override;
+    void changeListenerCallback(juce::ChangeBroadcaster *) override;
 
-    void setWorldDirectory(File directory, Dimension dim);
-    void queueTextureLoading(std::vector<File> files, Dimension dim, bool useCache);
+    void setWorldDirectory(juce::File directory, Dimension dim);
+    void queueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache);
     
     void setBrowserOpened(bool opened);
 
@@ -52,7 +51,7 @@ public:
     };
     
     void render(int const width, int const height, LookAt const lookAt, bool enableUI);
-    Rectangle<int> regionBoundingBox();
+    juce::Rectangle<int> regionBoundingBox();
 
     void handleAsyncUpdate() override;
     void timerCallback() override;
@@ -65,34 +64,34 @@ public:
 
 private:
     void updateShader();
-    Point<float> getMapCoordinateFromView(Point<float> p) const;
-    Point<float> getViewCoordinateFromMap(Point<float> p) const;
-    Point<float> getMapCoordinateFromView(Point<float> p, LookAt lookAt) const;
-    Point<float> getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const;
-    void magnify(Point<float> p, float rate);
+    juce::Point<float> getMapCoordinateFromView(juce::Point<float> p) const;
+    juce::Point<float> getViewCoordinateFromMap(juce::Point<float> p) const;
+    juce::Point<float> getMapCoordinateFromView(juce::Point<float> p, LookAt lookAt) const;
+    juce::Point<float> getViewCoordinateFromMap(juce::Point<float> p, LookAt lookAt) const;
+    void magnify(juce::Point<float> p, float rate);
     void drawBackground();
     void triggerRepaint();
     void captureToImage();
     LookAt clampLookAt(LookAt lookAt) const;
     LookAt clampedLookAt() const;
     void setLookAt(LookAt next);
-    void queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache);
+    void queueTextureLoadingImpl(juce::OpenGLContext &ctx, std::vector<juce::File> files, Dimension dim, bool useCache);
     void instantiateTextures(LookAt lookAt);
-    void mouseRightClicked(MouseEvent const& e);
+    void mouseRightClicked(juce::MouseEvent const& e);
     void saveWorldData();
     void addPinComponent(std::shared_ptr<Pin>);
     void updateAllPinComponentPosition();
-    void handlePinRightClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
-    void handlePinDoubleClicked(std::shared_ptr<Pin> const&, Point<int> screenPos);
-    void handlePinDrag(std::shared_ptr<Pin> const&, Point<int> screenPos);
+    void handlePinRightClicked(std::shared_ptr<Pin> const&, juce::Point<int> screenPos);
+    void handlePinDoubleClicked(std::shared_ptr<Pin> const&, juce::Point<int> screenPos);
+    void handlePinDrag(std::shared_ptr<Pin> const&, juce::Point<int> screenPos);
     void resetPinComponents();
 
-    static ThreadPool* CreateThreadPool();
+    static juce::ThreadPool* CreateThreadPool();
     static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region);
 
     struct Uniforms
     {
-        Uniforms (OpenGLContext& openGLContext, OpenGLShaderProgram& shader)
+        Uniforms (juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
         {
             texture.reset(createUniform(openGLContext, shader, "texture"));
             fade.reset(createUniform(openGLContext, shader, "fade"));
@@ -122,20 +121,20 @@ private:
             dimension.reset(createUniform(openGLContext, shader, "dimension"));
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, dimension;
-        std::unique_ptr<OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
-        std::unique_ptr<OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
+        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, dimension;
+        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
+        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
 
     private:
-        static OpenGLShaderProgram::Uniform* createUniform(OpenGLContext& openGLContext,
-                                                           OpenGLShaderProgram& shader,
-                                                           const char* uniformName)
+        static juce::OpenGLShaderProgram::Uniform* createUniform(juce::OpenGLContext& openGLContext,
+                                                                 juce::OpenGLShaderProgram& shader,
+                                                                 const char* uniformName)
         {
             if (openGLContext.extensions.glGetUniformLocation(shader.getProgramID(), uniformName) < 0) {
                 return nullptr;
             }
 
-            return new OpenGLShaderProgram::Uniform (shader, uniformName);
+            return new juce::OpenGLShaderProgram::Uniform (shader, uniformName);
         }
     };
 
@@ -147,13 +146,13 @@ private:
 
     struct Attributes
     {
-        Attributes (OpenGLContext& openGLContext, OpenGLShaderProgram& shader)
+        Attributes (juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
         {
             position.reset(createAttribute(openGLContext, shader, "position"));
             textureCoordIn.reset(createAttribute(openGLContext, shader, "textureCoordIn"));
         }
 
-        void enable (OpenGLContext& openGLContext)
+        void enable (juce::OpenGLContext& openGLContext)
         {
             using namespace juce::gl;
 
@@ -170,23 +169,23 @@ private:
             }
         }
 
-        void disable (OpenGLContext& openGLContext)
+        void disable (juce::OpenGLContext& openGLContext)
         {
             if (position.get() != nullptr)        openGLContext.extensions.glDisableVertexAttribArray (position->attributeID);
             if (textureCoordIn.get() != nullptr)  openGLContext.extensions.glDisableVertexAttribArray (textureCoordIn->attributeID);
         }
 
-        std::unique_ptr<OpenGLShaderProgram::Attribute> position, textureCoordIn;
+        std::unique_ptr<juce::OpenGLShaderProgram::Attribute> position, textureCoordIn;
 
     private:
-        static OpenGLShaderProgram::Attribute* createAttribute (OpenGLContext& openGLContext,
-                                                                OpenGLShaderProgram& shader,
+        static juce::OpenGLShaderProgram::Attribute* createAttribute (juce::OpenGLContext& openGLContext,
+            juce::OpenGLShaderProgram& shader,
                                                                 const char* attributeName)
         {
             if (openGLContext.extensions.glGetAttribLocation (shader.getProgramID(), attributeName) < 0)
                 return nullptr;
 
-            return new OpenGLShaderProgram::Attribute (shader, attributeName);
+            return new juce::OpenGLShaderProgram::Attribute (shader, attributeName);
         }
     };
 
@@ -197,26 +196,26 @@ private:
         static GLsizei const kNumPoints = 4;
     };
 
-    class RegionUpdateChecker : public Thread
+    class RegionUpdateChecker : public juce::Thread
     {
     public:
         explicit RegionUpdateChecker(MapViewComponent *component);
         void run() override;
-        void setDirectory(File f, Dimension dim);
+        void setDirectory(juce::File f, Dimension dim);
 
     private:
         void checkUpdatedFiles(std::map<std::string, int64_t> &updated);
         
     private:
-        CriticalSection fSection;
-        File fDirectory;
+        juce::CriticalSection fSection;
+        juce::File fDirectory;
         Dimension fDim;
         MapViewComponent * const fMapView;
     };
 
 private:
-    OpenGLContext fOpenGLContext;
-    File fWorldDirectory;
+    juce::OpenGLContext fOpenGLContext;
+    juce::File fWorldDirectory;
     WorldData fWorldData;
 
     std::vector<std::unique_ptr<PinComponent>> fPinComponents;
@@ -224,67 +223,67 @@ private:
 
     Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
-    std::unique_ptr<OpenGLShaderProgram> fShader;
+    std::unique_ptr<juce::OpenGLShaderProgram> fShader;
     std::unique_ptr<Uniforms> fUniforms;
     std::unique_ptr<Attributes> fAttributes;
     std::unique_ptr<Buffer> fBuffer;
 
     std::atomic<LookAt> fLookAt;
-    std::atomic<Rectangle<int>> fVisibleRegions;
-    std::atomic<Point<int>> fSize;
+    std::atomic<juce::Rectangle<int>> fVisibleRegions;
+    std::atomic<juce::Point<int>> fSize;
 
     static float const kMaxScale;
     static float const kMinScale;
 
-    Point<float> fCenterWhenDragStart;
+    juce::Point<float> fCenterWhenDragStart;
 
-    Point<float> fMouse;
+    juce::Point<float> fMouse;
     
-    std::unique_ptr<ThreadPool> fPool;
+    std::unique_ptr<juce::ThreadPool> fPool;
     std::vector<std::unique_ptr<RegionToTexture>> fJobs;
 
     static int constexpr kCheckeredPatternSize = 16;
     
     std::set<Region> fLoadingRegions;
-    CriticalSection fLoadingRegionsLock;
+    juce::CriticalSection fLoadingRegionsLock;
 
-    std::unique_ptr<DrawableButton> fBrowserOpenButton;
-    std::unique_ptr<Drawable> fBrowserOpenButtonImageOpen;
-    std::unique_ptr<Drawable> fBrowserOpenButtonImageClose;
+    std::unique_ptr<juce::DrawableButton> fBrowserOpenButton;
+    std::unique_ptr<juce::Drawable> fBrowserOpenButtonImageOpen;
+    std::unique_ptr<juce::Drawable> fBrowserOpenButtonImageClose;
 
-    std::unique_ptr<DrawableButton> fOverworld;
-    std::unique_ptr<Drawable> fOverworldImage;
+    std::unique_ptr<juce::DrawableButton> fOverworld;
+    std::unique_ptr<juce::Drawable> fOverworldImage;
     
-    std::unique_ptr<DrawableButton> fNether;
-    std::unique_ptr<Drawable> fNetherImage;
+    std::unique_ptr<juce::DrawableButton> fNether;
+    std::unique_ptr<juce::Drawable> fNetherImage;
     
-    std::unique_ptr<DrawableButton> fEnd;
-    std::unique_ptr<Drawable> fEndImage;
+    std::unique_ptr<juce::DrawableButton> fEnd;
+    std::unique_ptr<juce::Drawable> fEndImage;
     
-    std::unique_ptr<DrawableButton> fCaptureButton;
-    std::unique_ptr<Drawable> fCaptureButtonImage;
+    std::unique_ptr<juce::DrawableButton> fCaptureButton;
+    std::unique_ptr<juce::Drawable> fCaptureButtonImage;
     
-    std::unique_ptr<DrawableButton> fSettingsButton;
-    std::unique_ptr<Drawable> fSettingsButtonImage;
+    std::unique_ptr<juce::DrawableButton> fSettingsButton;
+    std::unique_ptr<juce::Drawable> fSettingsButtonImage;
     
-    std::unique_ptr<TooltipWindow> fTooltipWindow;
+    std::unique_ptr<juce::TooltipWindow> fTooltipWindow;
     
-    Atomic<bool> fLoadingFinished;
+    juce::Atomic<bool> fLoadingFinished;
     
     OverScroller fScroller;
-    std::deque<MouseEvent> fLastDragPosition;
+    std::deque<juce::MouseEvent> fLastDragPosition;
     TimerInstance fScrollerTimer;
     TimerInstance fAnimationTimer;
     
-    Atomic<float> fWaterOpticalDensity;
-    Atomic<bool> fWaterTranslucent;
+    juce::Atomic<float> fWaterOpticalDensity;
+    juce::Atomic<bool> fWaterTranslucent;
     
-    Atomic<bool> fEnableBiome;
-    Atomic<int> fBiomeBlend;
+    juce::Atomic<bool> fEnableBiome;
+    juce::Atomic<int> fBiomeBlend;
     
     std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
     
-    std::unique_ptr<FileChooser> fFileChooser;
+    std::unique_ptr<juce::FileChooser> fFileChooser;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

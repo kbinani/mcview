@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
 #include "MapViewComponent.h"
 #include "BrowserComponent.h"
 #include "SettingsComponent.h"
@@ -21,7 +20,7 @@
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent   : public Component, private AsyncUpdater
+class MainComponent   : public juce::Component, private juce::AsyncUpdater
 {
 public:
     //==============================================================================
@@ -29,6 +28,8 @@ public:
         : fBrowserOpened(true)
         , fSettingsOpened(false)
     {
+        using namespace juce;
+
         fSettings.reset(new Settings());
         fSettings->load();
         
@@ -114,14 +115,16 @@ public:
     }
 
     //==============================================================================
-    void paint (Graphics& g) override
+    void paint (juce::Graphics& g) override
     {
+        using namespace juce;
         // (Our component is opaque, so we must completely fill the background with a solid colour)
         g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
     }
 
-    static File DefaultMinecraftSaveDirectory()
+    static juce::File DefaultMinecraftSaveDirectory()
     {
+        using namespace juce;
 #if JUCE_WINDOWS
         return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(".minecraft").getChildFile("saves");
 #else
@@ -131,6 +134,8 @@ public:
     
     void resized() override
     {
+        using namespace juce;
+
         if (!fMapViewComponent || !fBrowser || !fSettingsComponent) {
 			return;
 		}
@@ -151,7 +156,7 @@ public:
         }
     }
 
-    void childBoundsChanged (Component *) override
+    void childBoundsChanged (juce::Component *) override
     {
         resized();
     }
@@ -212,7 +217,8 @@ public:
     }
     
 private:
-    static void Animate(Component *comp, int x, int y, int width, int height) {
+    static void Animate(juce::Component *comp, int x, int y, int width, int height) {
+        using namespace juce;
         auto& animator = Desktop::getInstance().getAnimator();
         animator.animateComponent(comp, { x, y, width, height }, 1.0f, kAnimationDuration, false, 0.0, 0.0);
     }

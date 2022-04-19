@@ -2,6 +2,8 @@
 #include "defer.h"
 #include "GraphicsHelper.h"
 
+using namespace juce;
+
 DirectoryBrowserModel::DirectoryBrowserModel(DirectoryBrowserComponent *parent, File directory, LookAndFeel const& laf)
     : fDirectory(directory)
     , fParent(parent)

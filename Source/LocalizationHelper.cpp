@@ -1,10 +1,11 @@
-#include "../JuceLibraryCode/JuceHeader.h"
+#include "LocalizationHelper.h"
+#include "BinaryData.h"
 
 #if JUCE_WINDOWS
 #include <windows.h>
 #endif
 
-#include "LocalizationHelper.h"
+using namespace juce;
 
 #if !JUCE_MAC
 

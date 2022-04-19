@@ -1,5 +1,5 @@
 #pragma once
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "minecraft-file.hpp"
 #include "RegionToTexture.h"
 #include "Region.h"
@@ -46,29 +46,29 @@ inline Biome ToBiome(mcfile::biomes::BiomeId b)
     }
 }
 
-class RegionToTexture : public ThreadPoolJob {
+class RegionToTexture : public juce::ThreadPoolJob {
 public:
-    RegionToTexture(File const& mcaFile, Region region, Dimension dim, bool useCache);
+    RegionToTexture(juce::File const& mcaFile, Region region, Dimension dim, bool useCache);
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
     
-    static void Load(mcfile::je::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(PixelARGB *)> completion);
-    static File CacheFile(File const& file);
+    static void Load(mcfile::je::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(juce::PixelARGB *)> completion);
+    static juce::File CacheFile(juce::File const& file);
     
 public:
-    File const fRegionFile;
+    juce::File const fRegionFile;
     Region const fRegion;
     Dimension const fDimension;
-    std::unique_ptr<PixelARGB[]> fPixels;
+    std::unique_ptr<juce::PixelARGB[]> fPixels;
     bool const fUseCache;
     
-    static std::map<mcfile::blocks::BlockId, Colour> const kBlockToColor;
+    static std::map<mcfile::blocks::BlockId, juce::Colour> const kBlockToColor;
 
-    static Colour const kDefaultOceanColor;
-    static std::map<Biome, Colour> const kOceanToColor;
+    static juce::Colour const kDefaultOceanColor;
+    static std::map<Biome, juce::Colour> const kOceanToColor;
 
-    static Colour const kDefaultFoliageColor;
-    static std::map<Biome, Colour> const kFoliageToColor;
+    static juce::Colour const kDefaultFoliageColor;
+    static std::map<Biome, juce::Colour> const kFoliageToColor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture);
 };

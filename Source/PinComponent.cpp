@@ -3,6 +3,8 @@
 #include "WorldData.h"
 #include "GraphicsHelper.h"
 
+using namespace juce;
+
 static int const pinHeadRadius = 6;
 static int const pinNameFontSize = 14;
 static int const stemLength = 16;

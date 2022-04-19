@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
-class AboutComponent : public Component {
+class AboutComponent : public juce::Component {
 public:
     AboutComponent();
-    void paint(Graphics &g) override;
+    void paint(juce::Graphics &g) override;
 
 private:
-    std::unique_ptr<Drawable> fLogo;
-    Array<std::unique_ptr<Component>> fLines;
+    std::unique_ptr<juce::Drawable> fLogo;
+    juce::Array<std::unique_ptr<Component>> fLines;
 };

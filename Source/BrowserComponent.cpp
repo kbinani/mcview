@@ -2,6 +2,9 @@
 #include "LookAndFeel.h"
 #include "defer.h"
 #include "MainComponent.h"
+#include "BinaryData.h"
+
+using namespace juce;
 
 class Header : public Component
 {

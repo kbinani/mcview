@@ -2,6 +2,8 @@
 #include "Settings.h"
 #include "Pin.h"
 
+using namespace juce;
+
 static const Identifier kPins("pins");
 
 void WorldData::save(File path) const

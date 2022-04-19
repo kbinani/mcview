@@ -1,4 +1,3 @@
-#include "../JuceLibraryCode/JuceHeader.h"
 #include "MapViewComponent.h"
 #include "RegionToTexture.h"
 #include "RegionTextureCache.h"
@@ -8,12 +7,15 @@
 #include "defer.h"
 #include "GraphicsHelper.h"
 #include "File.h"
+#include "BinaryData.h"
 #include <set>
 #include <cassert>
 #include <cmath>
 #include <thread>
 #include <minecraft-file.hpp>
 #include <colormap/colormap.h>
+
+using namespace juce;
 
 float const MapViewComponent::kMaxScale = 10;
 float const MapViewComponent::kMinScale = 1.0f / 32.0f;

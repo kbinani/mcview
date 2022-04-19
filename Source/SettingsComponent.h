@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "Settings.h"
 
-class SettingsComponent : public Component {
+class SettingsComponent : public juce::Component {
 public:
     std::function<void(float)> onWaterOpticalDensityChanged;
     std::function<void(bool)> onWaterTranslucentChanged;
@@ -22,12 +22,12 @@ public:
 public:
     explicit SettingsComponent(Settings const& settings);
     
-    void paint(Graphics &g) override;
+    void paint(juce::Graphics &g) override;
     void resized() override;
 
 private:
-    std::unique_ptr<GroupComponent> fGroupWater;
-    std::unique_ptr<GroupComponent> fGroupBiome;
-    std::unique_ptr<GroupComponent> fGroupPin;
-    std::unique_ptr<HyperlinkButton> fAboutButton;
+    std::unique_ptr<juce::GroupComponent> fGroupWater;
+    std::unique_ptr<juce::GroupComponent> fGroupBiome;
+    std::unique_ptr<juce::GroupComponent> fGroupPin;
+    std::unique_ptr<juce::HyperlinkButton> fAboutButton;
 };

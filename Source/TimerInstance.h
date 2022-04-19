@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
-class TimerInstance : public Timer
+class TimerInstance : public juce::Timer
 {
 public:
     TimerInstance() = default;

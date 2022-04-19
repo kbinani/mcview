@@ -1,6 +1,9 @@
 #include "AboutComponent.h"
 #include "GraphicsHelper.h"
 #include "defer.h"
+#include "BinaryData.h"
+
+using namespace juce;
 
 static Component* createLabel(String t, int height = 14)
 {
@@ -27,7 +30,7 @@ static Component *createLink(String t, int height = 16)
 AboutComponent::AboutComponent()
 {
     fLines = {
-        createLabel(String("Version: ") + String::fromUTF8(ProjectInfo::versionString)),
+        createLabel(String("Version: ") + String::fromUTF8(JUCE_APPLICATION_VERSION_STRING)),
         createLabel("Copyright (C) 2019, 2022 kbinani"),
         createLabel(""),
         createLabel("Acknowledgement"),
@@ -84,7 +87,7 @@ void AboutComponent::paint(Graphics &g)
         };
         g.setFont(titleHeight);
         g.setColour(Colours::white);
-        GraphicsHelper::DrawText(g, ProjectInfo::projectName, margin, y, width - 2 * margin, titleHeight, Justification::centred);
+        GraphicsHelper::DrawText(g, JUCE_APPLICATION_NAME_STRING, margin, y, width - 2 * margin, titleHeight, Justification::centred);
         y += titleHeight + margin;
     }
     for (auto const& line : fLines) {

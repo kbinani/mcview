@@ -1,6 +1,8 @@
 #include "Settings.h"
 #include "SettingsComponent.h"
 
+using namespace juce;
+
 static const Identifier kDirectories("directories");
 static const Identifier kWaterTranslucent("water_translucent");
 static const Identifier kWaterOpticalDensity("water_optical_density");

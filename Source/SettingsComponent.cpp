@@ -2,6 +2,8 @@
 #include "defer.h"
 #include "AboutComponent.h"
 
+using namespace juce;
+
 float const SettingsComponent::kDefaultWaterOpticalDensity = 0.02f;
 float const SettingsComponent::kMaxWaterOpticalDensity = 0.04f;
 float const SettingsComponent::kMinWaterOpticalDensity = 0.0f;

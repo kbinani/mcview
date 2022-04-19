@@ -6,6 +6,8 @@
 #include <map>
 #include <set>
 
+using namespace juce;
+
 static Colour const kColorPotter(135, 75, 58);
 static Colour const kColorPlanksBirch(244, 230, 161);
 static Colour const kColorPlanksDarkOak(101, 75, 50);

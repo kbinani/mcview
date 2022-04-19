@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
 #include "GraphicsHelper.h"
 #include "DirectoryBrowserComponent.h"
 
@@ -9,13 +8,15 @@ namespace mcview
 
 class LookAndFeel : public juce::LookAndFeel_V4
 {
-    void drawButtonText(Graphics &g, TextButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+    void drawButtonText(juce::Graphics &g, juce::TextButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
     {
-        LookAndFeel_V4::drawButtonText(g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+        juce::LookAndFeel_V4::drawButtonText(g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
     }
     
-    void drawLabel(Graphics &g, Label &label) override
+    void drawLabel(juce::Graphics &g, juce::Label &label) override
     {
+        using namespace juce;
+
         g.fillAll (label.findColour (Label::backgroundColourId));
         
         if (! label.isBeingEdited())
@@ -42,8 +43,10 @@ class LookAndFeel : public juce::LookAndFeel_V4
         g.drawRect (label.getLocalBounds());
     }
     
-    void drawGroupComponentOutline (Graphics &g, int width, int height, const String &text, const Justification &position, GroupComponent &group) override
+    void drawGroupComponentOutline (juce::Graphics &g, int width, int height, const juce::String &text, const juce::Justification &position, juce::GroupComponent &group) override
     {
+        using namespace juce;
+
         const float textH = 15.0f;
         const float indent = 3.0f;
         const float textEdgeGap = 4.0f;
@@ -99,8 +102,10 @@ class LookAndFeel : public juce::LookAndFeel_V4
                                   Justification::centred, true);
     }
     
-    void drawToggleButton(Graphics &g, ToggleButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+    void drawToggleButton(juce::Graphics &g, juce::ToggleButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
     {
+        using namespace juce;
+
         auto fontSize = jmin (15.0f, button.getHeight() * 0.75f);
         auto tickWidth = fontSize * 1.1f;
         
@@ -123,8 +128,10 @@ class LookAndFeel : public juce::LookAndFeel_V4
                                        Justification::centredLeft, 10);
     }
 
-    void drawPopupMenuItem(Graphics &g, Rectangle<int> const& area, bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu, String const& text, String const& shortcutKeyText, Drawable const* icon, Colour const* textColourToUse) override
+    void drawPopupMenuItem(juce::Graphics &g, juce::Rectangle<int> const& area, bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu, juce::String const& text, juce::String const& shortcutKeyText, juce::Drawable const* icon, juce::Colour const* textColourToUse) override
     {
+        using namespace juce;
+
         if (isSeparator)
         {
             auto r  = area.reduced (5, 0);
@@ -206,10 +213,12 @@ class LookAndFeel : public juce::LookAndFeel_V4
         }
     }
 
-    void drawDocumentWindowTitleBar (DocumentWindow& window, Graphics& g,
+    void drawDocumentWindowTitleBar (juce::DocumentWindow& window, juce::Graphics& g,
                                                      int w, int h, int titleSpaceX, int titleSpaceW,
-                                                     const Image* icon, bool drawTitleTextOnLeft) override
+                                                     const juce::Image* icon, bool drawTitleTextOnLeft) override
     {
+        using namespace juce;
+
         if (w * h == 0)
             return;
 

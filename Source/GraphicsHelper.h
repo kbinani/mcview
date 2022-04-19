@@ -1,33 +1,33 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
 class GraphicsHelper
 {
 public:
-    static void DrawText(Graphics &g, String const& text, float x, float y, float width, float height,
-                         Justification justificationType, bool const useEllipsesIfTooBig = true);
+    static void DrawText(juce::Graphics &g, juce::String const& text, float x, float y, float width, float height,
+        juce::Justification justificationType, bool const useEllipsesIfTooBig = true);
 
-    static void DrawText(Graphics &g, String const& text, Rectangle<float> area,
-                         Justification justificationType, bool const useEllipsesIfTooBig = true)
+    static void DrawText(juce::Graphics &g, juce::String const& text, juce::Rectangle<float> area,
+        juce::Justification justificationType, bool const useEllipsesIfTooBig = true)
     {
         DrawText(g, text, area.getX(), area.getY(), area.getWidth(), area.getHeight(), justificationType, useEllipsesIfTooBig);
     }
 
-    static void DrawFittedText(Graphics &g, String const& text, float x, float y, float width, float height,
-                               Justification justification,
+    static void DrawFittedText(juce::Graphics &g, juce::String const& text, float x, float y, float width, float height,
+        juce::Justification justification,
                                int const maximumNumberOfLines,
                                float const minimumHorizontalScale = 0.0f);
 
-    static void DrawFittedText(Graphics &g, String const& text, Rectangle<float> area,
-                               Justification justification,
+    static void DrawFittedText(juce::Graphics &g, juce::String const& text, juce::Rectangle<float> area,
+        juce::Justification justification,
                                int const maximumNumberOfLines,
                                float const minimumHorizontalScale = 0.0f)
     {
         DrawFittedText(g, text, area.getX(), area.getY(), area.getWidth(), area.getHeight(), justification, maximumNumberOfLines, minimumHorizontalScale);
     }
 
-    static Font FallbackFont(Font font, String text);
+    static juce::Font FallbackFont(juce::Font font, juce::String text);
 
 private:
     GraphicsHelper() = delete;

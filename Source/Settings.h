@@ -1,19 +1,19 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
 class Settings {
 public:
     Settings();
     
-    Array<File> directories() const { return fDirectories; }
-    void addDirectory(File f);
-    void removeDirectory(File f);
+    juce::Array<juce::File> directories() const { return fDirectories; }
+    void addDirectory(juce::File f);
+    void removeDirectory(juce::File f);
 
     void load();
     void save();
 
-    static File ConfigDirectory();
+    static juce::File ConfigDirectory();
 
 public:
     float fWaterOpticalDensity;
@@ -23,12 +23,12 @@ public:
     bool fShowPin = true;
 
 private:
-    static File ConfigFile();
+    static juce::File ConfigFile();
     
-    Array<File> fDirectories;
+    juce::Array<juce::File> fDirectories;
 
 #if JUCE_MAC
-    static String Bookmark(File f);
-    static File FromBookmark(String s);
+    static juce::String Bookmark(juce::File f);
+    static juce::File FromBookmark(juce::String s);
 #endif
 };

@@ -1,5 +1,7 @@
 #include "Pin.h"
 
+using namespace juce;
+
 static const Identifier kX("x");
 static const Identifier kZ("z");
 static const Identifier kMessage("message");

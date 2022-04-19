@@ -1,39 +1,39 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "DirectoryBrowserComponent.h"
 
-class BrowserComponent : public Component, private Timer {
+class BrowserComponent : public juce::Component, private juce::Timer {
 public:
     BrowserComponent();
     ~BrowserComponent();
     
     void resized() override;
 
-    void addDirectory(File directory);
+    void addDirectory(juce::File directory);
     void browse();
 
-    std::function<void(File)> onSelect;
-    std::function<void(File)> onAdd;
-    std::function<void(File)> onRemove;
+    std::function<void(juce::File)> onSelect;
+    std::function<void(juce::File)> onAdd;
+    std::function<void(juce::File)> onRemove;
 
     static int constexpr kDefaultWidth = 214;
 
 private:
-    void removeDirectory(File dir);
+    void removeDirectory(juce::File dir);
     
     void timerCallback() override;
     
 private:
-    std::unique_ptr<ResizableEdgeComponent> fResizer;
-    std::unique_ptr<ComponentBoundsConstrainer> fConstrainer;
-    std::unique_ptr<ConcertinaPanel> fPanel;
-    std::unique_ptr<DrawableButton> fAddButton;
-    std::unique_ptr<Drawable> fAddButtonImage;
-    std::unique_ptr<FileChooser> fFileChooser;
+    std::unique_ptr<juce::ResizableEdgeComponent> fResizer;
+    std::unique_ptr<juce::ComponentBoundsConstrainer> fConstrainer;
+    std::unique_ptr<juce::ConcertinaPanel> fPanel;
+    std::unique_ptr<juce::DrawableButton> fAddButton;
+    std::unique_ptr<juce::Drawable> fAddButtonImage;
+    std::unique_ptr<juce::FileChooser> fFileChooser;
 
-    Array<DirectoryBrowserComponent *> fBrowsers;
-    Time fTimerStarted;
+    juce::Array<DirectoryBrowserComponent *> fBrowsers;
+    juce::Time fTimerStarted;
     
     static int constexpr kResizerWidth = 8;
     

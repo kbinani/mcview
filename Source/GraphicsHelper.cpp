@@ -1,6 +1,8 @@
 #include "GraphicsHelper.h"
 #include "defer.h"
 
+using namespace juce;
+
 Font GraphicsHelper::FallbackFont(Font font, String text)
 {
     if (text.containsOnly(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~")) {

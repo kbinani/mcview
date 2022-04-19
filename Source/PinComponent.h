@@ -1,26 +1,26 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 #include "Pin.h"
 
-class PinComponent : public Component {
+class PinComponent : public juce::Component {
 public:
     explicit PinComponent(std::shared_ptr<Pin> const& pin);
 
-    void paint(Graphics &g) override;
-    void mouseDown(MouseEvent const&) override;
-    void mouseUp(MouseEvent const&) override;
-    void mouseDoubleClick(MouseEvent const&) override;
-    void mouseDrag(MouseEvent const&) override;
+    void paint(juce::Graphics &g) override;
+    void mouseDown(juce::MouseEvent const&) override;
+    void mouseUp(juce::MouseEvent const&) override;
+    void mouseDoubleClick(juce::MouseEvent const&) override;
+    void mouseDrag(juce::MouseEvent const&) override;
 
-    void updatePinPosition(Point<float> pos);
+    void updatePinPosition(juce::Point<float> pos);
     bool isPresenting(std::shared_ptr<Pin> const& p) const
     {
         return p.get() == fPin.get();
     }
-    Point<float> getMapCoordinate() const
+    juce::Point<float> getMapCoordinate() const
     {
-        return Point<float>(fPin->fX + 0.5f, fPin->fZ - 0.5f);
+        return juce::Point<float>(fPin->fX + 0.5f, fPin->fZ - 0.5f);
     }
     Dimension getDimension() const
     {
@@ -28,14 +28,14 @@ public:
     }
 
 public:
-    std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onRightClick;
-    std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onDoubleClick;
-    std::function<void(std::shared_ptr<Pin>, Point<int> screenPos)> onDrag;
+    std::function<void(std::shared_ptr<Pin>, juce::Point<int> screenPos)> onRightClick;
+    std::function<void(std::shared_ptr<Pin>, juce::Point<int> screenPos)> onDoubleClick;
+    std::function<void(std::shared_ptr<Pin>, juce::Point<int> screenPos)> onDrag;
     std::function<void(std::shared_ptr<Pin>)> onDragEnd;
 
 private:
     std::shared_ptr<Pin> fPin;
-    Point<int> fMouseDownToPinOffset;
+    juce::Point<int> fMouseDownToPinOffset;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PinComponent)
 };

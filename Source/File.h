@@ -1,7 +1,6 @@
-
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
 inline std::filesystem::path PathFromFile(juce::File const& file) {
 #if defined(_WIN32)

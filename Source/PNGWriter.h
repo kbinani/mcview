@@ -1,19 +1,19 @@
 #pragma once
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <juce_gui_extra/juce_gui_extra.h>
 
 class PNGWriter {
 public:
-    PNGWriter(int width, int height, OutputStream &stream);
+    PNGWriter(int width, int height, juce::OutputStream &stream);
     ~PNGWriter();
 
-    void writeRow(PixelARGB *row);
+    void writeRow(juce::PixelARGB *row);
 
 private:
-    OutputStream &fStream;
+    juce::OutputStream &fStream;
     int fWidth;
     int fHeight;
     void *fWriteStruct;
     void *fInfoStruct;
-    HeapBlock<uint8> fRowData;
+    juce::HeapBlock<juce::uint8> fRowData;
 };
