@@ -115,11 +115,12 @@ BrowserComponent::BrowserComponent()
 void BrowserComponent::browse()
 {
     String message = TRANS("Select Minecraft \"saves\" directory");
+    int flags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories;
 #if JUCE_MAC
     message += String(":\n/Users/yourname/Library/Application Support/minecraft/saves");
+    flags = flags | FileBrowserComponent::showsHiddenFiles;
 #endif
     fFileChooser.reset(new FileChooser(message));
-    int const flags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories | FileBrowserComponent::showsHiddenFiles;
     fFileChooser->launchAsync(flags, [this](FileChooser const& chooser){
         File directory = chooser.getResult();
         if (directory == File()) {

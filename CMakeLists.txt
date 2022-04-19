@@ -44,13 +44,11 @@ set(mcview_files
   Source/GraphicsHelper.h
   Source/LocalizationHelper.cpp
   Source/LocalizationHelper.h
-  Source/LocalizationHelper.mm
   Source/LookAndFeel.h
   Source/Main.cpp
   Source/MainComponent.h
   Source/MapViewComponent.cpp
   Source/MapViewComponent.h
-  Source/mcview.entitlements
   Source/OverScroller.hpp
   Source/Pin.cpp
   Source/Pin.h
@@ -65,7 +63,6 @@ set(mcview_files
   Source/RegionToTexture.h
   Source/Settings.cpp
   Source/Settings.h
-  Source/Settings.mm
   Source/SettingsComponent.cpp
   Source/SettingsComponent.h
   Source/TimerInstance.h
@@ -73,6 +70,13 @@ set(mcview_files
   Source/WorldData.h
   Source/File.h
 )
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  list(APPEND mcview_files
+    Source/mcview.entitlements
+    Source/LocalizationHelper.mm
+    Source/Settings.mm
+  )
+endif()
 
 target_sources(mcview
   PRIVATE
