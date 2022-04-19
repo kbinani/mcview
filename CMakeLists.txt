@@ -143,3 +143,5 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     TYPE C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5
     GUID 33553e30-3cf6-4634-ad63-aa90ca486a7f)
 endif()
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest.in ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest)
