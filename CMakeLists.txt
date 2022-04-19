@@ -78,10 +78,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   )
 endif()
 
-target_sources(mcview
-  PRIVATE
-  ${mcview_files}
-)
+target_sources(mcview PRIVATE ${mcview_files})
 
 target_compile_definitions(mcview
   PRIVATE
@@ -90,11 +87,16 @@ target_compile_definitions(mcview
     JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:mcview,JUCE_PRODUCT_NAME>"
     JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:mcview,JUCE_VERSION>"
     JUCE_DISPLAY_SPLASH_SCREEN=0
-    NOMINMAX
-    WIN32_LEAN_AND_MEAN)
-
-target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
-target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
+)
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  target_compile_definitions(mcview
+    PRIVATE
+      NOMINMAX
+      WIN32_LEAN_AND_MEAN
+  )
+  target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
+  target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
+endif()
 
 juce_add_binary_data(app-data
   SOURCES
@@ -134,4 +136,10 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   execute_process(
     COMMAND patch -p1 -N --input ../../JUCE.patch
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ext/JUCE)
+endif()
+
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+  include_external_msproject(Package "${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.wapproj"
+    TYPE C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5
+    GUID 33553e30-3cf6-4634-ad63-aa90ca486a7f)
 endif()
