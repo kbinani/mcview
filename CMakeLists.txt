@@ -128,7 +128,8 @@ target_link_libraries(mcview
 
 target_include_directories(mcview
   PRIVATE
-    ext/colormap-shaders/include)
+    ext/colormap-shaders/include
+    ext/JUCE/modules/juce_graphics/image_formats)
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mcview_files})
 
