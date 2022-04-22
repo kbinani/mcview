@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_LIBS OFF)
 
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   add_definitions(
     /DUNICODE
     /D_UNICODE
@@ -21,6 +21,9 @@ if ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
     $<$<CONFIG:RelWithDebInfo>:/MT>
     $<$<CONFIG:MinSizeRel>:/MT>
   )
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
+  set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "XM695N4A7T")
 endif()
 
 add_subdirectory(ext/libminecraft-file)
@@ -35,6 +38,7 @@ juce_add_gui_app(mcview
   APP_SANDBOX_OPTIONS "com.apple.security.files.user-selected.read-write;com.apple.security.files.bookmarks.app-scope"
   VERSION "${CMAKE_PROJECT_VERSION}"
   BUNDLE_ID "com.github.kbinani.mcview"
+  HARDENED_RUNTIME_ENABLED TRUE
 )
 
 set(mcview_files
