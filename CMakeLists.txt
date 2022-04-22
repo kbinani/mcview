@@ -29,7 +29,12 @@ add_subdirectory(ext/JUCE)
 juce_add_gui_app(mcview
   ICON_BIG "Resource/icon_512x512@2x.png"
   ICON_SMALL "Resource/icon_512x512.png"
-  PRODUCT_NAME "mcview")
+  PRODUCT_NAME "mcview"
+  APP_SANDBOX_ENABLED TRUE
+  APP_SANDBOX_INHERIT FALSE
+  APP_SANDBOX_FILE_ACCESS_HOME_RO "/Library/Application Support/minecraft/saves"
+  APP_SANDBOX_OPTIONS "com.apple.security.files.user-selected.read-write;com.apple.security.files.bookmarks.app-scope"
+)
 
 set(mcview_files
   Source/AboutComponent.cpp
@@ -72,7 +77,6 @@ set(mcview_files
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
-    Source/mcview.entitlements
     Source/LocalizationHelper.mm
     Source/Settings.mm
   )

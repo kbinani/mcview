@@ -51,18 +51,12 @@ public:
         addAndMakeVisible(fMapViewComponent.get());
 
         fBrowser.reset(new BrowserComponent());
-#if !JUCE_MAC
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory());
-#endif
+
         Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
             fBrowser->addDirectory(directories[i]);
         }
-#if JUCE_MAC
-        if (directories.size() == 0) {
-            triggerAsyncUpdate();
-        }
-#endif
         fBrowser->onSelect = [this](File dir) {
             fMapViewComponent->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());
@@ -128,7 +122,8 @@ public:
 #if JUCE_WINDOWS
         return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(".minecraft").getChildFile("saves");
 #else
-        return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+        File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
+        return library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
 #endif
     }
     

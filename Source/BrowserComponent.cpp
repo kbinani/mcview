@@ -145,14 +145,7 @@ BrowserComponent::~BrowserComponent()
 
 void BrowserComponent::addDirectory(File directory)
 {
-#if JUCE_MAC
-    // userHomeDirectory = $HOME/Library/Containers/com.github.kbinani.mcview/Data
-    File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
-    File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
-    bool const fixed = directory.getFullPathName() == saves.getFullPathName();
-#else
     bool const fixed = directory.getFullPathName() == MainComponent::DefaultMinecraftSaveDirectory().getFullPathName();
-#endif
     Header *header = new Header(fPanel.get(), directory, fixed ? "Default" : directory.getFileName(), !fixed);
     DirectoryBrowserComponent* browser = new DirectoryBrowserComponent(directory);
     browser->onSelect = [this](File f) {
