@@ -34,6 +34,8 @@ juce_add_gui_app(mcview
   APP_SANDBOX_INHERIT FALSE
   APP_SANDBOX_FILE_ACCESS_HOME_RO "/Library/Application Support/minecraft/saves"
   APP_SANDBOX_OPTIONS "com.apple.security.files.user-selected.read-write;com.apple.security.files.bookmarks.app-scope"
+  VERSION "${CMAKE_PROJECT_VERSION}"
+  BUNDLE_ID "com.github.kbinani.mcview"
 )
 
 set(mcview_files
