@@ -881,9 +881,8 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
     int const minZ = region.minBlockZ();
 
 #if JUCE_DEBUG
-    static bool init = true;
-    if (init) {
-        init = false;
+    static std::atomic_bool init = true;
+    if (init.exchange(false)) {
         std::set<mcfile::blocks::BlockId> ids;
         for (auto it : kBlockToColor) {
             ids.insert(it.first);
