@@ -51,12 +51,18 @@ public:
         addAndMakeVisible(fMapViewComponent.get());
 
         fBrowser.reset(new BrowserComponent());
+#if !JUCE_MAC
         fBrowser->addDirectory(DefaultMinecraftSaveDirectory());
-
+#endif
         Array<File> directories = fSettings->directories();
         for (int i = 0; i < directories.size(); i++) {
             fBrowser->addDirectory(directories[i]);
         }
+#if JUCE_MAC
+        if (directories.size() == 0) {
+            triggerAsyncUpdate();
+        }
+#endif
         fBrowser->onSelect = [this](File dir) {
             fMapViewComponent->setWorldDirectory(dir, Dimension::Overworld);
             getTopLevelComponent()->setName(dir.getFileName());

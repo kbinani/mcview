@@ -120,10 +120,10 @@ void BrowserComponent::browse()
     String message = TRANS("Select Minecraft \"saves\" directory");
     int flags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectDirectories;
 #if JUCE_MAC
-    message += String(":\n/Users/yourname/Library/Application Support/minecraft/saves");
+    message += "\n" + TRANS("This dialog opens the default location of the \"saves\" directory. If this directory is appropriate, press the \"Open\" button");
     flags = flags | FileBrowserComponent::showsHiddenFiles;
 #endif
-    fFileChooser.reset(new FileChooser(message));
+    fFileChooser.reset(new FileChooser(message, MainComponent::DefaultMinecraftSaveDirectory()));
     fFileChooser->launchAsync(flags, [this](FileChooser const& chooser){
         File directory = chooser.getResult();
         if (directory == File()) {
@@ -145,7 +145,14 @@ BrowserComponent::~BrowserComponent()
 
 void BrowserComponent::addDirectory(File directory)
 {
+#if JUCE_MAC
+    // userHomeDirectory = $HOME/Library/Containers/com.github.kbinani.mcview/Data
+    File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
+    File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+    bool const fixed = directory.getFullPathName() == saves.getFullPathName();
+#else
     bool const fixed = directory.getFullPathName() == MainComponent::DefaultMinecraftSaveDirectory().getFullPathName();
+#endif
     Header *header = new Header(fPanel.get(), directory, fixed ? "Default" : directory.getFileName(), !fixed);
     DirectoryBrowserComponent* browser = new DirectoryBrowserComponent(directory);
     browser->onSelect = [this](File f) {

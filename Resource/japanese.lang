@@ -18,3 +18,4 @@ language: Japanese
 "Please enter a pin name" = "ピンの名前を入力してください"
 "Delete" = "削除"
 "Rename" = "名前を変更"
+"This dialog opens the default location of the \"saves\" directory. If this directory is appropriate, press the \"Open\" button" = "このダイアログはデフォルトの \"saves\" ディレクトリの場所を開きます。このディレクトリが適切であれば \"開く\" ボタンを押してください"
