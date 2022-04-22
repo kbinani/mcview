@@ -24,6 +24,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
   set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "XM695N4A7T")
+  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
 add_subdirectory(ext/libminecraft-file)
