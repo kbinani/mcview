@@ -7,6 +7,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_LIBS OFF)
 
+set(mcview_macos_deployment_target "10.15")
+
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   add_definitions(
     /DUNICODE
@@ -22,7 +24,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     $<$<CONFIG:MinSizeRel>:/MT>
   )
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "${mcview_macos_deployment_target}")
   set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "XM695N4A7T")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
@@ -40,6 +42,18 @@ juce_add_gui_app(mcview
   VERSION "${CMAKE_PROJECT_VERSION}"
   BUNDLE_ID "com.github.kbinani.mcview"
   HARDENED_RUNTIME_ENABLED TRUE
+  PLIST_TO_MERGE "
+    <plist>
+      <dict>
+        <key>LSApplicationCategoryType</key>
+        <string>public.app-category.productivity</string>
+        <key>ITSAppUsesNonExemptEncryption</key>
+        <false/>
+        <key>LSMinimumSystemVersion</key>
+        <string>${mcview_macos_deployment_target}</string>
+      </dict>
+    </plist>"
+  COMPANY_COPYRIGHT "Copyright © 2019, 2022 kbinani"
 )
 
 set(mcview_files
