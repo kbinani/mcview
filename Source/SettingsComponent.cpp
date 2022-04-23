@@ -24,6 +24,7 @@ public:
         fWaterOpticalDensity.reset(new Slider(Slider::LinearHorizontal, Slider::TextBoxBelow));
         fWaterOpticalDensity->setRange(SettingsComponent::kMinWaterOpticalDensity, SettingsComponent::kMaxWaterOpticalDensity);
         fWaterOpticalDensity->setValue(settings.fWaterOpticalDensity);
+        fWaterOpticalDensity->setNumDecimalPlacesToDisplay(3);
         fWaterOpticalDensity->onValueChange = [this]() {
             if (onWaterOpticalDensityChanged) {
                 onWaterOpticalDensityChanged((float)fWaterOpticalDensity->getValue());
