@@ -1140,10 +1140,15 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
                     return false;
                 }
                 uint8_t waterDepth = 0;
-                int yini = 255;
+                int ymax = 319;
+                int ymin = -64;
+
+                int yini = ymax;
                 if (dim == Dimension::TheNether) {
-                    yini = 127;
-                    for (int y = 127; y >= 0; y--) {
+                    ymax = 127;
+                    ymin = 0;
+                    yini = ymax;
+                    for (int y = ymax; y >= ymin; y--) {
                         auto block = chunk.blockIdAt(x, y, z);
                         if (!block) continue;
                         if (block == mcfile::blocks::minecraft::air) {
@@ -1151,10 +1156,13 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
                             break;
                         }
                     }
+                } else if (dim == Dimension::TheEnd) {
+                    ymax = 255;
+                    ymin = 0;
                 }
                 bool all_transparent = true;
                 bool found_opaque_block = false;
-                for (int y = yini; y >= 0; y--) {
+                for (int y = yini; y >= ymin; y--) {
                     auto block = chunk.blockIdAt(x, y, z);
                     if (block == mcfile::blocks::unknown) {
                         continue;
