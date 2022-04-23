@@ -214,7 +214,7 @@ private:
     };
 
 private:
-    juce::OpenGLContext fOpenGLContext;
+    juce::OpenGLContext fGLContext;
     juce::File fWorldDirectory;
     WorldData fWorldData;
 
@@ -223,10 +223,10 @@ private:
 
     Dimension fDimension;
     std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
-    std::unique_ptr<juce::OpenGLShaderProgram> fShader;
-    std::unique_ptr<Uniforms> fUniforms;
-    std::unique_ptr<Attributes> fAttributes;
-    std::unique_ptr<Buffer> fBuffer;
+    std::unique_ptr<juce::OpenGLShaderProgram> fGLShader;
+    std::unique_ptr<Uniforms> fGLUniforms;
+    std::unique_ptr<Attributes> fGLAttributes;
+    std::unique_ptr<Buffer> fGLBuffer;
 
     std::atomic<LookAt> fLookAt;
     std::atomic<juce::Rectangle<int>> fVisibleRegions;

@@ -103,8 +103,8 @@ MapViewComponent::MapViewComponent()
     addAndMakeVisible(*fSettingsButton);
     
     setOpaque(true);
-    fOpenGLContext.setRenderer(this);
-    fOpenGLContext.attachTo(*this);
+    fGLContext.setRenderer(this);
+    fGLContext.attachTo(*this);
 
     fScrollerTimer.fTimerCallback = [this](TimerInstance &timer) {
         if (!fScroller.computeScrollOffset()) {
@@ -137,7 +137,7 @@ MapViewComponent::~MapViewComponent()
 {
     Desktop::getInstance().getAnimator().removeChangeListener(this);
 
-    fOpenGLContext.detach();
+    fGLContext.detach();
     fPool->removeAllJobs(true, -1);
     fRegionUpdateChecker->signalThreadShouldExit();
     fRegionUpdateChecker->waitForThreadToExit(-1);
@@ -232,27 +232,27 @@ void MapViewComponent::newOpenGLContextCreated()
     
     std::unique_ptr<Buffer> buffer(new Buffer());
 
-    fOpenGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
-	fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
+    fGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
+	fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
     std::vector<Vertex> vertices = {
         {{0, 0}, {0.0, 0.0}},
         {{1, 0}, {1.0, 0.0}},
         {{1, 1}, {1.0, 1.0}},
         {{0, 1}, {0.0, 1.0}},
     };
-	fOpenGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+	fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 
-	fOpenGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
-	fOpenGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
+	fGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
+	fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
     std::vector<uint32_t> indices = { 0, 1, 2, 3 };
-	fOpenGLContext.extensions.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
+	fGLContext.extensions.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
     
-    fBuffer.reset(buffer.release());
+    fGLBuffer.reset(buffer.release());
 }
 
 void MapViewComponent::updateShader()
 {
-    std::unique_ptr<OpenGLShaderProgram> newShader(new OpenGLShaderProgram(fOpenGLContext));
+    std::unique_ptr<OpenGLShaderProgram> newShader(new OpenGLShaderProgram(fGLContext));
 
     newShader->addVertexShader(R"#(
         attribute vec2 textureCoordIn;
@@ -672,16 +672,16 @@ void MapViewComponent::updateShader()
     newShader->link();
     newShader->use();
 
-    fUniforms.reset(new Uniforms(fOpenGLContext, *newShader));
-    fAttributes.reset(new Attributes(fOpenGLContext, *newShader));
+    fGLUniforms.reset(new Uniforms(fGLContext, *newShader));
+    fGLAttributes.reset(new Attributes(fGLContext, *newShader));
 
-    fShader.reset(newShader.release());
+    fGLShader.reset(newShader.release());
 }
 
 void MapViewComponent::renderOpenGL()
 {
     LookAt lookAt = clampedLookAt();
-    auto desktopScale = (float)fOpenGLContext.getRenderingScale();
+    auto desktopScale = (float)fGLContext.getRenderingScale();
     Point<int> size = fSize.load();
     int const width = size.x * desktopScale;
     int const height = size.y * desktopScale;
@@ -801,7 +801,7 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
     
     Time const now = Time::getCurrentTime();
     
-    if (fShader.get() == nullptr) {
+    if (fGLShader.get() == nullptr) {
         updateShader();
     }
 
@@ -811,73 +811,73 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_TEXTURE_2D);
 
-    fShader->use();
+    fGLShader->use();
     auto const& textures = fTextures;
     
     for (auto it : textures) {
         auto cache = it.second;
-        if (fUniforms->blocksPerPixel.get() != nullptr) {
-            fUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
+        if (fGLUniforms->blocksPerPixel.get() != nullptr) {
+            fGLUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
         }
-        if (fUniforms->Xr.get() != nullptr) {
-            fUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
+        if (fGLUniforms->Xr.get() != nullptr) {
+            fGLUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
         }
-        if (fUniforms->Zr.get() != nullptr) {
-            fUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
+        if (fGLUniforms->Zr.get() != nullptr) {
+            fGLUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
         }
-        if (fUniforms->width.get() != nullptr) {
-            fUniforms->width->set((GLfloat)width);
+        if (fGLUniforms->width.get() != nullptr) {
+            fGLUniforms->width->set((GLfloat)width);
         }
-        if (fUniforms->height.get() != nullptr) {
-            fUniforms->height->set((GLfloat)height);
+        if (fGLUniforms->height.get() != nullptr) {
+            fGLUniforms->height->set((GLfloat)height);
         }
-        if (fUniforms->Cx.get() != nullptr) {
-            fUniforms->Cx->set((GLfloat)lookAt.fX);
+        if (fGLUniforms->Cx.get() != nullptr) {
+            fGLUniforms->Cx->set((GLfloat)lookAt.fX);
         }
-        if (fUniforms->Cz.get() != nullptr) {
-            fUniforms->Cz->set((GLfloat)lookAt.fZ);
+        if (fGLUniforms->Cz.get() != nullptr) {
+            fGLUniforms->Cz->set((GLfloat)lookAt.fZ);
         }
-        if (fUniforms->grassBlockId.get() != nullptr) {
-            fUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
+        if (fGLUniforms->grassBlockId.get() != nullptr) {
+            fGLUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
         }
-        if (fUniforms->foliageBlockId) {
-            fUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
+        if (fGLUniforms->foliageBlockId) {
+            fGLUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
         }
-        if (fUniforms->netherrackBlockId) {
-            fUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
+        if (fGLUniforms->netherrackBlockId) {
+            fGLUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
         }
-        if (fUniforms->waterOpticalDensity) {
-            fUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
+        if (fGLUniforms->waterOpticalDensity) {
+            fGLUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
         }
-        if (fUniforms->waterTranslucent) {
-            fUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
+        if (fGLUniforms->waterTranslucent) {
+            fGLUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
         }
-        if (fUniforms->biomeBlend) {
-            fUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
+        if (fGLUniforms->biomeBlend) {
+            fGLUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
         }
-        if (fUniforms->enableBiome) {
-            fUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
+        if (fGLUniforms->enableBiome) {
+            fGLUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
         }
-        if (fUniforms->dimension) {
-            fUniforms->dimension->set((GLint)fDimension);
+        if (fGLUniforms->dimension) {
+            fGLUniforms->dimension->set((GLint)fDimension);
         }
 
-        if (fUniforms->fade.get() != nullptr) {
+        if (fGLUniforms->fade.get() != nullptr) {
             if (enableUI) {
                 int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
                 GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
-                fUniforms->fade->set(a);
+                fGLUniforms->fade->set(a);
             } else {
-                fUniforms->fade->set(1.0f);
+                fGLUniforms->fade->set(1.0f);
             }
         }
 
-        fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0);
+        fGLContext.extensions.glActiveTexture(GL_TEXTURE0);
         cache->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fUniforms->texture.get() != nullptr) {
-            fUniforms->texture->set(0);
+        if (fGLUniforms->texture.get() != nullptr) {
+            fGLUniforms->texture->set(0);
         }
 
         int const x = it.first.first;
@@ -885,98 +885,98 @@ void MapViewComponent::render(int const width, int const height, LookAt const lo
 
         auto const& north = textures.find(MakeRegion(x, z - 1));
         if (north != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
             north->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->north.get() != nullptr) {
-                fUniforms->north->set(1);
+            if (fGLUniforms->north.get() != nullptr) {
+                fGLUniforms->north->set(1);
             }
         }
 
         auto const& northEast = textures.find(MakeRegion(x + 1, z - 1));
         if (northEast != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
             northEast->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->northEast.get() != nullptr) {
-                fUniforms->northEast->set(2);
+            if (fGLUniforms->northEast.get() != nullptr) {
+                fGLUniforms->northEast->set(2);
             }
         }
 
         auto const& east = textures.find(MakeRegion(x + 1, z));
         if (east != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
             east->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->east.get() != nullptr) {
-                fUniforms->east->set(3);
+            if (fGLUniforms->east.get() != nullptr) {
+                fGLUniforms->east->set(3);
             }
         }
 
         auto const& southEast = textures.find(MakeRegion(x + 1, z + 1));
         if (southEast != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
             southEast->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->southEast.get() != nullptr) {
-                fUniforms->southEast->set(4);
+            if (fGLUniforms->southEast.get() != nullptr) {
+                fGLUniforms->southEast->set(4);
             }
         }
 
         auto const& south = textures.find(MakeRegion(x, z + 1));
         if (south != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
             south->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->south.get() != nullptr) {
-                fUniforms->south->set(5);
+            if (fGLUniforms->south.get() != nullptr) {
+                fGLUniforms->south->set(5);
             }
         }
 
         auto const& southWest = textures.find(MakeRegion(x - 1, z + 1));
         if (southWest != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
             southWest->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->southWest.get() != nullptr) {
-                fUniforms->southWest->set(6);
+            if (fGLUniforms->southWest.get() != nullptr) {
+                fGLUniforms->southWest->set(6);
             }
         }
 
         auto const& west = textures.find(MakeRegion(x - 1, z));
         if (west != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
             west->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->west.get() != nullptr) {
-                fUniforms->west->set(7);
+            if (fGLUniforms->west.get() != nullptr) {
+                fGLUniforms->west->set(7);
             }
         }
 
         auto const& northWest = textures.find(MakeRegion(x - 1, z - 1));
         if (northWest != textures.end()) {
-            fOpenGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
+            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
             northWest->second->fTexture->bind();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fUniforms->northWest.get() != nullptr) {
-                fUniforms->northWest->set(8);
+            if (fGLUniforms->northWest.get() != nullptr) {
+                fGLUniforms->northWest->set(8);
             }
         }
 
-        fOpenGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fBuffer->vBuffer);
-		fOpenGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fBuffer->iBuffer);
+        fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
+		fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fGLBuffer->iBuffer);
         
-        fAttributes->enable(fOpenGLContext);
+        fGLAttributes->enable(fGLContext);
         glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
-        fAttributes->disable(fOpenGLContext);
+        fGLAttributes->disable(fGLContext);
     }
 
     instantiateTextures(lookAt);
@@ -987,9 +987,9 @@ void MapViewComponent::drawBackground()
     Point<int> size = fSize.load();
     const int width = size.x;
     const int height = size.y;
-    const float desktopScale = (float)fOpenGLContext.getRenderingScale();
+    const float desktopScale = (float)fGLContext.getRenderingScale();
 
-    std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fOpenGLContext,
+    std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fGLContext,
                                                                                     roundToInt(desktopScale * width),
                                                                                     roundToInt(desktopScale * height)));
 
@@ -1043,8 +1043,8 @@ void MapViewComponent::drawBackground()
 void MapViewComponent::openGLContextClosing()
 {
     fTextures.clear();
-    fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->vBuffer);
-    fOpenGLContext.extensions.glDeleteBuffers(1, &fBuffer->iBuffer);
+    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
+    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
 }
 
 float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region)
@@ -1074,7 +1074,7 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
     File worldDataFile = WorldData::WorldDataPath(directory);
     WorldData data = WorldData::Load(worldDataFile);
     
-    fOpenGLContext.executeOnGLThread([this](OpenGLContext&) {
+    fGLContext.executeOnGLThread([this](OpenGLContext&) {
         std::unique_ptr<ThreadPool> prev(fPool.release());
         fPool.reset(CreateThreadPool());
         prev->removeAllJobs(true, -1);
@@ -1137,10 +1137,10 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension di
         return;
     }
 
-    if (OpenGLContext::getCurrentContext() == &fOpenGLContext) {
-        queueTextureLoadingImpl(fOpenGLContext, files, dim, useCache);
+    if (OpenGLContext::getCurrentContext() == &fGLContext) {
+        queueTextureLoadingImpl(fGLContext, files, dim, useCache);
     } else {
-        fOpenGLContext.executeOnGLThread([this, files, dim, useCache](OpenGLContext &ctx) {
+        fGLContext.executeOnGLThread([this, files, dim, useCache](OpenGLContext &ctx) {
             queueTextureLoadingImpl(ctx, files, dim, useCache);
         }, false);
     }
@@ -1594,7 +1594,7 @@ ThreadPool* MapViewComponent::CreateThreadPool()
 void MapViewComponent::triggerRepaint()
 {
     repaint();
-    fOpenGLContext.triggerRepaint();
+    fGLContext.triggerRepaint();
 }
 
 void MapViewComponent::resized()
@@ -1651,7 +1651,7 @@ public:
     SavePNGProgressWindow(MapViewComponent *component, OpenGLContext &openGLContext, File file)
         : ThreadWithProgressWindow(TRANS("Writing image file"), true, false)
         , fComponent(component)
-        , fOpenGLContext(openGLContext)
+        , fGLContext(openGLContext)
         , fFile(file)
     {
     }
@@ -1659,7 +1659,7 @@ public:
     void run()
     {
         Rectangle<int> bounds;
-        fOpenGLContext.executeOnGLThread([this, &bounds](OpenGLContext&) {
+        fGLContext.executeOnGLThread([this, &bounds](OpenGLContext&) {
             bounds = fComponent->regionBoundingBox();
         }, true);
         
@@ -1687,7 +1687,7 @@ public:
         stream.setPosition(0);
         PNGWriter writer(width, height, stream);
 
-        fOpenGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext& ctx) {
+        fGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext& ctx) {
             int y = 0;
             for (int i = 0; i < numFrames; i++) {
                 std::fill_n(pixelsPtr, width, PixelARGB());
@@ -1724,7 +1724,7 @@ public:
     
 private:
     MapViewComponent *fComponent;
-    OpenGLContext &fOpenGLContext;
+    OpenGLContext &fGLContext;
     File fFile;
 };
 
@@ -1741,7 +1741,7 @@ void MapViewComponent::captureToImage()
         if (file == File()) {
             return;
         }
-        SavePNGProgressWindow wnd(this, fOpenGLContext, file);
+        SavePNGProgressWindow wnd(this, fGLContext, file);
         wnd.run();
     });
 }
@@ -1753,7 +1753,7 @@ void MapViewComponent::handleAsyncUpdate()
 
 void MapViewComponent::timerCallback()
 {
-    fOpenGLContext.triggerRepaint();
+    fGLContext.triggerRepaint();
 }
 
 void MapViewComponent::setWaterOpticalDensity(float v)
