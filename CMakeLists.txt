@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(BUILD_SHARED_LIBS OFF)
 
 set(mcview_macos_deployment_target "10.15")
+set(mcview_apple_development_team_id "XM695N4A7T")
 
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   add_definitions(
@@ -25,7 +26,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   )
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "${mcview_macos_deployment_target}")
-  set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "XM695N4A7T")
+  set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${mcview_apple_development_team_id}")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
