@@ -10,15 +10,15 @@ class defer_t {
 public:
     template<class T, class = typename std::enable_if<std::is_void<decltype((std::declval<T>())())>::value>::type>
     defer_t(T const& f)
-        : f(f)
+        : fDeferred(f)
     {}
 
     ~defer_t() {
-        f();
+        fDeferred();
     }
 
 private:
-    std::function<void(void)> f;
+    std::function<void(void)> fDeferred;
 };
 
 #define defer_helper2(line) defer_tmp ## line
