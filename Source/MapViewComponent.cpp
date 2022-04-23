@@ -286,6 +286,7 @@ void MapViewComponent::updateShader()
 	std::ostringstream fragment;
     fragment << R"#(
         #version 120
+        #extension GL_EXT_gpu_shader4 : enable
         varying vec2 textureCoordOut;
         uniform sampler2D texture;
         uniform float fade;
@@ -320,34 +321,39 @@ void MapViewComponent::updateShader()
             int blockId;
             int biomeRadius;
         };
-    
-        int imod(int x, int y) {
-            return x - y * int(floor(float(x) / float(y)) + 0.1);
+
+        float altitudeFromColor(vec4 color) {
+            int a = int(color.a * 255.0);
+            int r = int(color.r * 255.0);
+            int h = (a << 1) + (0x1 & (r >> 7));
+            return float(h);
         }
     
         BlockInfo pixelInfo(vec4 color) {
-            // h:            8bit
+            // h:            9bit
             // waterDepth:   7bit
-            // biome:        4bit
+            // biome:        3bit
             // block:       10bit
             // biomeRadius:  3bit
             
             /*
              AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
-             hhhhhhhhwwwwwwwbbbboooooooooorrr
+             hhhhhhhhhwwwwwwwbbboooooooooorrr : v3
+             hhhhhhhhwwwwwwwbbbboooooooooorrr : v2
              */
-            
-            int shift2 = 4;
-            int shift3 = 8;
-            int shift5 = 32;
-            
-            int h = int(color.a * 255.0);
-            int depth = int(color.r * 255.0) / 2;
-            int biome = imod(int(color.r * 255.0), 2) * shift2 + int(color.g * 255.0) / shift5;
-            int block = imod(int(color.g * 255.0), 0x20) * shift5 + int(color.b * 255.0) / shift3;
-            int biomeRadius = imod(int(color.b * 255.0), 8);
+
+            int a = int(color.a * 255.0);
+            int r = int(color.r * 255.0);
+            int g = int(color.g * 255.0);
+            int b = int(color.b * 255.0);
+             
+            float h = altitudeFromColor(color);
+            int depth = 0x7f & r;
+            int biome = g >> 5;
+            int block = ((0x1f & g) << 5) + ((0xf8 & b) >> 3);
+            int biomeRadius = 0x7 & b;
             BlockInfo info;
-            info.height = float(h);
+            info.height = h;
             info.waterDepth = float(depth) / 127.0 * 255.0;
             info.biomeId = biome;
             info.blockId = block;
@@ -616,8 +622,8 @@ void MapViewComponent::updateShader()
             } else {
                 westC = texture2D(texture, vec2(tx - d, ty));
             }
-            float northH = northC.a * 255.0;
-            float westH = westC.a * 255.0;
+            float northH = altitudeFromColor(northC);
+            float westH = altitudeFromColor(westC);
             if (northH > 0.0) {
                 if (northH > height) heightScore--;
                 if (northH < height) heightScore++;
@@ -652,8 +658,15 @@ void MapViewComponent::updateShader()
     }
     )#";
     
+    
     String fragmentShaderTemplate = fragment.str();
     String fragmentShader = fragmentShaderTemplate.replace("#{airBlockId}", String(mcfile::blocks::minecraft::air));
+#if 0
+    int lineNumber = 0;
+    for (auto const& line : mcfile::String::Split(fragmentShader.toStdString(), '\n')) {
+        std::cout << "#" << (lineNumber++) << line << std::endl;
+    }
+#endif
     newShader->addFragmentShader(fragmentShader);
 
     newShader->link();

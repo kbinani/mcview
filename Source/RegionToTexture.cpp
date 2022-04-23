@@ -1033,25 +1033,26 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-static PixelARGB ToPixelInfo(uint8_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius)
+static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius)
 {
-    // h:            8bit
+    // [v3 pixel info]
+    // h:            9bit
     // waterDepth:   7bit
-    // biome:        4bit
+    // biome:        3bit
     // block:       10bit
     // biomeRadius:  3bit
-    static_assert((int)Biome::max_Biome <= 1 << 4, "");
+    static_assert((int)Biome::max_Biome <= 1 << 3, "");
     static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
 
     uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
     if (waterDepth > 0 && depth == 0) {
         depth = 1;
     }
-    
-    uint32_t const num = ((0xFF & (uint32_t)height) << 24)
-        | ((0x7F & (uint32_t)depth) << 17)
-        | ((0xF & (uint32_t)biome) << 13)
-        | ((0x3FF & (uint32_t)block) << 3)
+
+    uint32_t const num = (0xFF800000 & (height << 23))
+        | (0x7F0000 & (uint32_t(depth) << 16))
+        | (0xE000 & (uint32_t(biome) << 13))
+        | (0x1FF8 & (uint32_t(block) << 3))
         | (0x7 & (uint32_t)biomeRadius);
     PixelARGB p;
     p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
@@ -1075,7 +1076,7 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
     int const minX = region.minBlockX();
     int const minZ = region.minBlockZ();
 
-#if JUCE_DEBUG
+#if 0
     static std::atomic_bool init = true;
     if (init.exchange(false)) {
         std::set<mcfile::blocks::BlockId> ids;
@@ -1174,7 +1175,7 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
                     if (it == kBlockToColor.end()) {
 
                     } else {
-                        uint8_t const h = (uint8)std::min(std::max(y, 0), 255);
+                        int const h = std::min(std::max(y, 0), 511);
                         PixelInfo info;
                         info.height = h;
                         info.waterDepth = waterDepth;
@@ -1252,7 +1253,7 @@ File RegionToTexture::CacheFile(File const& file)
 	if (!tmp.exists()) {
         tmp.createDirectory();
     }
-    String hash = String("v2.") + String(file.getParentDirectory().getFullPathName().hashCode64());
+    String hash = String("v3.") + String(file.getParentDirectory().getFullPathName().hashCode64());
     File dir = tmp.getChildFile(hash);
     if (!dir.exists()) {
         dir.createDirectory();
