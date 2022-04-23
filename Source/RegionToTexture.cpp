@@ -32,7 +32,7 @@ static Colour const kColorFurnace(131, 131, 131);
 static Colour const kColorEndStoneBricks(233, 248, 173);
 static Colour const kColorPolishedBlackStoneBricks(32, 28, 23);
 static Colour const kColorRedSandstone(184, 102, 33);
-static Colour const kColorSandstone(244, 230, 161);
+static Colour const kColorSand(201,192,154);
 static Colour const kColorDragonHead(22, 22, 22);
 static Colour const kColorQuartz(235, 227, 219);
 static Colour const kColorMossyStone(115, 131, 82);
@@ -67,7 +67,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::brown_mushroom, Colour(0, 123, 0)},
     {mcfile::blocks::minecraft::grass_block, Colour(130, 148, 58)},
     {mcfile::blocks::minecraft::iron_ore, Colour(111, 111, 111)},
-    {mcfile::blocks::minecraft::sand, Colour(201,192,154)}, //
+    {mcfile::blocks::minecraft::sand, kColorSand}, //
     {mcfile::blocks::minecraft::oak_leaves, Colour(56, 95, 31)}, //
     {mcfile::blocks::minecraft::jungle_leaves, Colour(56, 95, 31)}, //
     {mcfile::blocks::minecraft::birch_leaves, Colour(67, 124, 37)},
@@ -113,7 +113,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::prismarine_bricks, Colour(91, 216, 210)},
     {mcfile::blocks::minecraft::rail, kColorRail},
     {mcfile::blocks::minecraft::redstone_ore, Colour(111, 111, 111)},
-    {mcfile::blocks::minecraft::sandstone, kColorSandstone},
+    {mcfile::blocks::minecraft::sandstone, kColorSand},
     {mcfile::blocks::minecraft::sea_lantern, Colour(252, 249, 242)},
     {mcfile::blocks::minecraft::snow, Colour(229, 229, 229)}, //
     {mcfile::blocks::minecraft::snow_block, Colour(252, 252, 252)},
@@ -250,10 +250,10 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
 	{mcfile::blocks::minecraft::red_shulker_box, Colour(152, 35, 33)},
 	{mcfile::blocks::minecraft::black_shulker_box, Colour(31, 31, 34)},
     {mcfile::blocks::minecraft::bricks, kColorBricks},
-    {mcfile::blocks::minecraft::cut_sandstone, kColorSandstone},
-    {mcfile::blocks::minecraft::sandstone_stairs, kColorSandstone},
-    {mcfile::blocks::minecraft::chiseled_sandstone, kColorSandstone},
-    {mcfile::blocks::minecraft::sandstone_slab, kColorSandstone},
+    {mcfile::blocks::minecraft::cut_sandstone, kColorSand},
+    {mcfile::blocks::minecraft::sandstone_stairs, kColorSand},
+    {mcfile::blocks::minecraft::chiseled_sandstone, kColorSand},
+    {mcfile::blocks::minecraft::sandstone_slab, kColorSand},
     {mcfile::blocks::minecraft::dark_oak_door, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::polished_diorite, kColorStoneDiorite},
     {mcfile::blocks::minecraft::coarse_dirt, Colour(96, 67, 45)},
@@ -309,10 +309,10 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::fire_coral_block, Colour(196, 42, 54)},
     {mcfile::blocks::minecraft::fire_coral_fan, Colour(196, 42, 54)},
     {mcfile::blocks::minecraft::fire_coral_wall_fan, Colour(196, 42, 54)},
-    {mcfile::blocks::minecraft::smooth_sandstone, kColorSandstone},
-    {mcfile::blocks::minecraft::smooth_sandstone_slab, kColorSandstone},
-    {mcfile::blocks::minecraft::smooth_sandstone_stairs, kColorSandstone},
-    {mcfile::blocks::minecraft::sandstone_wall, kColorSandstone},
+    {mcfile::blocks::minecraft::smooth_sandstone, kColorSand},
+    {mcfile::blocks::minecraft::smooth_sandstone_slab, kColorSand},
+    {mcfile::blocks::minecraft::smooth_sandstone_stairs, kColorSand},
+    {mcfile::blocks::minecraft::sandstone_wall, kColorSand},
     {mcfile::blocks::minecraft::polished_andesite, kColorStoneAndesite},
     {mcfile::blocks::minecraft::carved_pumpkin, Colour(213, 125, 50)},
     {mcfile::blocks::minecraft::stripped_oak_wood, Colour(127, 85, 48)},
@@ -517,7 +517,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::smooth_red_sandstone, kColorRedSandstone},
     {mcfile::blocks::minecraft::smooth_red_sandstone_slab, kColorRedSandstone},
     {mcfile::blocks::minecraft::smooth_red_sandstone_stairs, kColorRedSandstone},
-    {mcfile::blocks::minecraft::cut_sandstone_slab, kColorSandstone},
+    {mcfile::blocks::minecraft::cut_sandstone_slab, kColorSand},
     {mcfile::blocks::minecraft::cyan_concrete, Colour(21, 118, 134)},
     {mcfile::blocks::minecraft::dark_oak_sapling, Colour(31, 100, 25)},
     {mcfile::blocks::minecraft::dark_oak_wood, Colour(62, 48, 29)},
