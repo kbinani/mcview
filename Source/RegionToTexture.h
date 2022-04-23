@@ -12,8 +12,8 @@ enum class Biome : uint8_t {
     LukewarmOcean,
     WarmOcean,
     ColdOcean,
-    FrozenOcean,
     Badlands,
+    MangroveSwamp,
     
     max_Biome,
 };
@@ -32,15 +32,16 @@ inline Biome ToBiome(mcfile::biomes::BiomeId b)
             return Biome::WarmOcean;
         case mcfile::biomes::minecraft::cold_ocean:
         case mcfile::biomes::minecraft::deep_cold_ocean:
-            return Biome::ColdOcean;
         case mcfile::biomes::minecraft::frozen_ocean:
         case mcfile::biomes::minecraft::deep_frozen_ocean:
-            return Biome::FrozenOcean;
+            return Biome::ColdOcean;
         case mcfile::biomes::minecraft::swamp:
         case mcfile::biomes::minecraft::swamp_hills:
             return Biome::Swamp;
         case mcfile::biomes::minecraft::badlands:
             return Biome::Badlands;
+        case mcfile::biomes::minecraft::mangrove_swamp:
+            return Biome::MangroveSwamp;
         default:
             return Biome::Other;
     }
@@ -70,5 +71,5 @@ public:
     static juce::Colour const kDefaultFoliageColor;
     static std::map<Biome, juce::Colour> const kFoliageToColor;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture)
 };

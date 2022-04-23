@@ -1023,8 +1023,8 @@ std::map<Biome, Colour> const RegionToTexture::kOceanToColor = {
     {Biome::LukewarmOcean, Colour(43, 122, 170)},
     {Biome::WarmOcean, Colour(56, 150, 177)},
     {Biome::ColdOcean, Colour(50, 66, 158)},
-    {Biome::FrozenOcean, Colour(50, 47, 155)},
     {Biome::Swamp, Colour(115, 133, 120)},
+    {Biome::MangroveSwamp, Colour(41, 81, 73)},
 };
 
 Colour const RegionToTexture::kDefaultFoliageColor(56, 95, 31);
