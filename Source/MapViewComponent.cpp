@@ -326,7 +326,7 @@ void MapViewComponent::updateShader()
             int a = int(color.a * 255.0);
             int r = int(color.r * 255.0);
             int h = (a << 1) + (0x1 & (r >> 7));
-            return float(h);
+            return float(h) - 64.0;
         }
     
         BlockInfo pixelInfo(vec4 color) {

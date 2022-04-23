@@ -1160,6 +1160,7 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
                 } else if (dim == Dimension::TheEnd) {
                     ymax = 255;
                     ymin = 0;
+                    yini = ymax;
                 }
                 bool all_transparent = true;
                 bool found_opaque_block = false;
@@ -1184,7 +1185,7 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
                     if (it == kBlockToColor.end()) {
 
                     } else {
-                        int const h = std::min(std::max(y, 0), 511);
+                        int const h = std::min(std::max(y + 64, 0), 511);
                         PixelInfo info;
                         info.height = h;
                         info.waterDepth = waterDepth;
