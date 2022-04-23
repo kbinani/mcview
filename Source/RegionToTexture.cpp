@@ -842,6 +842,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
 
     {mcfile::blocks::minecraft::potted_azalea_bush, kColorPotter},
     {mcfile::blocks::minecraft::potted_flowering_azalea_bush, kColorPotter},
+    {mcfile::blocks::minecraft::cauldron, Colour(53, 52, 52)},
     {mcfile::blocks::minecraft::water_cauldron, Colour(53, 52, 52)},
     {mcfile::blocks::minecraft::lava_cauldron, Colour(53, 52, 52)},
     {mcfile::blocks::minecraft::powder_snow_cauldron, Colour(53, 52, 52)},
