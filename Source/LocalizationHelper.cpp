@@ -1,5 +1,8 @@
-#include "LocalizationHelper.hpp"
+#include <juce_gui_basics/juce_gui_basics.h>
+
 #include "BinaryData.h"
+
+#include "LocalizationHelper.hpp"
 
 #if JUCE_WINDOWS
 #include <windows.h>

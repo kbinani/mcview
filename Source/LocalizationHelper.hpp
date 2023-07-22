@@ -1,8 +1,5 @@
 #pragma once
 
-#include "BinaryData.h"
-#include <juce_gui_extra/juce_gui_extra.h>
-
 class LocalizationHelper {
 public:
   static juce::LocalisedStrings *CurrentLocalisedStrings();

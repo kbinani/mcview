@@ -1,13 +1,9 @@
-#include "minecraft-file.hpp"
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <minecraft-file.hpp>
 #include <colormap/colormap.h>
 
-#include <cassert>
-#include <map>
-#include <set>
+#include "Dimension.hpp"
 
-#include "defer.hpp"
-
-#include "File.hpp"
 #include "RegionToTexture.hpp"
 
 using namespace juce;
@@ -1059,6 +1055,34 @@ static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome,
   return p;
 }
 
+static inline Biome ToBiome(mcfile::biomes::BiomeId b) {
+  switch (b) {
+  case mcfile::biomes::minecraft::ocean:
+  case mcfile::biomes::minecraft::deep_ocean:
+    return Biome::Ocean;
+  case mcfile::biomes::minecraft::lukewarm_ocean:
+  case mcfile::biomes::minecraft::deep_lukewarm_ocean:
+    return Biome::LukewarmOcean;
+  case mcfile::biomes::minecraft::warm_ocean:
+  case mcfile::biomes::minecraft::deep_warm_ocean:
+    return Biome::WarmOcean;
+  case mcfile::biomes::minecraft::cold_ocean:
+  case mcfile::biomes::minecraft::deep_cold_ocean:
+  case mcfile::biomes::minecraft::frozen_ocean:
+  case mcfile::biomes::minecraft::deep_frozen_ocean:
+    return Biome::ColdOcean;
+  case mcfile::biomes::minecraft::swamp:
+  case mcfile::biomes::minecraft::swamp_hills:
+    return Biome::Swamp;
+  case mcfile::biomes::minecraft::badlands:
+    return Biome::Badlands;
+  case mcfile::biomes::minecraft::mangrove_swamp:
+    return Biome::MangroveSwamp;
+  default:
+    return Biome::Other;
+  }
+}
+
 struct PixelInfo {
   int height;
   int waterDepth;
@@ -1268,66 +1292,4 @@ File RegionToTexture::CacheFile(File const &file) {
     dir.createDirectory();
   }
   return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
-}
-
-RegionToTexture::RegionToTexture(File const &worldDirectory, File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
-    : ThreadPoolJob(mcaFile.getFileName()), fRegionFile(mcaFile), fRegion(region), fWorldDirectory(worldDirectory), fDimension(dim), fUseCache(useCache), fDelegate(delegate) {
-}
-
-RegionToTexture::~RegionToTexture() {
-}
-
-ThreadPoolJob::JobStatus RegionToTexture::runJob() {
-  auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
-  defer {
-    fDelegate->regionToTextureDidFinishJob(result);
-  };
-  try {
-    int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();
-    File cache = CacheFile(fRegionFile);
-    if (fUseCache && cache.existsAsFile()) {
-      FileInputStream stream(cache);
-      GZIPDecompressorInputStream ungzip(stream);
-      int expectedBytes = sizeof(PixelARGB) * 512 * 512;
-      int64 cachedModificationTime = 0;
-      if (ungzip.read(&cachedModificationTime, sizeof(cachedModificationTime)) != sizeof(cachedModificationTime)) {
-        return ThreadPoolJob::jobHasFinished;
-      }
-      if (cachedModificationTime >= modified) {
-        result->fPixels.reset(new PixelARGB[512 * 512]);
-        if (ungzip.read(result->fPixels.get(), expectedBytes) != expectedBytes) {
-          result->fPixels.reset();
-        }
-        return ThreadPoolJob::jobHasFinished;
-      }
-    }
-
-    auto region = mcfile::je::Region::MakeRegion(PathFromFile(fRegionFile));
-    if (!region) {
-      return ThreadPoolJob::jobHasFinished;
-    }
-    Load(*region, this, fDimension, [this, &result](PixelARGB *pixels) {
-      result->fPixels.reset(pixels);
-    });
-    if (shouldExit()) {
-      return ThreadPoolJob::jobHasFinished;
-    }
-    FileOutputStream out(cache);
-    out.truncate();
-    out.setPosition(0);
-    GZIPCompressorOutputStream gzip(out, 9);
-    if (result->fPixels) {
-      gzip.write(&modified, sizeof(modified));
-      gzip.write(result->fPixels.get(), sizeof(PixelARGB) * 512 * 512);
-    }
-    return ThreadPoolJob::jobHasFinished;
-  } catch (std::exception &e) {
-    Logger::writeToLog(e.what());
-    result->fPixels.reset();
-    return ThreadPoolJob::jobHasFinished;
-  } catch (...) {
-    Logger::writeToLog("Unknown error");
-    result->fPixels.reset();
-    return ThreadPoolJob::jobHasFinished;
-  }
 }

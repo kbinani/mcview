@@ -1,8 +1,5 @@
 #pragma once
 
-#include <juce_gui_extra/juce_gui_extra.h>
-#include <map>
-
 using Region = std::pair<int, int>;
 
 static inline Region MakeRegion(int x, int z) {

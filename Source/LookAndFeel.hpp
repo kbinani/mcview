@@ -1,8 +1,5 @@
 #pragma once
 
-#include "DirectoryBrowserComponent.hpp"
-#include "GraphicsHelper.hpp"
-
 namespace mcview {
 
 class LookAndFeel : public juce::LookAndFeel_V4 {

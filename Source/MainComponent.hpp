@@ -1,28 +1,7 @@
-/*
-  ==============================================================================
-
-    This file was auto-generated!
-
-  ==============================================================================
-*/
-
 #pragma once
 
-#include "BrowserComponent.hpp"
-#include "Dimension.hpp"
-#include "MapViewComponent.hpp"
-#include "Settings.hpp"
-#include "SettingsComponent.hpp"
-#include <iostream>
-
-//==============================================================================
-/*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
-*/
 class MainComponent : public juce::Component, private juce::AsyncUpdater {
 public:
-  //==============================================================================
   MainComponent()
       : fBrowserOpened(true), fSettingsOpened(false) {
     using namespace juce;
@@ -109,21 +88,8 @@ public:
     fBrowser->browse();
   }
 
-  //==============================================================================
   void paint(juce::Graphics &g) override {
-    using namespace juce;
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(getLookAndFeel().findColour(ResizableWindow::backgroundColourId));
-  }
-
-  static juce::File DefaultMinecraftSaveDirectory() {
-    using namespace juce;
-#if JUCE_WINDOWS
-    return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(".minecraft").getChildFile("saves");
-#else
-    File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
-    return library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
-#endif
+    g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
   }
 
   void resized() override {

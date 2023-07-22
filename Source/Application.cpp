@@ -1,12 +1,44 @@
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <juce_opengl/juce_opengl.h>
+#include <minecraft-file.hpp>
+#include <colormap/colormap.h>
 
-#include "AboutComponent.hpp"
+#include <iostream>
+#include <filesystem>
+#include <variant>
+
+// clang-format off
+#include "defer.hpp"
+
+#include "BinaryData.h"
 #include "GraphicsHelper.hpp"
 #include "LocalizationHelper.hpp"
 #include "LookAndFeel.hpp"
+#include "Settings.hpp"
+#include "File.hpp"
+#include "LookAt.hpp"
+#include "Dimension.hpp"
+#include "Region.hpp"
+#include "PNGWriter.hpp"
+#include "Pin.hpp"
+#include "WorldData.hpp"
+#include "RegionTextureCache.hpp"
+#include "OverScroller.hpp"
+#include "TimerInstance.hpp"
+
+#include "AboutComponent.hpp"
+#include "SettingsComponent.hpp"
+#include "DirectoryBrowserComponent.hpp"
+#include "BrowserComponent.hpp"
+#include "TextInputDialog.hpp"
+#include "PinComponent.hpp"
+#include "SavePNGProgressWindow.hpp"
+#include "RegionToTexture.hpp"
+#include "TexturePackJob.hpp"
+#include "MapViewComponent.hpp"
 #include "MainComponent.hpp"
 #include "MainWindow.hpp"
-#include "MapViewComponent.hpp"
+// clang-format on
 
 class Application : public juce::JUCEApplication {
 public:

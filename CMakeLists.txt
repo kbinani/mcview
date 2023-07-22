@@ -54,48 +54,41 @@ juce_add_gui_app(mcview
         <string>${mcview_macos_deployment_target}</string>
       </dict>
     </plist>"
-  COMPANY_COPYRIGHT "Copyright © 2019, 2022 kbinani"
+  COMPANY_COPYRIGHT "Copyright © 2019, 2022, 2023 kbinani"
 )
 
 set(mcview_files
-  Source/AboutComponent.cpp
   Source/AboutComponent.hpp
-  Source/BrowserComponent.cpp
   Source/BrowserComponent.hpp
   Source/defer.hpp
   Source/Dimension.hpp
-  Source/DirectoryBrowserComponent.cpp
   Source/DirectoryBrowserComponent.hpp
-  Source/GraphicsHelper.cpp
   Source/GraphicsHelper.hpp
   Source/LocalizationHelper.cpp
   Source/LocalizationHelper.hpp
   Source/LookAndFeel.hpp
   Source/Application.cpp
   Source/MainComponent.hpp
-  Source/MapViewComponent.cpp
   Source/MapViewComponent.hpp
   Source/OverScroller.hpp
-  Source/Pin.cpp
   Source/Pin.hpp
-  Source/PinComponent.cpp
   Source/PinComponent.hpp
   Source/PNGWriter.cpp
   Source/PNGWriter.hpp
   Source/Region.hpp
-  Source/RegionTextureCache.cpp
   Source/RegionTextureCache.hpp
   Source/RegionToTexture.cpp
   Source/RegionToTexture.hpp
-  Source/Settings.cpp
   Source/Settings.hpp
-  Source/SettingsComponent.cpp
   Source/SettingsComponent.hpp
   Source/TimerInstance.hpp
-  Source/WorldData.cpp
   Source/WorldData.hpp
   Source/File.hpp
   Source/MainWindow.hpp
+  Source/SavePNGProgressWindow.hpp
+  Source/LookAt.hpp
+  Source/TextInputDialog.hpp
+  Source/TexturePackJob.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

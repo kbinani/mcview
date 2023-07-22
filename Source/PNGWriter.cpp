@@ -1,5 +1,7 @@
 // This file is basically a copy of juce_PNGLoader.cpp
 // See "#if 0 // begin mcview customization" preprocessor
+#include <juce_gui_basics/juce_gui_basics.h>
+
 #include "PNGWriter.hpp"
 
 /*

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <juce_gui_extra/juce_gui_extra.h>
-
 enum class Dimension : int {
   Overworld = 0,
   TheNether = -1,
