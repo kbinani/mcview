@@ -1,0 +1,6 @@
+#!/bin/bash
+
+(
+  cd "$(dirname "$0")"
+  git ls-files . | grep -e '\.cpp$' -e '\.hpp$' -e '\.h$' | xargs -P$(nproc) -n1 clang-format -i
+)

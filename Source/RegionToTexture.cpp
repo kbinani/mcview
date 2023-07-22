@@ -7,8 +7,8 @@
 
 #include "defer.h"
 
-#include "RegionToTexture.h"
 #include "File.h"
+#include "RegionToTexture.h"
 
 using namespace juce;
 
@@ -36,7 +36,7 @@ static Colour const kColorFurnace(131, 131, 131);
 static Colour const kColorEndStoneBricks(233, 248, 173);
 static Colour const kColorPolishedBlackStoneBricks(32, 28, 23);
 static Colour const kColorRedSandstone(184, 102, 33);
-static Colour const kColorSand(201,192,154);
+static Colour const kColorSand(201, 192, 154);
 static Colour const kColorDragonHead(22, 22, 22);
 static Colour const kColorQuartz(235, 227, 219);
 static Colour const kColorMossyStone(115, 131, 82);
@@ -58,7 +58,7 @@ static Colour const kColorExposedCopper(150, 138, 104);
 static Colour const kColorWeatheredCopper(99, 158, 118);
 static Colour const kColorOxidizedCopper(75, 146, 130);
 
-std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
+std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor{
     {mcfile::blocks::minecraft::stone, Colour(111, 111, 111)},
     {mcfile::blocks::minecraft::granite, kColorStoneGranite},
     {mcfile::blocks::minecraft::diorite, kColorStoneDiorite},
@@ -71,8 +71,8 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::brown_mushroom, Colour(0, 123, 0)},
     {mcfile::blocks::minecraft::grass_block, Colour(130, 148, 58)},
     {mcfile::blocks::minecraft::iron_ore, Colour(111, 111, 111)},
-    {mcfile::blocks::minecraft::sand, kColorSand}, //
-    {mcfile::blocks::minecraft::oak_leaves, Colour(56, 95, 31)}, //
+    {mcfile::blocks::minecraft::sand, kColorSand},                  //
+    {mcfile::blocks::minecraft::oak_leaves, Colour(56, 95, 31)},    //
     {mcfile::blocks::minecraft::jungle_leaves, Colour(56, 95, 31)}, //
     {mcfile::blocks::minecraft::birch_leaves, Colour(67, 124, 37)},
     {mcfile::blocks::minecraft::red_mushroom, Colour(0, 123, 0)},
@@ -90,7 +90,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::birch_stairs, kColorPlanksBirch},
     {mcfile::blocks::minecraft::dark_oak_fence, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::dark_oak_log, Colour(101, 75, 50)},
-    {mcfile::blocks::minecraft::dark_oak_planks, Colour(191,152,63)}, //
+    {mcfile::blocks::minecraft::dark_oak_planks, Colour(191, 152, 63)}, //
     {mcfile::blocks::minecraft::dark_oak_slab, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::dark_oak_stairs, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::dark_oak_trapdoor, Colour(141, 118, 71)},
@@ -186,73 +186,73 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::glowstone, Colour(248, 215, 115)},
     {mcfile::blocks::minecraft::nether_quartz_ore, Colour(170, 112, 105)},
     {mcfile::blocks::minecraft::soul_sand, Colour(72, 54, 43)},
-	{mcfile::blocks::minecraft::white_wool, Colour(247, 247, 247)},
-	{mcfile::blocks::minecraft::orange_wool, Colour(244, 122, 25)},
-	{mcfile::blocks::minecraft::magenta_wool, Colour(193, 73, 183)},
-	{mcfile::blocks::minecraft::light_blue_wool, Colour(65, 186, 220)},
-	{mcfile::blocks::minecraft::yellow_wool, Colour(249, 206, 47)},
-	{mcfile::blocks::minecraft::lime_wool, Colour(123, 193, 27)},
-	{mcfile::blocks::minecraft::pink_wool, Colour(241, 160, 186)},
-	{mcfile::blocks::minecraft::gray_wool, Colour(70, 78, 81)},
-	{mcfile::blocks::minecraft::light_gray_wool, Colour(151, 151, 145)},
-	{mcfile::blocks::minecraft::cyan_wool, Colour(22, 153, 154)},
-	{mcfile::blocks::minecraft::purple_wool, Colour(132, 47, 179)},
-	{mcfile::blocks::minecraft::blue_wool, Colour(57, 63, 164)},
-	{mcfile::blocks::minecraft::brown_wool, Colour(125, 79, 46)},
-	{mcfile::blocks::minecraft::green_wool, Colour(91, 119, 22)},
-	{mcfile::blocks::minecraft::red_wool, Colour(170, 42, 36)},
-	{mcfile::blocks::minecraft::black_wool, Colour(28, 28, 32)},
-	{mcfile::blocks::minecraft::white_carpet, Colour(247, 247, 247)},
-	{mcfile::blocks::minecraft::orange_carpet, Colour(244, 122, 25)},
-	{mcfile::blocks::minecraft::magenta_carpet, Colour(193, 73, 183)},
-	{mcfile::blocks::minecraft::light_blue_carpet, Colour(65, 186, 220)},
-	{mcfile::blocks::minecraft::yellow_carpet, Colour(249, 206, 47)},
-	{mcfile::blocks::minecraft::lime_carpet, Colour(123, 193, 27)},
-	{mcfile::blocks::minecraft::pink_carpet, Colour(241, 160, 186)},
-	{mcfile::blocks::minecraft::gray_carpet, Colour(70, 78, 81)},
-	{mcfile::blocks::minecraft::light_gray_carpet, Colour(151, 151, 145)},
-	{mcfile::blocks::minecraft::cyan_carpet, Colour(22, 153, 154)},
-	{mcfile::blocks::minecraft::purple_carpet, Colour(132, 47, 179)},
-	{mcfile::blocks::minecraft::blue_carpet, Colour(57, 63, 164)},
-	{mcfile::blocks::minecraft::brown_carpet, Colour(125, 79, 46)},
-	{mcfile::blocks::minecraft::green_carpet, Colour(91, 119, 22)},
-	{mcfile::blocks::minecraft::red_carpet, Colour(170, 42, 36)},
-	{mcfile::blocks::minecraft::black_carpet, Colour(28, 28, 32)},
-	{mcfile::blocks::minecraft::white_bed, Colour(247, 247, 247)},
-	{mcfile::blocks::minecraft::orange_bed, Colour(244, 122, 25)},
-	{mcfile::blocks::minecraft::magenta_bed, Colour(193, 73, 183)},
-	{mcfile::blocks::minecraft::light_blue_bed, Colour(65, 186, 220)},
-	{mcfile::blocks::minecraft::yellow_bed, Colour(249, 206, 47)},
-	{mcfile::blocks::minecraft::lime_bed, Colour(123, 193, 27)},
-	{mcfile::blocks::minecraft::pink_bed, Colour(241, 160, 186)},
-	{mcfile::blocks::minecraft::gray_bed, Colour(70, 78, 81)},
-	{mcfile::blocks::minecraft::light_gray_bed, Colour(151, 151, 145)},
-	{mcfile::blocks::minecraft::cyan_bed, Colour(22, 153, 154)},
-	{mcfile::blocks::minecraft::purple_bed, Colour(132, 47, 179)},
-	{mcfile::blocks::minecraft::blue_bed, Colour(57, 63, 164)},
-	{mcfile::blocks::minecraft::brown_bed, Colour(125, 79, 46)},
-	{mcfile::blocks::minecraft::green_bed, Colour(91, 119, 22)},
-	{mcfile::blocks::minecraft::red_bed, Colour(170, 42, 36)},
-	{mcfile::blocks::minecraft::black_bed, Colour(28, 28, 32)},
-	{mcfile::blocks::minecraft::dried_kelp_block, Colour(43, 55, 32)},
-	{mcfile::blocks::minecraft::beacon, Colour(72, 210, 202)},
-	{mcfile::blocks::minecraft::shulker_box, Colour(149, 101, 149)},
-	{mcfile::blocks::minecraft::white_shulker_box, Colour(225, 230, 230)},
-	{mcfile::blocks::minecraft::orange_shulker_box, Colour(225, 230, 230)},
-	{mcfile::blocks::minecraft::magenta_shulker_box, Colour(183, 61, 172)},
-	{mcfile::blocks::minecraft::light_blue_shulker_box, Colour(57, 177, 215)},
-	{mcfile::blocks::minecraft::yellow_shulker_box, Colour(249, 194, 34)},
-	{mcfile::blocks::minecraft::lime_shulker_box, Colour(108, 183, 24)},
-	{mcfile::blocks::minecraft::pink_shulker_box, Colour(239, 135, 166)},
-	{mcfile::blocks::minecraft::gray_shulker_box, Colour(59, 63, 67)},
-	{mcfile::blocks::minecraft::light_gray_shulker_box, Colour(135, 135, 126)},
-	{mcfile::blocks::minecraft::cyan_shulker_box, Colour(22, 133, 144)},
-	{mcfile::blocks::minecraft::purple_shulker_box, Colour(115, 38, 167)},
-	{mcfile::blocks::minecraft::blue_shulker_box, Colour(49, 52, 152)},
-	{mcfile::blocks::minecraft::brown_shulker_box, Colour(111, 69, 39)},
-	{mcfile::blocks::minecraft::green_shulker_box, Colour(83, 107, 29)},
-	{mcfile::blocks::minecraft::red_shulker_box, Colour(152, 35, 33)},
-	{mcfile::blocks::minecraft::black_shulker_box, Colour(31, 31, 34)},
+    {mcfile::blocks::minecraft::white_wool, Colour(247, 247, 247)},
+    {mcfile::blocks::minecraft::orange_wool, Colour(244, 122, 25)},
+    {mcfile::blocks::minecraft::magenta_wool, Colour(193, 73, 183)},
+    {mcfile::blocks::minecraft::light_blue_wool, Colour(65, 186, 220)},
+    {mcfile::blocks::minecraft::yellow_wool, Colour(249, 206, 47)},
+    {mcfile::blocks::minecraft::lime_wool, Colour(123, 193, 27)},
+    {mcfile::blocks::minecraft::pink_wool, Colour(241, 160, 186)},
+    {mcfile::blocks::minecraft::gray_wool, Colour(70, 78, 81)},
+    {mcfile::blocks::minecraft::light_gray_wool, Colour(151, 151, 145)},
+    {mcfile::blocks::minecraft::cyan_wool, Colour(22, 153, 154)},
+    {mcfile::blocks::minecraft::purple_wool, Colour(132, 47, 179)},
+    {mcfile::blocks::minecraft::blue_wool, Colour(57, 63, 164)},
+    {mcfile::blocks::minecraft::brown_wool, Colour(125, 79, 46)},
+    {mcfile::blocks::minecraft::green_wool, Colour(91, 119, 22)},
+    {mcfile::blocks::minecraft::red_wool, Colour(170, 42, 36)},
+    {mcfile::blocks::minecraft::black_wool, Colour(28, 28, 32)},
+    {mcfile::blocks::minecraft::white_carpet, Colour(247, 247, 247)},
+    {mcfile::blocks::minecraft::orange_carpet, Colour(244, 122, 25)},
+    {mcfile::blocks::minecraft::magenta_carpet, Colour(193, 73, 183)},
+    {mcfile::blocks::minecraft::light_blue_carpet, Colour(65, 186, 220)},
+    {mcfile::blocks::minecraft::yellow_carpet, Colour(249, 206, 47)},
+    {mcfile::blocks::minecraft::lime_carpet, Colour(123, 193, 27)},
+    {mcfile::blocks::minecraft::pink_carpet, Colour(241, 160, 186)},
+    {mcfile::blocks::minecraft::gray_carpet, Colour(70, 78, 81)},
+    {mcfile::blocks::minecraft::light_gray_carpet, Colour(151, 151, 145)},
+    {mcfile::blocks::minecraft::cyan_carpet, Colour(22, 153, 154)},
+    {mcfile::blocks::minecraft::purple_carpet, Colour(132, 47, 179)},
+    {mcfile::blocks::minecraft::blue_carpet, Colour(57, 63, 164)},
+    {mcfile::blocks::minecraft::brown_carpet, Colour(125, 79, 46)},
+    {mcfile::blocks::minecraft::green_carpet, Colour(91, 119, 22)},
+    {mcfile::blocks::minecraft::red_carpet, Colour(170, 42, 36)},
+    {mcfile::blocks::minecraft::black_carpet, Colour(28, 28, 32)},
+    {mcfile::blocks::minecraft::white_bed, Colour(247, 247, 247)},
+    {mcfile::blocks::minecraft::orange_bed, Colour(244, 122, 25)},
+    {mcfile::blocks::minecraft::magenta_bed, Colour(193, 73, 183)},
+    {mcfile::blocks::minecraft::light_blue_bed, Colour(65, 186, 220)},
+    {mcfile::blocks::minecraft::yellow_bed, Colour(249, 206, 47)},
+    {mcfile::blocks::minecraft::lime_bed, Colour(123, 193, 27)},
+    {mcfile::blocks::minecraft::pink_bed, Colour(241, 160, 186)},
+    {mcfile::blocks::minecraft::gray_bed, Colour(70, 78, 81)},
+    {mcfile::blocks::minecraft::light_gray_bed, Colour(151, 151, 145)},
+    {mcfile::blocks::minecraft::cyan_bed, Colour(22, 153, 154)},
+    {mcfile::blocks::minecraft::purple_bed, Colour(132, 47, 179)},
+    {mcfile::blocks::minecraft::blue_bed, Colour(57, 63, 164)},
+    {mcfile::blocks::minecraft::brown_bed, Colour(125, 79, 46)},
+    {mcfile::blocks::minecraft::green_bed, Colour(91, 119, 22)},
+    {mcfile::blocks::minecraft::red_bed, Colour(170, 42, 36)},
+    {mcfile::blocks::minecraft::black_bed, Colour(28, 28, 32)},
+    {mcfile::blocks::minecraft::dried_kelp_block, Colour(43, 55, 32)},
+    {mcfile::blocks::minecraft::beacon, Colour(72, 210, 202)},
+    {mcfile::blocks::minecraft::shulker_box, Colour(149, 101, 149)},
+    {mcfile::blocks::minecraft::white_shulker_box, Colour(225, 230, 230)},
+    {mcfile::blocks::minecraft::orange_shulker_box, Colour(225, 230, 230)},
+    {mcfile::blocks::minecraft::magenta_shulker_box, Colour(183, 61, 172)},
+    {mcfile::blocks::minecraft::light_blue_shulker_box, Colour(57, 177, 215)},
+    {mcfile::blocks::minecraft::yellow_shulker_box, Colour(249, 194, 34)},
+    {mcfile::blocks::minecraft::lime_shulker_box, Colour(108, 183, 24)},
+    {mcfile::blocks::minecraft::pink_shulker_box, Colour(239, 135, 166)},
+    {mcfile::blocks::minecraft::gray_shulker_box, Colour(59, 63, 67)},
+    {mcfile::blocks::minecraft::light_gray_shulker_box, Colour(135, 135, 126)},
+    {mcfile::blocks::minecraft::cyan_shulker_box, Colour(22, 133, 144)},
+    {mcfile::blocks::minecraft::purple_shulker_box, Colour(115, 38, 167)},
+    {mcfile::blocks::minecraft::blue_shulker_box, Colour(49, 52, 152)},
+    {mcfile::blocks::minecraft::brown_shulker_box, Colour(111, 69, 39)},
+    {mcfile::blocks::minecraft::green_shulker_box, Colour(83, 107, 29)},
+    {mcfile::blocks::minecraft::red_shulker_box, Colour(152, 35, 33)},
+    {mcfile::blocks::minecraft::black_shulker_box, Colour(31, 31, 34)},
     {mcfile::blocks::minecraft::bricks, kColorBricks},
     {mcfile::blocks::minecraft::cut_sandstone, kColorSand},
     {mcfile::blocks::minecraft::sandstone_stairs, kColorSand},
@@ -407,7 +407,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::potted_wither_rose, kColorPotter},
     {mcfile::blocks::minecraft::dark_oak_button, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::dark_oak_pressure_plate, kColorPlanksDarkOak},
-    {mcfile::blocks::minecraft::dark_oak_sign,kColorPlanksDarkOak},
+    {mcfile::blocks::minecraft::dark_oak_sign, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::dark_oak_wall_sign, kColorPlanksDarkOak},
     {mcfile::blocks::minecraft::oak_button, kColorPlanksOak},
     {mcfile::blocks::minecraft::oak_sign, kColorPlanksOak},
@@ -667,7 +667,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::cocoa, Colour(109, 112, 52)},
 
     // 1.15
-    
+
     {mcfile::blocks::minecraft::bee_nest, Colour(198, 132, 67)},
     {mcfile::blocks::minecraft::beehive, Colour(182, 146, 94)},
     {mcfile::blocks::minecraft::honey_block, Colour(233, 145, 38)},
@@ -744,7 +744,7 @@ std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor {
     {mcfile::blocks::minecraft::crimson_door, kColorPlanksCrimson},
     {mcfile::blocks::minecraft::warped_door, kColorPlanksWarped},
     {mcfile::blocks::minecraft::target, Colour(183, 49, 49)},
-    
+
     // bugfix for 1.16
     {mcfile::blocks::minecraft::twisting_vines_plant, Colour(17, 153, 131)},
     {mcfile::blocks::minecraft::warped_wart_block, Colour(17, 153, 131)},
@@ -1038,48 +1038,43 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius)
-{
-    // [v3 pixel info]
-    // h:            9bit
-    // waterDepth:   7bit
-    // biome:        3bit
-    // block:       10bit
-    // biomeRadius:  3bit
-    static_assert((int)Biome::max_Biome <= 1 << 3, "");
-    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
+static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
+  // [v3 pixel info]
+  // h:            9bit
+  // waterDepth:   7bit
+  // biome:        3bit
+  // block:       10bit
+  // biomeRadius:  3bit
+  static_assert((int)Biome::max_Biome <= 1 << 3, "");
+  static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
 
-    uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
-    if (waterDepth > 0 && depth == 0) {
-        depth = 1;
-    }
+  uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
+  if (waterDepth > 0 && depth == 0) {
+    depth = 1;
+  }
 
-    uint32_t const num = (0xFF800000 & (height << 23))
-        | (0x7F0000 & (uint32_t(depth) << 16))
-        | (0xE000 & (uint32_t(biome) << 13))
-        | (0x1FF8 & (uint32_t(block) << 3))
-        | (0x7 & (uint32_t)biomeRadius);
-    PixelARGB p;
-    p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
-    return p;
+  uint32_t const num = (0xFF800000 & (height << 23)) | (0x7F0000 & (uint32_t(depth) << 16)) | (0xE000 & (uint32_t(biome) << 13)) | (0x1FF8 & (uint32_t(block) << 3)) | (0x7 & (uint32_t)biomeRadius);
+  PixelARGB p;
+  p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
+  return p;
 }
 
 struct PixelInfo {
-    int height;
-    int waterDepth;
-    mcfile::blocks::BlockId blockId;
+  int height;
+  int waterDepth;
+  mcfile::blocks::BlockId blockId;
 };
 
-void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
-    int const width = 512;
-    int const height = 512;
+void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
+  int const width = 512;
+  int const height = 512;
 
-    std::vector<PixelInfo> pixelInfo(width * height);
-    std::fill(pixelInfo.begin(), pixelInfo.end(), PixelInfo { -1, 0, 0 });
-    std::vector<Biome> biomes(width * height);
-    
-    int const minX = region.minBlockX();
-    int const minZ = region.minBlockZ();
+  std::vector<PixelInfo> pixelInfo(width * height);
+  std::fill(pixelInfo.begin(), pixelInfo.end(), PixelInfo{-1, 0, 0});
+  std::vector<Biome> biomes(width * height);
+
+  int const minX = region.minBlockX();
+  int const minZ = region.minBlockZ();
 
 #if 0
     static std::atomic_bool init = true;
@@ -1119,229 +1114,220 @@ void RegionToTexture::Load(mcfile::je::Region const& region, ThreadPoolJob *job,
     }
 #endif
 
-    bool error = false;
-    bool didset = false;
-    region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const& chunk) {
-        colormap::kbinani::Altitude altitude;
-        int const sZ = chunk.minBlockZ();
-        int const eZ = chunk.maxBlockZ();
-        int const sX = chunk.minBlockX();
-        int const eX = chunk.maxBlockX();
-        for (int z = sZ; z <= eZ; z++) {
-            for (int x = sX; x <= eX; x++) {
-                Biome biome = ToBiome(chunk.biomeAt(x, z));
-                int i = (z - minZ) * width + (x - minX);
-                biomes[i] = biome;
-            }
-            if (job->shouldExit()) {
-                return false;
-            }
-        }
-        for (int z = sZ; z <= eZ; z++) {
-            for (int x = sX; x <= eX; x++) {
-                int const idx = (z - minZ) * width + (x - minX);
-                assert(0 <= idx && idx < width * height);
-                if (job->shouldExit()) {
-                    return false;
-                }
-                uint8_t waterDepth = 0;
-                int ymax = 319;
-                int ymin = -64;
-
-                int yini = ymax;
-                if (dim == Dimension::TheNether) {
-                    ymax = 127;
-                    ymin = 0;
-                    yini = ymax;
-                    for (int y = ymax; y >= ymin; y--) {
-                        auto block = chunk.blockIdAt(x, y, z);
-                        if (!block) continue;
-                        if (block == mcfile::blocks::minecraft::air) {
-                            yini = y;
-                            break;
-                        }
-                    }
-                } else if (dim == Dimension::TheEnd) {
-                    ymax = 255;
-                    ymin = 0;
-                    yini = ymax;
-                }
-                bool all_transparent = true;
-                bool found_opaque_block = false;
-                for (int y = yini; y >= ymin; y--) {
-                    auto block = chunk.blockIdAt(x, y, z);
-                    if (block == mcfile::blocks::unknown) {
-                        continue;
-                    }
-                    if (block == mcfile::blocks::minecraft::water || block == mcfile::blocks::minecraft::bubble_column) {
-                        waterDepth++;
-                        all_transparent = false;
-                        continue;
-                    }
-                    if (transparentBlocks.find(block) != transparentBlocks.end()) {
-                        continue;
-                    }
-                    if (plantBlocks.find(block) != plantBlocks.end()) {
-                        continue;
-                    }
-                    all_transparent = false;
-                    auto it = kBlockToColor.find(block);
-                    if (it == kBlockToColor.end()) {
-
-                    } else {
-                        int const h = std::min(std::max(y + 64, 0), 511);
-                        PixelInfo info;
-                        info.height = h;
-                        info.waterDepth = waterDepth;
-                        info.blockId = block;
-                        pixelInfo[idx] = info;
-                        didset = true;
-                        found_opaque_block = true;
-                        break;
-                    }
-                }
-                if (!found_opaque_block && waterDepth > 0) {
-                    PixelInfo info;
-                    info.height = 0;
-                    info.waterDepth = waterDepth;
-                    info.blockId = mcfile::blocks::minecraft::water;
-                    pixelInfo[idx] = info;
-                    didset = true;
-                } else if (all_transparent) {
-                    PixelInfo info;
-                    info.height = 0;
-                    info.waterDepth = 0;
-                    info.blockId = mcfile::blocks::minecraft::air;
-                    pixelInfo[idx] = info;
-                    didset = true;
-                }
-            }
-        }
-        return true;
-    });
-
-    if (!didset) {
-        completion(nullptr);
-        return;
+  bool error = false;
+  bool didset = false;
+  region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
+    colormap::kbinani::Altitude altitude;
+    int const sZ = chunk.minBlockZ();
+    int const eZ = chunk.maxBlockZ();
+    int const sX = chunk.minBlockX();
+    int const eX = chunk.maxBlockX();
+    for (int z = sZ; z <= eZ; z++) {
+      for (int x = sX; x <= eX; x++) {
+        Biome biome = ToBiome(chunk.biomeAt(x, z));
+        int i = (z - minZ) * width + (x - minX);
+        biomes[i] = biome;
+      }
+      if (job->shouldExit()) {
+        return false;
+      }
     }
-    
-    std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
-    std::fill_n(pixels.get(), width * height, PixelARGB(0, 0, 0, 0));
-    for (int z = 0; z < height; z++) {
-        for (int x = 0; x < width; x++) {
-            int idx = z * width + x;
-            PixelInfo info = pixelInfo[idx];
-            if (info.height < 0) {
-                continue;
-            }
-            Biome biome = biomes[idx];
-            int biomeRadius;
-            if (7 <= x && x < width - 7 && 7 <= z && z < height - 7) {
-                biomeRadius = 7;
-                for (int iz = -7; iz <= 7; iz++) {
-                    for (int ix = -7; ix <= 7; ix++) {
-                        int i = (z + iz) * width + x + ix;
-                        Biome b = biomes[i];
-                        if (b != biome) {
-                            biomeRadius = std::min(std::min(biomeRadius, abs(ix)), abs(iz));
-                        }
-                    }
-                }
-            } else {
-                biomeRadius = 0;
-            }
-            pixels[idx] = ToPixelInfo(info.height, info.waterDepth, (uint8_t)biome, (uint32_t)info.blockId, biomeRadius);
+    for (int z = sZ; z <= eZ; z++) {
+      for (int x = sX; x <= eX; x++) {
+        int const idx = (z - minZ) * width + (x - minX);
+        assert(0 <= idx && idx < width * height);
+        if (job->shouldExit()) {
+          return false;
         }
-    }
+        uint8_t waterDepth = 0;
+        int ymax = 319;
+        int ymin = -64;
 
-    completion(pixels.release());
+        int yini = ymax;
+        if (dim == Dimension::TheNether) {
+          ymax = 127;
+          ymin = 0;
+          yini = ymax;
+          for (int y = ymax; y >= ymin; y--) {
+            auto block = chunk.blockIdAt(x, y, z);
+            if (!block)
+              continue;
+            if (block == mcfile::blocks::minecraft::air) {
+              yini = y;
+              break;
+            }
+          }
+        } else if (dim == Dimension::TheEnd) {
+          ymax = 255;
+          ymin = 0;
+          yini = ymax;
+        }
+        bool all_transparent = true;
+        bool found_opaque_block = false;
+        for (int y = yini; y >= ymin; y--) {
+          auto block = chunk.blockIdAt(x, y, z);
+          if (block == mcfile::blocks::unknown) {
+            continue;
+          }
+          if (block == mcfile::blocks::minecraft::water || block == mcfile::blocks::minecraft::bubble_column) {
+            waterDepth++;
+            all_transparent = false;
+            continue;
+          }
+          if (transparentBlocks.find(block) != transparentBlocks.end()) {
+            continue;
+          }
+          if (plantBlocks.find(block) != plantBlocks.end()) {
+            continue;
+          }
+          all_transparent = false;
+          auto it = kBlockToColor.find(block);
+          if (it == kBlockToColor.end()) {
+
+          } else {
+            int const h = std::min(std::max(y + 64, 0), 511);
+            PixelInfo info;
+            info.height = h;
+            info.waterDepth = waterDepth;
+            info.blockId = block;
+            pixelInfo[idx] = info;
+            didset = true;
+            found_opaque_block = true;
+            break;
+          }
+        }
+        if (!found_opaque_block && waterDepth > 0) {
+          PixelInfo info;
+          info.height = 0;
+          info.waterDepth = waterDepth;
+          info.blockId = mcfile::blocks::minecraft::water;
+          pixelInfo[idx] = info;
+          didset = true;
+        } else if (all_transparent) {
+          PixelInfo info;
+          info.height = 0;
+          info.waterDepth = 0;
+          info.blockId = mcfile::blocks::minecraft::air;
+          pixelInfo[idx] = info;
+          didset = true;
+        }
+      }
+    }
+    return true;
+  });
+
+  if (!didset) {
+    completion(nullptr);
+    return;
+  }
+
+  std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
+  std::fill_n(pixels.get(), width * height, PixelARGB(0, 0, 0, 0));
+  for (int z = 0; z < height; z++) {
+    for (int x = 0; x < width; x++) {
+      int idx = z * width + x;
+      PixelInfo info = pixelInfo[idx];
+      if (info.height < 0) {
+        continue;
+      }
+      Biome biome = biomes[idx];
+      int biomeRadius;
+      if (7 <= x && x < width - 7 && 7 <= z && z < height - 7) {
+        biomeRadius = 7;
+        for (int iz = -7; iz <= 7; iz++) {
+          for (int ix = -7; ix <= 7; ix++) {
+            int i = (z + iz) * width + x + ix;
+            Biome b = biomes[i];
+            if (b != biome) {
+              biomeRadius = std::min(std::min(biomeRadius, abs(ix)), abs(iz));
+            }
+          }
+        }
+      } else {
+        biomeRadius = 0;
+      }
+      pixels[idx] = ToPixelInfo(info.height, info.waterDepth, (uint8_t)biome, (uint32_t)info.blockId, biomeRadius);
+    }
+  }
+
+  completion(pixels.release());
 }
 
-File RegionToTexture::CacheFile(File const& file)
-{
+File RegionToTexture::CacheFile(File const &file) {
 #if JUCE_WINDOWS
-	File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("mcview").getChildFile("cache");
+  File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("mcview").getChildFile("cache");
 #else
-    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
+  File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
 #endif
-	if (!tmp.exists()) {
-        tmp.createDirectory();
-    }
-    String hash = String("v3.") + String(file.getParentDirectory().getFullPathName().hashCode64());
-    File dir = tmp.getChildFile(hash);
-    if (!dir.exists()) {
-        dir.createDirectory();
-    }
-    return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
+  if (!tmp.exists()) {
+    tmp.createDirectory();
+  }
+  String hash = String("v3.") + String(file.getParentDirectory().getFullPathName().hashCode64());
+  File dir = tmp.getChildFile(hash);
+  if (!dir.exists()) {
+    dir.createDirectory();
+  }
+  return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
 }
 
-RegionToTexture::RegionToTexture(File const& worldDirectory, File const& mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
-    : ThreadPoolJob(mcaFile.getFileName())
-    , fRegionFile(mcaFile)
-    , fRegion(region)
-    , fWorldDirectory(worldDirectory)
-    , fDimension(dim)
-    , fUseCache(useCache)
-    , fDelegate(delegate)
-{
+RegionToTexture::RegionToTexture(File const &worldDirectory, File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
+    : ThreadPoolJob(mcaFile.getFileName()), fRegionFile(mcaFile), fRegion(region), fWorldDirectory(worldDirectory), fDimension(dim), fUseCache(useCache), fDelegate(delegate) {
 }
 
-RegionToTexture::~RegionToTexture()
-{
+RegionToTexture::~RegionToTexture() {
 }
 
-ThreadPoolJob::JobStatus RegionToTexture::runJob()
-{
-    auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
-    defer{
-        fDelegate->regionToTextureDidFinishJob(result);
-    };
-    try {
-        int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();
-        File cache = CacheFile(fRegionFile);
-        if (fUseCache && cache.existsAsFile()) {
-            FileInputStream stream(cache);
-            GZIPDecompressorInputStream ungzip(stream);
-            int expectedBytes = sizeof(PixelARGB) * 512 * 512;
-            int64 cachedModificationTime = 0;
-            if (ungzip.read(&cachedModificationTime, sizeof(cachedModificationTime)) != sizeof(cachedModificationTime)) {
-                return ThreadPoolJob::jobHasFinished;
-            }
-            if (cachedModificationTime >= modified) {
-                result->fPixels.reset(new PixelARGB[512 * 512]);
-                if (ungzip.read(result->fPixels.get(), expectedBytes) != expectedBytes) {
-                    result->fPixels.reset();
-                }
-                return ThreadPoolJob::jobHasFinished;
-            }
-        }
-
-        auto region = mcfile::je::Region::MakeRegion(PathFromFile(fRegionFile));
-        if (!region) {
-            return ThreadPoolJob::jobHasFinished;
-        }
-        Load(*region, this, fDimension, [this, &result](PixelARGB *pixels) {
-            result->fPixels.reset(pixels);
-        });
-        if (shouldExit()) {
-            return ThreadPoolJob::jobHasFinished;
-        }
-        FileOutputStream out(cache);
-        out.truncate();
-        out.setPosition(0);
-        GZIPCompressorOutputStream gzip(out, 9);
-        if (result->fPixels) {
-            gzip.write(&modified, sizeof(modified));
-            gzip.write(result->fPixels.get(), sizeof(PixelARGB) * 512 * 512);
+ThreadPoolJob::JobStatus RegionToTexture::runJob() {
+  auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
+  defer {
+    fDelegate->regionToTextureDidFinishJob(result);
+  };
+  try {
+    int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();
+    File cache = CacheFile(fRegionFile);
+    if (fUseCache && cache.existsAsFile()) {
+      FileInputStream stream(cache);
+      GZIPDecompressorInputStream ungzip(stream);
+      int expectedBytes = sizeof(PixelARGB) * 512 * 512;
+      int64 cachedModificationTime = 0;
+      if (ungzip.read(&cachedModificationTime, sizeof(cachedModificationTime)) != sizeof(cachedModificationTime)) {
+        return ThreadPoolJob::jobHasFinished;
+      }
+      if (cachedModificationTime >= modified) {
+        result->fPixels.reset(new PixelARGB[512 * 512]);
+        if (ungzip.read(result->fPixels.get(), expectedBytes) != expectedBytes) {
+          result->fPixels.reset();
         }
         return ThreadPoolJob::jobHasFinished;
-    } catch (std::exception &e) {
-        Logger::writeToLog(e.what());
-        result->fPixels.reset();
-        return ThreadPoolJob::jobHasFinished;
-    } catch (...) {
-        Logger::writeToLog("Unknown error");
-        result->fPixels.reset();
-        return ThreadPoolJob::jobHasFinished;
+      }
     }
+
+    auto region = mcfile::je::Region::MakeRegion(PathFromFile(fRegionFile));
+    if (!region) {
+      return ThreadPoolJob::jobHasFinished;
+    }
+    Load(*region, this, fDimension, [this, &result](PixelARGB *pixels) {
+      result->fPixels.reset(pixels);
+    });
+    if (shouldExit()) {
+      return ThreadPoolJob::jobHasFinished;
+    }
+    FileOutputStream out(cache);
+    out.truncate();
+    out.setPosition(0);
+    GZIPCompressorOutputStream gzip(out, 9);
+    if (result->fPixels) {
+      gzip.write(&modified, sizeof(modified));
+      gzip.write(result->fPixels.get(), sizeof(PixelARGB) * 512 * 512);
+    }
+    return ThreadPoolJob::jobHasFinished;
+  } catch (std::exception &e) {
+    Logger::writeToLog(e.what());
+    result->fPixels.reset();
+    return ThreadPoolJob::jobHasFinished;
+  } catch (...) {
+    Logger::writeToLog("Unknown error");
+    result->fPixels.reset();
+    return ThreadPoolJob::jobHasFinished;
+  }
 }

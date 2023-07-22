@@ -1,19 +1,19 @@
 #include "MapViewComponent.h"
-#include "RegionToTexture.h"
-#include "RegionTextureCache.h"
+#include "BinaryData.h"
+#include "File.h"
+#include "GraphicsHelper.h"
 #include "OverScroller.hpp"
 #include "PNGWriter.h"
+#include "RegionTextureCache.h"
+#include "RegionToTexture.h"
 #include "SettingsComponent.h"
 #include "defer.h"
-#include "GraphicsHelper.h"
-#include "File.h"
-#include "BinaryData.h"
-#include <set>
 #include <cassert>
 #include <cmath>
-#include <thread>
-#include <minecraft-file.hpp>
 #include <colormap/colormap.h>
+#include <minecraft-file.hpp>
+#include <set>
+#include <thread>
 
 using namespace juce;
 
@@ -26,238 +26,226 @@ static int const kFadeDurationMS = 300;
 static int const kScrollUpdateHz = 50;
 
 MapViewComponent::MapViewComponent()
-    : fLookAt({0, 0, 5})
-    , fVisibleRegions({0, 0, 0, 0})
-    , fPool(CreateThreadPool())
-    , fLoadingFinished(true)
-    , fWaterOpticalDensity(SettingsComponent::kDefaultWaterOpticalDensity)
-    , fWaterTranslucent(true)
-    , fEnableBiome(true)
-    , fBiomeBlend(2)
-{
-    if (auto* peer = getPeer()) {
-        peer->setCurrentRenderingEngine (0);
+    : fLookAt({0, 0, 5}), fVisibleRegions({0, 0, 0, 0}), fPool(CreateThreadPool()), fLoadingFinished(true), fWaterOpticalDensity(SettingsComponent::kDefaultWaterOpticalDensity), fWaterTranslucent(true), fEnableBiome(true), fBiomeBlend(2) {
+  if (auto *peer = getPeer()) {
+    peer->setCurrentRenderingEngine(0);
+  }
+
+  fBrowserOpenButtonImageClose = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_left_white_18dp_png,
+                                                               BinaryData::baseline_keyboard_arrow_left_white_18dp_pngSize);
+  fBrowserOpenButtonImageOpen = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
+                                                              BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize);
+
+  fBrowserOpenButton.reset(new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  setBrowserOpened(true);
+  fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
+  fBrowserOpenButton->onClick = [this]() {
+    onOpenButtonClicked();
+  };
+  addAndMakeVisible(*fBrowserOpenButton);
+
+  fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_landscape_white_18dp_png,
+                                                  BinaryData::baseline_landscape_white_18dp_pngSize);
+  fOverworld.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  fOverworld->setImages(fOverworldImage.get());
+  fOverworld->onClick = [this]() {
+    setWorldDirectory(fWorldDirectory, Dimension::Overworld);
+  };
+  fOverworld->setEnabled(false);
+  fOverworld->setTooltip(TRANS("Overworld"));
+  addAndMakeVisible(*fOverworld);
+
+  fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
+  fNether.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  fNether->setImages(fNetherImage.get());
+  fNether->onClick = [this]() {
+    setWorldDirectory(fWorldDirectory, Dimension::TheNether);
+  };
+  fNether->setEnabled(false);
+  fNether->setTooltip(TRANS("The Nether"));
+  addAndMakeVisible(*fNether);
+
+  fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
+  fEnd.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  fEnd->setImages(fEndImage.get());
+  fEnd->onClick = [this]() {
+    setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
+  };
+  fEnd->setEnabled(false);
+  fEnd->setTooltip(TRANS("The End"));
+  addAndMakeVisible(*fEnd);
+
+  fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
+                                                      BinaryData::baseline_camera_white_18dp_pngSize);
+  fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  fCaptureButton->setImages(fCaptureButtonImage.get());
+  fCaptureButton->onClick = [this]() {
+    captureToImage();
+  };
+  addAndMakeVisible(*fCaptureButton);
+  fCaptureButton->setEnabled(false);
+
+  fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
+                                                       BinaryData::baseline_settings_white_18dp_pngSize);
+  fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+  fSettingsButton->setImages(fSettingsButtonImage.get());
+  fSettingsButton->onClick = [this]() {
+    onSettingsButtonClicked();
+  };
+  addAndMakeVisible(*fSettingsButton);
+
+  setOpaque(true);
+  fGLContext.setRenderer(this);
+  fGLContext.attachTo(*this);
+
+  fScrollerTimer.fTimerCallback = [this](TimerInstance &timer) {
+    if (!fScroller.computeScrollOffset()) {
+      timer.stopTimer();
     }
+    LookAt next = clampedLookAt();
+    next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
+    next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
+    setLookAt(next);
+    triggerRepaint();
+  };
 
-    fBrowserOpenButtonImageClose = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_left_white_18dp_png,
-                                                                 BinaryData::baseline_keyboard_arrow_left_white_18dp_pngSize);
-    fBrowserOpenButtonImageOpen = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
-                                                                BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize);
-    
-    fBrowserOpenButton.reset(new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    setBrowserOpened(true);
-    fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
-    fBrowserOpenButton->onClick = [this]() {
-        onOpenButtonClicked();
-    };
-    addAndMakeVisible(*fBrowserOpenButton);
+  fAnimationTimer.fTimerCallback = [this](TimerInstance &timer) {
+    updateAllPinComponentPosition();
+  };
 
-    fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_landscape_white_18dp_png,
-                                                    BinaryData::baseline_landscape_white_18dp_pngSize);
-    fOverworld.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    fOverworld->setImages(fOverworldImage.get());
-    fOverworld->onClick = [this]() {
-        setWorldDirectory(fWorldDirectory, Dimension::Overworld);
-    };
-    fOverworld->setEnabled(false);
-    fOverworld->setTooltip(TRANS("Overworld"));
-    addAndMakeVisible(*fOverworld);
-    
-    fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
-    fNether.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    fNether->setImages(fNetherImage.get());
-    fNether->onClick = [this]() {
-        setWorldDirectory(fWorldDirectory, Dimension::TheNether);
-    };
-    fNether->setEnabled(false);
-    fNether->setTooltip(TRANS("The Nether"));
-    addAndMakeVisible(*fNether);
-    
-    fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
-    fEnd.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    fEnd->setImages(fEndImage.get());
-    fEnd->onClick = [this]() {
-        setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
-    };
-    fEnd->setEnabled(false);
-    fEnd->setTooltip(TRANS("The End"));
-    addAndMakeVisible(*fEnd);
-    
-    fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
-                                                        BinaryData::baseline_camera_white_18dp_pngSize);
-    fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    fCaptureButton->setImages(fCaptureButtonImage.get());
-    fCaptureButton->onClick = [this]() {
-        captureToImage();
-    };
-    addAndMakeVisible(*fCaptureButton);
-    fCaptureButton->setEnabled(false);
+  fTooltipWindow.reset(new TooltipWindow());
+  addAndMakeVisible(*fTooltipWindow);
 
-    fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
-                                                         BinaryData::baseline_settings_white_18dp_pngSize);
-    fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
-    fSettingsButton->setImages(fSettingsButtonImage.get());
-    fSettingsButton->onClick = [this]() {
-        onSettingsButtonClicked();
-    };
-    addAndMakeVisible(*fSettingsButton);
-    
-    setOpaque(true);
-    fGLContext.setRenderer(this);
-    fGLContext.attachTo(*this);
+  fRegionUpdateChecker.reset(new RegionUpdateChecker(this));
+  fRegionUpdateChecker->startThread();
 
-    fScrollerTimer.fTimerCallback = [this](TimerInstance &timer) {
-        if (!fScroller.computeScrollOffset()) {
-            timer.stopTimer();
-        }
-        LookAt next = clampedLookAt();
-        next.fX = fScroller.getCurrX() * next.fBlocksPerPixel;
-        next.fZ = fScroller.getCurrY() * next.fBlocksPerPixel;
-        setLookAt(next);
-        triggerRepaint();
-    };
+  Desktop::getInstance().getAnimator().addChangeListener(this);
 
-    fAnimationTimer.fTimerCallback = [this](TimerInstance &timer) {
-        updateAllPinComponentPosition();
-    };
-
-    fTooltipWindow.reset(new TooltipWindow());
-    addAndMakeVisible(*fTooltipWindow);
-    
-    fRegionUpdateChecker.reset(new RegionUpdateChecker(this));
-    fRegionUpdateChecker->startThread();
-
-    Desktop::getInstance().getAnimator().addChangeListener(this);
-
-    fSize = Point<int>(600, 400);
-    setSize (600, 400);
+  fSize = Point<int>(600, 400);
+  setSize(600, 400);
 }
 
-MapViewComponent::~MapViewComponent()
-{
-    Desktop::getInstance().getAnimator().removeChangeListener(this);
+MapViewComponent::~MapViewComponent() {
+  Desktop::getInstance().getAnimator().removeChangeListener(this);
 
-    fGLContext.detach();
-    fPool->removeAllJobs(true, -1);
-    for (auto& pool : fPoolTomb) {
-        pool->removeAllJobs(true, -1);
-    }
-    fRegionUpdateChecker->signalThreadShouldExit();
-    fRegionUpdateChecker->waitForThreadToExit(-1);
+  fGLContext.detach();
+  fPool->removeAllJobs(true, -1);
+  for (auto &pool : fPoolTomb) {
+    pool->removeAllJobs(true, -1);
+  }
+  fRegionUpdateChecker->signalThreadShouldExit();
+  fRegionUpdateChecker->waitForThreadToExit(-1);
 }
 
-void MapViewComponent::paint(Graphics &g)
-{
-    g.saveState();
-    defer {
-        g.restoreState();
-    };
+void MapViewComponent::paint(Graphics &g) {
+  g.saveState();
+  defer {
+    g.restoreState();
+  };
 
-    int const width = getWidth();
-    int const height = getHeight();
-    int const lineHeight = 24;
-    int const coordLabelWidth = 100;
-    int const coordLabelHeight = 2 * lineHeight;
+  int const width = getWidth();
+  int const height = getHeight();
+  int const lineHeight = 24;
+  int const coordLabelWidth = 100;
+  int const coordLabelHeight = 2 * lineHeight;
 
-    LookAt const lookAt = fLookAt.load();
+  LookAt const lookAt = fLookAt.load();
 
-    Point<float> const topLeft = getMapCoordinateFromView(Point<float>(0, 0), lookAt);
-    Point<float> const bottomRight = getMapCoordinateFromView(Point<float>(width, height), lookAt);
-    int const minRegionX = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
-    int const maxRegionX = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.x)) + 1;
-    int const minRegionZ = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
-    int const maxRegionZ = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.y)) + 1;
-    int const numRegionsOnDisplay = (maxRegionX - minRegionX + 1) * (maxRegionZ - minRegionZ + 1);
-    
-    if (KeyPress::isKeyCurrentlyDown(KeyPress::F1Key)) {
-        g.setColour(Colours::black);
-        float const thickness = 1;
-        // vertical lines
-        for (int x = minRegionX; x <= maxRegionX; x++) {
-            int const bx = x * 512;
-            int const minBz = minRegionZ * 512;
-            int const maxBz = maxRegionZ * 512;
-            Point<float> const top = getViewCoordinateFromMap(Point<float>(bx, minBz), lookAt);
-            Point<float> const bottom = getViewCoordinateFromMap(Point<float>(bx, maxBz), lookAt);
-            g.drawLine(top.x, top.y, bottom.x, bottom.y, thickness);
-        }
-        for (int z = minRegionZ; z <= maxRegionZ; z++) {
-            int const bz = z * 512;
-            int const minBx = minRegionX * 512;
-            int const maxBx = maxRegionX * 512;
-            Point<float> const left = getViewCoordinateFromMap(Point<float>(minBx, bz), lookAt);
-            Point<float> const right = getViewCoordinateFromMap(Point<float>(maxBx, bz), lookAt);
-            g.drawLine(left.x, left.y, right.x, right.y, thickness);
-        }
-        if (numRegionsOnDisplay < 64) {
-            g.setFont(20);
-            for (int x = minRegionX; x <= maxRegionX; x++) {
-                for (int z = minRegionZ; z <= maxRegionZ; z++) {
-                    Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
-                    Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
-                    GraphicsHelper::DrawFittedText(g,
-                                                   String::formatted("r.%d.%d.mca", x, z),
-                                                   tl.x, tl.y,
-                                                   br.x - tl.x, br.y - tl.y,
-                                                   Justification::centred, 1);
-                }
-            }
-        }
-    }
-    
-    Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
-    g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
-    g.fillRoundedRectangle(border, 6.0f);
-    g.setColour(Colours::lightgrey);
-    g.drawRoundedRectangle(border, 6.0f, 1.0f);
-    Point<float> block = getMapCoordinateFromView(fMouse);
-    int y = kMargin;
+  Point<float> const topLeft = getMapCoordinateFromView(Point<float>(0, 0), lookAt);
+  Point<float> const bottomRight = getMapCoordinateFromView(Point<float>(width, height), lookAt);
+  int const minRegionX = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
+  int const maxRegionX = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.x)) + 1;
+  int const minRegionZ = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
+  int const maxRegionZ = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.y)) + 1;
+  int const numRegionsOnDisplay = (maxRegionX - minRegionX + 1) * (maxRegionZ - minRegionZ + 1);
+
+  if (KeyPress::isKeyCurrentlyDown(KeyPress::F1Key)) {
     g.setColour(Colours::black);
-    Font bold(14, Font::bold);
-    Font regular(14);
-    Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
-    g.setFont(regular);
-    g.drawText("X: ", line1, Justification::centredLeft);
-    g.setFont(bold);
-    g.drawFittedText(String::formatted("%d", (int)floor(block.x)), line1, Justification::centredRight, 1);
-    y += lineHeight;
-    Rectangle<int> line2(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
-    g.setFont(regular);
-    g.drawText("Z: ", line2, Justification::centredLeft);
-    g.setFont(bold);
-    g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
-    y += lineHeight;
+    float const thickness = 1;
+    // vertical lines
+    for (int x = minRegionX; x <= maxRegionX; x++) {
+      int const bx = x * 512;
+      int const minBz = minRegionZ * 512;
+      int const maxBz = maxRegionZ * 512;
+      Point<float> const top = getViewCoordinateFromMap(Point<float>(bx, minBz), lookAt);
+      Point<float> const bottom = getViewCoordinateFromMap(Point<float>(bx, maxBz), lookAt);
+      g.drawLine(top.x, top.y, bottom.x, bottom.y, thickness);
+    }
+    for (int z = minRegionZ; z <= maxRegionZ; z++) {
+      int const bz = z * 512;
+      int const minBx = minRegionX * 512;
+      int const maxBx = maxRegionX * 512;
+      Point<float> const left = getViewCoordinateFromMap(Point<float>(minBx, bz), lookAt);
+      Point<float> const right = getViewCoordinateFromMap(Point<float>(maxBx, bz), lookAt);
+      g.drawLine(left.x, left.y, right.x, right.y, thickness);
+    }
+    if (numRegionsOnDisplay < 64) {
+      g.setFont(20);
+      for (int x = minRegionX; x <= maxRegionX; x++) {
+        for (int z = minRegionZ; z <= maxRegionZ; z++) {
+          Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
+          Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
+          GraphicsHelper::DrawFittedText(g,
+                                         String::formatted("r.%d.%d.mca", x, z),
+                                         tl.x, tl.y,
+                                         br.x - tl.x, br.y - tl.y,
+                                         Justification::centred, 1);
+        }
+      }
+    }
+  }
+
+  Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
+  g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
+  g.fillRoundedRectangle(border, 6.0f);
+  g.setColour(Colours::lightgrey);
+  g.drawRoundedRectangle(border, 6.0f, 1.0f);
+  Point<float> block = getMapCoordinateFromView(fMouse);
+  int y = kMargin;
+  g.setColour(Colours::black);
+  Font bold(14, Font::bold);
+  Font regular(14);
+  Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+  g.setFont(regular);
+  g.drawText("X: ", line1, Justification::centredLeft);
+  g.setFont(bold);
+  g.drawFittedText(String::formatted("%d", (int)floor(block.x)), line1, Justification::centredRight, 1);
+  y += lineHeight;
+  Rectangle<int> line2(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+  g.setFont(regular);
+  g.drawText("Z: ", line2, Justification::centredLeft);
+  g.setFont(bold);
+  g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
+  y += lineHeight;
 }
 
-void MapViewComponent::newOpenGLContextCreated()
-{
-    using namespace juce::gl;
-    
-    std::unique_ptr<Buffer> buffer(new Buffer());
+void MapViewComponent::newOpenGLContextCreated() {
+  using namespace juce::gl;
 
-    fGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
-	fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
-    std::vector<Vertex> vertices = {
-        {{0, 0}, {0.0, 0.0}},
-        {{1, 0}, {1.0, 0.0}},
-        {{1, 1}, {1.0, 1.0}},
-        {{0, 1}, {0.0, 1.0}},
-    };
-	fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+  std::unique_ptr<Buffer> buffer(new Buffer());
 
-	fGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
-	fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
-    std::vector<uint32_t> indices = { 0, 1, 2, 3 };
-	fGLContext.extensions.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
-    
-    fGLBuffer.reset(buffer.release());
+  fGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
+  fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
+  std::vector<Vertex> vertices = {
+      {{0, 0}, {0.0, 0.0}},
+      {{1, 0}, {1.0, 0.0}},
+      {{1, 1}, {1.0, 1.0}},
+      {{0, 1}, {0.0, 1.0}},
+  };
+  fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+
+  fGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
+  fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
+  std::vector<uint32_t> indices = {0, 1, 2, 3};
+  fGLContext.extensions.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
+
+  fGLBuffer.reset(buffer.release());
 }
 
-void MapViewComponent::updateShader()
-{
-    std::unique_ptr<OpenGLShaderProgram> newShader(new OpenGLShaderProgram(fGLContext));
+void MapViewComponent::updateShader() {
+  std::unique_ptr<OpenGLShaderProgram> newShader(new OpenGLShaderProgram(fGLContext));
 
-    newShader->addVertexShader(R"#(
+  newShader->addVertexShader(R"#(
         attribute vec2 textureCoordIn;
         attribute vec4 position;
         uniform float blocksPerPixel;
@@ -284,10 +272,10 @@ void MapViewComponent::updateShader()
         }
     )#");
 
-    colormap::kbinani::Altitude altitude;
+  colormap::kbinani::Altitude altitude;
 
-	std::ostringstream fragment;
-    fragment << R"#(
+  std::ostringstream fragment;
+  fragment << R"#(
         #version 120
         #extension GL_EXT_gpu_shader4 : enable
         varying vec2 textureCoordOut;
@@ -314,9 +302,9 @@ void MapViewComponent::updateShader()
         uniform sampler2D northWest;
     )#";
 
-	fragment << altitude.getSource() << std::endl;
-    
-    fragment << R"#(
+  fragment << altitude.getSource() << std::endl;
+
+  fragment << R"#(
         struct BlockInfo {
             float height;
             float waterDepth;
@@ -445,66 +433,66 @@ void MapViewComponent::updateShader()
             return vec4(c.rgb, 1);
         }
     )#";
-    
-    fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
-    fragment << "    if (blockId == #{airBlockId}) {" << std::endl;
-    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
-    fragment << "    }" << std::endl;
-    fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
-    for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-        auto it = RegionToTexture::kBlockToColor.find(id);
-        if (it != RegionToTexture::kBlockToColor.end()) {
-            Colour c = it->second;
-            GLfloat r = c.getRed() / 255.0f;
-            GLfloat g = c.getGreen() / 255.0f;
-            GLfloat b = c.getBlue() / 255.0f;
-            fragment << "        vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0)";
-        } else {
-            fragment << "        vec4(0.0, 0.0, 0.0, 0.0)";
-        }
-        if (id < mcfile::blocks::minecraft::minecraft_max_block_id - 1) {
-            fragment << "," << std::endl;
-        }
-    }
-    fragment << "    );" << std::endl;
-    fragment << "    return mapping[blockId - 1];" << std::endl;
-    fragment << "}" << std::endl;
 
-    fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
-    for (auto it : RegionToTexture::kOceanToColor) {
-        auto id = it.first;
-        Colour c = it.second;
-        int r = c.getRed();
-        int g = c.getGreen();
-        int b = c.getBlue();
-        fragment << "    if (biome == " << (int)id << ") {" << std::endl;
-        fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
-        fragment << "    } else" << std::endl;
+  fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
+  fragment << "    if (blockId == #{airBlockId}) {" << std::endl;
+  fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
+  fragment << "    }" << std::endl;
+  fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
+  for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+    auto it = RegionToTexture::kBlockToColor.find(id);
+    if (it != RegionToTexture::kBlockToColor.end()) {
+      Colour c = it->second;
+      GLfloat r = c.getRed() / 255.0f;
+      GLfloat g = c.getGreen() / 255.0f;
+      GLfloat b = c.getBlue() / 255.0f;
+      fragment << "        vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0)";
+    } else {
+      fragment << "        vec4(0.0, 0.0, 0.0, 0.0)";
     }
-    fragment << "    { " << std::endl;
-    auto ocean = RegionToTexture::kDefaultOceanColor;
-    fragment << "        return rgb(" << (int)ocean.getRed() << ", " << (int)ocean.getGreen() << ", " << (int)ocean.getBlue() << ", 255);" << std::endl;
-    fragment << "    }" << std::endl;
-    fragment << "}";
+    if (id < mcfile::blocks::minecraft::minecraft_max_block_id - 1) {
+      fragment << "," << std::endl;
+    }
+  }
+  fragment << "    );" << std::endl;
+  fragment << "    return mapping[blockId - 1];" << std::endl;
+  fragment << "}" << std::endl;
 
-    fragment << "vec4 foliageColorFromBiome(int biome) {" << std::endl;
-    for (auto it : RegionToTexture::kFoliageToColor) {
-        auto id = it.first;
-        Colour c = it.second;
-        int r = c.getRed();
-        int g = c.getGreen();
-        int b = c.getBlue();
-        fragment << "    if (biome == " << (int)id << ") {" << std::endl;
-        fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
-        fragment << "    } else" << std::endl;
-    }
-    fragment << "    { " << std::endl;
-    auto foliage = RegionToTexture::kDefaultFoliageColor;
-    fragment << "        return rgb(" << (int)foliage.getRed() << ", " << (int)foliage.getGreen() << ", " << (int)foliage.getBlue() << ", 255);" << std::endl;
-    fragment << "    }" << std::endl;
-    fragment << "}" << std::endl;
-    
-    fragment << R"#(
+  fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
+  for (auto it : RegionToTexture::kOceanToColor) {
+    auto id = it.first;
+    Colour c = it.second;
+    int r = c.getRed();
+    int g = c.getGreen();
+    int b = c.getBlue();
+    fragment << "    if (biome == " << (int)id << ") {" << std::endl;
+    fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
+    fragment << "    } else" << std::endl;
+  }
+  fragment << "    { " << std::endl;
+  auto ocean = RegionToTexture::kDefaultOceanColor;
+  fragment << "        return rgb(" << (int)ocean.getRed() << ", " << (int)ocean.getGreen() << ", " << (int)ocean.getBlue() << ", 255);" << std::endl;
+  fragment << "    }" << std::endl;
+  fragment << "}";
+
+  fragment << "vec4 foliageColorFromBiome(int biome) {" << std::endl;
+  for (auto it : RegionToTexture::kFoliageToColor) {
+    auto id = it.first;
+    Colour c = it.second;
+    int r = c.getRed();
+    int g = c.getGreen();
+    int b = c.getBlue();
+    fragment << "    if (biome == " << (int)id << ") {" << std::endl;
+    fragment << "        return rgb(" << r << ", " << g << ", " << b << ", 255);" << std::endl;
+    fragment << "    } else" << std::endl;
+  }
+  fragment << "    { " << std::endl;
+  auto foliage = RegionToTexture::kDefaultFoliageColor;
+  fragment << "        return rgb(" << (int)foliage.getRed() << ", " << (int)foliage.getGreen() << ", " << (int)foliage.getBlue() << ", 255);" << std::endl;
+  fragment << "    }" << std::endl;
+  fragment << "}" << std::endl;
+
+  fragment << R"#(
 
     vec4 waterColor() {
         vec2 center = textureCoordOut;
@@ -660,1298 +648,1245 @@ void MapViewComponent::updateShader()
         }
     }
     )#";
-    
-    
-    String fragmentShaderTemplate = fragment.str();
-    String fragmentShader = fragmentShaderTemplate.replace("#{airBlockId}", String(mcfile::blocks::minecraft::air));
+
+  String fragmentShaderTemplate = fragment.str();
+  String fragmentShader = fragmentShaderTemplate.replace("#{airBlockId}", String(mcfile::blocks::minecraft::air));
 #if 0
     int lineNumber = 0;
     for (auto const& line : mcfile::String::Split(fragmentShader.toStdString(), '\n')) {
         std::cout << "#" << (lineNumber++) << line << std::endl;
     }
 #endif
-    newShader->addFragmentShader(fragmentShader);
+  newShader->addFragmentShader(fragmentShader);
 
-    newShader->link();
-    newShader->use();
+  newShader->link();
+  newShader->use();
 
-    fGLUniforms.reset(new Uniforms(fGLContext, *newShader));
-    fGLAttributes.reset(new Attributes(fGLContext, *newShader));
+  fGLUniforms.reset(new Uniforms(fGLContext, *newShader));
+  fGLAttributes.reset(new Attributes(fGLContext, *newShader));
 
-    fGLShader.reset(newShader.release());
+  fGLShader.reset(newShader.release());
 }
 
-void MapViewComponent::renderOpenGL()
-{
-    LookAt lookAt = clampedLookAt();
-    auto desktopScale = (float)fGLContext.getRenderingScale();
-    Point<int> size = fSize.load();
-    int const width = size.x * desktopScale;
-    int const height = size.y * desktopScale;
-    lookAt.fBlocksPerPixel /= desktopScale;
-    render(width, height, lookAt, true);
+void MapViewComponent::renderOpenGL() {
+  LookAt lookAt = clampedLookAt();
+  auto desktopScale = (float)fGLContext.getRenderingScale();
+  Point<int> size = fSize.load();
+  int const width = size.x * desktopScale;
+  int const height = size.y * desktopScale;
+  lookAt.fBlocksPerPixel /= desktopScale;
+  render(width, height, lookAt, true);
 }
 
 template <typename T>
-static T Clamp(T v, T min, T max)
-{
-    if (v < min) {
-        return min;
-    } else if (max < v) {
-        return max;
-    } else {
-        return v;
-    }
+static T Clamp(T v, T min, T max) {
+  if (v < min) {
+    return min;
+  } else if (max < v) {
+    return max;
+  } else {
+    return v;
+  }
 }
 
 static float CubicEaseInOut(float t, float start, float end, float duration) {
-    float b = start;
-    float c = end - start;
-    t  /= duration / 2.0f;
-    if (t < 1.0f) {
-        return c / 2.0f * t * t * t + b;
-    } else {
-        t = t - 2.0f;
-        return c / 2.0f * (t * t * t + 2.0f) + b;
-    }
+  float b = start;
+  float c = end - start;
+  t /= duration / 2.0f;
+  if (t < 1.0f) {
+    return c / 2.0f * t * t * t + b;
+  } else {
+    t = t - 2.0f;
+    return c / 2.0f * (t * t * t + 2.0f) + b;
+  }
 }
 
-void MapViewComponent::instantiateTextures(LookAt lookAt)
-{
-    bool loadingFinished = false;
-    juce::File worldDirectory;
-    Dimension dimension;
-    std::vector<std::shared_ptr<RegionToTexture::Result>> remove;
-    std::vector<std::pair<std::shared_ptr<RegionToTexture::Result>, float>> distances;
-    {
-        std::lock_guard<std::mutex> lock(fMut);
-        worldDirectory = fWorldDirectory;
-        dimension = fDimension;
-
-        for (size_t i = 0; i < fGLJobResults.size(); i++) {
-            auto const& result = fGLJobResults[i];
-            if (result->fWorldDirectory != worldDirectory) {
-                remove.push_back(result);
-                continue;
-            }
-            if (result->fDimension != dimension) {
-                remove.push_back(result);
-                continue;
-            }
-            float distance = DistanceSqBetweenRegionAndLookAt(lookAt, result->fRegion);
-            distances.push_back(std::make_pair(result, distance));
-        }
-    }
-    std::sort(distances.begin(), distances.end(), [](auto const& a, auto const& b) {
-        return a.second < b.second;
-        });
-
-    int constexpr kNumLoadTexturesPerFrame = 16;
-    for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
-        std::shared_ptr<RegionToTexture::Result> j = distances[i].first;
-        remove.push_back(j);
-
-        auto before = fTextures.find(j->fRegion);
-        if (j->fPixels) {
-            auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
-            cache->load(j->fPixels.get());
-            if (before != fTextures.end()) {
-                cache->fLoadTime = before->second->fLoadTime;
-            }
-            fTextures[j->fRegion] = cache;
-        } else {
-            if (before != fTextures.end()) {
-                fTextures.erase(before);
-            }
-        }
-
-        std::lock_guard<std::mutex> lock(fMut);
-        auto it = fLoadingRegions.find(j->fRegion);
-        if (it != fLoadingRegions.end()) {
-            fLoadingRegions.erase(it);
-        }
-        if (fLoadingRegions.empty()) {
-            fLoadingFinished = true;
-            loadingFinished = true;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> lock(fMut);
-        for (auto const& it : remove) {
-            for (size_t i = 0; i < fGLJobResults.size(); i++) {
-                if (it.get() == fGLJobResults[i].get()) {
-                    fGLJobResults.erase(fGLJobResults.begin() + i);
-                    break;
-                }
-            }
-        }
-    }
-
-    if (loadingFinished) {
-        callAfterDelay(kFadeDurationMS, [this]() {
-            stopTimer();
-            });
-        {
-            std::lock_guard<std::mutex> lock(fMut);
-            fAsyncUpdateQueue.push_back(AsyncUpdateQueueUpdateCaptureButtonStatus{});
-        }
-        triggerAsyncUpdate();
-    }
-}
-
-void MapViewComponent::render(int const width, int const height, LookAt const lookAt, bool enableUI)
-{
-    using namespace juce::gl;
-
-    if (enableUI) {
-        OpenGLHelpers::clear(Colours::white);
-    } else {
-        OpenGLHelpers::clear(Colours::transparentBlack);
-    }
-
-    glViewport(0, 0, width, height);
-
-    if (enableUI) {
-        drawBackground();
-    }
-    
-    Time const now = Time::getCurrentTime();
-    
-    if (fGLShader.get() == nullptr) {
-        updateShader();
-    }
-
-    glEnable (GL_DEPTH_TEST);
-    glDepthFunc (GL_LESS);
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_TEXTURE_2D);
-
-    fGLShader->use();
-    auto const& textures = fTextures;
-    
-    for (auto it : textures) {
-        auto cache = it.second;
-        if (fGLUniforms->blocksPerPixel.get() != nullptr) {
-            fGLUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
-        }
-        if (fGLUniforms->Xr.get() != nullptr) {
-            fGLUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
-        }
-        if (fGLUniforms->Zr.get() != nullptr) {
-            fGLUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
-        }
-        if (fGLUniforms->width.get() != nullptr) {
-            fGLUniforms->width->set((GLfloat)width);
-        }
-        if (fGLUniforms->height.get() != nullptr) {
-            fGLUniforms->height->set((GLfloat)height);
-        }
-        if (fGLUniforms->Cx.get() != nullptr) {
-            fGLUniforms->Cx->set((GLfloat)lookAt.fX);
-        }
-        if (fGLUniforms->Cz.get() != nullptr) {
-            fGLUniforms->Cz->set((GLfloat)lookAt.fZ);
-        }
-        if (fGLUniforms->grassBlockId.get() != nullptr) {
-            fGLUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
-        }
-        if (fGLUniforms->foliageBlockId) {
-            fGLUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
-        }
-        if (fGLUniforms->netherrackBlockId) {
-            fGLUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
-        }
-        if (fGLUniforms->waterOpticalDensity) {
-            fGLUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
-        }
-        if (fGLUniforms->waterTranslucent) {
-            fGLUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
-        }
-        if (fGLUniforms->biomeBlend) {
-            fGLUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
-        }
-        if (fGLUniforms->enableBiome) {
-            fGLUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
-        }
-        if (fGLUniforms->dimension) {
-            fGLUniforms->dimension->set((GLint)fDimension);
-        }
-
-        if (fGLUniforms->fade.get() != nullptr) {
-            if (enableUI) {
-                int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
-                GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
-                fGLUniforms->fade->set(a);
-            } else {
-                fGLUniforms->fade->set(1.0f);
-            }
-        }
-
-        fGLContext.extensions.glActiveTexture(GL_TEXTURE0);
-        cache->fTexture->bind();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->texture.get() != nullptr) {
-            fGLUniforms->texture->set(0);
-        }
-
-        int const x = it.first.first;
-        int const z = it.first.second;
-
-        auto const& north = textures.find(MakeRegion(x, z - 1));
-        if (north != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
-            north->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->north.get() != nullptr) {
-                fGLUniforms->north->set(1);
-            }
-        }
-
-        auto const& northEast = textures.find(MakeRegion(x + 1, z - 1));
-        if (northEast != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
-            northEast->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->northEast.get() != nullptr) {
-                fGLUniforms->northEast->set(2);
-            }
-        }
-
-        auto const& east = textures.find(MakeRegion(x + 1, z));
-        if (east != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
-            east->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->east.get() != nullptr) {
-                fGLUniforms->east->set(3);
-            }
-        }
-
-        auto const& southEast = textures.find(MakeRegion(x + 1, z + 1));
-        if (southEast != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
-            southEast->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->southEast.get() != nullptr) {
-                fGLUniforms->southEast->set(4);
-            }
-        }
-
-        auto const& south = textures.find(MakeRegion(x, z + 1));
-        if (south != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
-            south->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->south.get() != nullptr) {
-                fGLUniforms->south->set(5);
-            }
-        }
-
-        auto const& southWest = textures.find(MakeRegion(x - 1, z + 1));
-        if (southWest != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
-            southWest->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->southWest.get() != nullptr) {
-                fGLUniforms->southWest->set(6);
-            }
-        }
-
-        auto const& west = textures.find(MakeRegion(x - 1, z));
-        if (west != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
-            west->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->west.get() != nullptr) {
-                fGLUniforms->west->set(7);
-            }
-        }
-
-        auto const& northWest = textures.find(MakeRegion(x - 1, z - 1));
-        if (northWest != textures.end()) {
-            fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
-            northWest->second->fTexture->bind();
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            if (fGLUniforms->northWest.get() != nullptr) {
-                fGLUniforms->northWest->set(8);
-            }
-        }
-
-        fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
-		fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fGLBuffer->iBuffer);
-        
-        fGLAttributes->enable(fGLContext);
-        glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
-        fGLAttributes->disable(fGLContext);
-    }
-
-    instantiateTextures(lookAt);
-}
-
-void MapViewComponent::drawBackground()
-{
-    Point<int> size = fSize.load();
-    const int width = size.x;
-    const int height = size.y;
-    const float desktopScale = (float)fGLContext.getRenderingScale();
-
-    std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fGLContext,
-                                                                                    roundToInt(desktopScale * width),
-                                                                                    roundToInt(desktopScale * height)));
-
-    if (glRenderer.get() == nullptr) {
-        return;
-    }
-
-    LookAt current = clampedLookAt();
-
-    Graphics g(*glRenderer);
-    g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
-
-    Point<float> mapOriginPx = getViewCoordinateFromMap({0.0f, 0.0f}, current);
-    int const xoffset = int(floor(mapOriginPx.x)) % (2 * kCheckeredPatternSize);
-    int const yoffset = int(floor(mapOriginPx.y)) % (2 * kCheckeredPatternSize);
-
-    g.setColour(Colour::fromRGB(236, 236, 236));
-    
-    const int w = width / kCheckeredPatternSize + 5;
-    const int h = height / kCheckeredPatternSize + 5;
-    for (int j = 0; j < h; j++) {
-        const int y = (j - 2) * kCheckeredPatternSize + yoffset;
-        for (int i = (j % 2 == 0 ? 0 : 1); i < w; i += 2) {
-            const int x = (i - 2) * kCheckeredPatternSize + xoffset;
-            g.fillRect(x, y, kCheckeredPatternSize, kCheckeredPatternSize);
-        }
-    }
-    g.setColour(Colour::fromRGB(245, 245, 245));
-    for (int i = 0; i < w; i++) {
-        const int x = (i - 2) * kCheckeredPatternSize + xoffset;
-        g.drawVerticalLine(x, 0, height);
-    }
-    for (int j = 0; j < h; j++) {
-        const int y = (j - 2) * kCheckeredPatternSize + yoffset;
-        g.drawHorizontalLine(y, 0, width);
-    }
-
-    std::set<Region> loadingRegions;
-    {
-        std::lock_guard<std::mutex> lock(fMut);
-        loadingRegions = fLoadingRegions;
-    }
-    g.setColour(Colour::fromRGBA(0, 0, 0, 37));
-    for (Region region : loadingRegions) {
-        int const x = region.first * 512;
-        int const z = region.second * 512;
-        Point<float> topLeft = getViewCoordinateFromMap(Point<float>(x, z), current);
-        float const regionSize = 512.0f / current.fBlocksPerPixel;
-        g.fillRect(topLeft.x, topLeft.y, regionSize, regionSize);
-    }
-}
-
-void MapViewComponent::openGLContextClosing()
-{
-    fTextures.clear();
-    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
-    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
-}
-
-float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region)
-{
-    float const regionCenterX = region.first * 512 - 256;
-    float const regionCenterZ = region.second * 512 - 256;
-    float const dx = regionCenterX - lookAt.fX;
-    float const dz = regionCenterZ - lookAt.fZ;
-    return dx * dx + dz * dz;
-}
-
-void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
-{
-    if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
-        return;
-    }
-
-    fRegionUpdateChecker->setDirectory(directory, dim);
-
-    fOverworld->setEnabled(dim != Dimension::Overworld);
-    fNether->setEnabled(dim != Dimension::TheNether);
-    fEnd->setEnabled(dim != Dimension::TheEnd);
-    
-    fLoadingFinished = false;
-    fCaptureButton->setEnabled(false);
-
-    File worldDataFile = WorldData::WorldDataPath(directory);
-    WorldData data = WorldData::Load(worldDataFile);
-
-    if (fPool) {
-        fPool->removeAllJobs(true, 0);
-        fPoolTomb.push_back(std::move(fPool));
-    }
-    fPool.reset(CreateThreadPool());
-
-    auto garbageTextures = std::make_shared<std::map<Region, std::shared_ptr<RegionTextureCache>>>();
-    garbageTextures->swap(fTextures);
-    fGLContext.executeOnGLThread([this, garbageTextures](OpenGLContext&) {
-        garbageTextures->clear();
-        }, true);
-
-    {
-        std::lock_guard<std::mutex> lk(fMut);
-
-        LookAt const lookAt = fLookAt.load();
-
-        fLoadingRegions.clear();
-        fWorldDirectory = directory;
-        fDimension = dim;
-        fWorldData = data;
-        resetPinComponents();
-
-        int minX = 0;
-        int maxX = 0;
-        int minZ = 0;
-        int maxZ = 0;
-
-        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
-        std::vector<File> files;
-        for (DirectoryEntry entry : it) {
-            File f = entry.getFile();
-            auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-            if (!r) {
-                continue;
-            }
-            minX = std::min(minX, r->fX);
-            maxX = std::max(maxX, r->fX);
-            minZ = std::min(minZ, r->fZ);
-            maxZ = std::max(maxZ, r->fZ);
-            files.push_back(f);
-        }
-        
-        LookAt next = lookAt;
-        next.fX = 0;
-        next.fZ = 0;
-        fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
-        setLookAt(next);
-
-        std::sort(files.begin(), files.end(), [next](File const& a, File const& b) {
-            auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
-            auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
-            auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
-            auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
-            return distanceA < distanceB;
-        });
-        
-        queueTextureLoading(files, dim, true);
-    }
-}
-
-void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension dim, bool useCache)
-{
-    if (files.empty()) {
-        return;
-    }
-
-    if (OpenGLContext::getCurrentContext() == &fGLContext) {
-        queueTextureLoadingImpl(fGLContext, files, fWorldDirectory, dim, useCache);
-    } else {
-        juce::File worldDirectory = fWorldDirectory;
-        fGLContext.executeOnGLThread([this, files, worldDirectory, dim, useCache](OpenGLContext &ctx) {
-            queueTextureLoadingImpl(ctx, files, worldDirectory, dim, useCache);
-        }, false);
-    }
-}
-
-void MapViewComponent::queueTextureLoadingImpl(OpenGLContext& ctx, std::vector<File> files, juce::File worldDirectory, Dimension dim, bool useCache)
-{
+void MapViewComponent::instantiateTextures(LookAt lookAt) {
+  bool loadingFinished = false;
+  juce::File worldDirectory;
+  Dimension dimension;
+  std::vector<std::shared_ptr<RegionToTexture::Result>> remove;
+  std::vector<std::pair<std::shared_ptr<RegionToTexture::Result>, float>> distances;
+  {
     std::lock_guard<std::mutex> lock(fMut);
-    fLoadingFinished = false;
+    worldDirectory = fWorldDirectory;
+    dimension = fDimension;
 
-    Rectangle<int> visibleRegions = fVisibleRegions.load();
-    int minX = visibleRegions.getX();
-    int maxX = visibleRegions.getRight();
-    int minY = visibleRegions.getY();
-    int maxY = visibleRegions.getBottom();
+    for (size_t i = 0; i < fGLJobResults.size(); i++) {
+      auto const &result = fGLJobResults[i];
+      if (result->fWorldDirectory != worldDirectory) {
+        remove.push_back(result);
+        continue;
+      }
+      if (result->fDimension != dimension) {
+        remove.push_back(result);
+        continue;
+      }
+      float distance = DistanceSqBetweenRegionAndLookAt(lookAt, result->fRegion);
+      distances.push_back(std::make_pair(result, distance));
+    }
+  }
+  std::sort(distances.begin(), distances.end(), [](auto const &a, auto const &b) {
+    return a.second < b.second;
+  });
 
-    for (File const& f : files) {
-        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-        auto region = MakeRegion(r->fX, r->fZ);
-        RegionToTexture* job = new RegionToTexture(worldDirectory, f, region, dim, useCache, this);
-        fPool->addJob(job, true);
-        fLoadingRegions.insert(region);
-        minX = std::min(minX, r->fX);
-        maxX = std::max(maxX, r->fX + 1);
-        minY = std::min(minY, r->fZ);
-        maxY = std::max(maxY, r->fZ + 1);
+  int constexpr kNumLoadTexturesPerFrame = 16;
+  for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
+    std::shared_ptr<RegionToTexture::Result> j = distances[i].first;
+    remove.push_back(j);
+
+    auto before = fTextures.find(j->fRegion);
+    if (j->fPixels) {
+      auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
+      cache->load(j->fPixels.get());
+      if (before != fTextures.end()) {
+        cache->fLoadTime = before->second->fLoadTime;
+      }
+      fTextures[j->fRegion] = cache;
+    } else {
+      if (before != fTextures.end()) {
+        fTextures.erase(before);
+      }
     }
 
-    fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
-    if (!isTimerRunning()) {
-        startTimer(16); // 60fps
+    std::lock_guard<std::mutex> lock(fMut);
+    auto it = fLoadingRegions.find(j->fRegion);
+    if (it != fLoadingRegions.end()) {
+      fLoadingRegions.erase(it);
     }
+    if (fLoadingRegions.empty()) {
+      fLoadingFinished = true;
+      loadingFinished = true;
+    }
+  }
+  {
+    std::lock_guard<std::mutex> lock(fMut);
+    for (auto const &it : remove) {
+      for (size_t i = 0; i < fGLJobResults.size(); i++) {
+        if (it.get() == fGLJobResults[i].get()) {
+          fGLJobResults.erase(fGLJobResults.begin() + i);
+          break;
+        }
+      }
+    }
+  }
+
+  if (loadingFinished) {
+    callAfterDelay(kFadeDurationMS, [this]() {
+      stopTimer();
+    });
+    {
+      std::lock_guard<std::mutex> lock(fMut);
+      fAsyncUpdateQueue.push_back(AsyncUpdateQueueUpdateCaptureButtonStatus{});
+    }
+    triggerAsyncUpdate();
+  }
+}
+
+void MapViewComponent::render(int const width, int const height, LookAt const lookAt, bool enableUI) {
+  using namespace juce::gl;
+
+  if (enableUI) {
+    OpenGLHelpers::clear(Colours::white);
+  } else {
+    OpenGLHelpers::clear(Colours::transparentBlack);
+  }
+
+  glViewport(0, 0, width, height);
+
+  if (enableUI) {
+    drawBackground();
+  }
+
+  Time const now = Time::getCurrentTime();
+
+  if (fGLShader.get() == nullptr) {
+    updateShader();
+  }
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_TEXTURE_2D);
+
+  fGLShader->use();
+  auto const &textures = fTextures;
+
+  for (auto it : textures) {
+    auto cache = it.second;
+    if (fGLUniforms->blocksPerPixel.get() != nullptr) {
+      fGLUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
+    }
+    if (fGLUniforms->Xr.get() != nullptr) {
+      fGLUniforms->Xr->set((GLfloat)cache->fRegion.first * 512);
+    }
+    if (fGLUniforms->Zr.get() != nullptr) {
+      fGLUniforms->Zr->set((GLfloat)cache->fRegion.second * 512);
+    }
+    if (fGLUniforms->width.get() != nullptr) {
+      fGLUniforms->width->set((GLfloat)width);
+    }
+    if (fGLUniforms->height.get() != nullptr) {
+      fGLUniforms->height->set((GLfloat)height);
+    }
+    if (fGLUniforms->Cx.get() != nullptr) {
+      fGLUniforms->Cx->set((GLfloat)lookAt.fX);
+    }
+    if (fGLUniforms->Cz.get() != nullptr) {
+      fGLUniforms->Cz->set((GLfloat)lookAt.fZ);
+    }
+    if (fGLUniforms->grassBlockId.get() != nullptr) {
+      fGLUniforms->grassBlockId->set((GLint)mcfile::blocks::minecraft::grass_block);
+    }
+    if (fGLUniforms->foliageBlockId) {
+      fGLUniforms->foliageBlockId->set((GLint)mcfile::blocks::minecraft::oak_leaves);
+    }
+    if (fGLUniforms->netherrackBlockId) {
+      fGLUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
+    }
+    if (fGLUniforms->waterOpticalDensity) {
+      fGLUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
+    }
+    if (fGLUniforms->waterTranslucent) {
+      fGLUniforms->waterTranslucent->set((GLboolean)fWaterTranslucent.get());
+    }
+    if (fGLUniforms->biomeBlend) {
+      fGLUniforms->biomeBlend->set((GLint)fBiomeBlend.get());
+    }
+    if (fGLUniforms->enableBiome) {
+      fGLUniforms->enableBiome->set((GLboolean)fEnableBiome.get());
+    }
+    if (fGLUniforms->dimension) {
+      fGLUniforms->dimension->set((GLint)fDimension);
+    }
+
+    if (fGLUniforms->fade.get() != nullptr) {
+      if (enableUI) {
+        int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
+        GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
+        fGLUniforms->fade->set(a);
+      } else {
+        fGLUniforms->fade->set(1.0f);
+      }
+    }
+
+    fGLContext.extensions.glActiveTexture(GL_TEXTURE0);
+    cache->fTexture->bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    if (fGLUniforms->texture.get() != nullptr) {
+      fGLUniforms->texture->set(0);
+    }
+
+    int const x = it.first.first;
+    int const z = it.first.second;
+
+    auto const &north = textures.find(MakeRegion(x, z - 1));
+    if (north != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
+      north->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->north.get() != nullptr) {
+        fGLUniforms->north->set(1);
+      }
+    }
+
+    auto const &northEast = textures.find(MakeRegion(x + 1, z - 1));
+    if (northEast != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
+      northEast->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->northEast.get() != nullptr) {
+        fGLUniforms->northEast->set(2);
+      }
+    }
+
+    auto const &east = textures.find(MakeRegion(x + 1, z));
+    if (east != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
+      east->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->east.get() != nullptr) {
+        fGLUniforms->east->set(3);
+      }
+    }
+
+    auto const &southEast = textures.find(MakeRegion(x + 1, z + 1));
+    if (southEast != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
+      southEast->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->southEast.get() != nullptr) {
+        fGLUniforms->southEast->set(4);
+      }
+    }
+
+    auto const &south = textures.find(MakeRegion(x, z + 1));
+    if (south != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
+      south->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->south.get() != nullptr) {
+        fGLUniforms->south->set(5);
+      }
+    }
+
+    auto const &southWest = textures.find(MakeRegion(x - 1, z + 1));
+    if (southWest != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
+      southWest->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->southWest.get() != nullptr) {
+        fGLUniforms->southWest->set(6);
+      }
+    }
+
+    auto const &west = textures.find(MakeRegion(x - 1, z));
+    if (west != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
+      west->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->west.get() != nullptr) {
+        fGLUniforms->west->set(7);
+      }
+    }
+
+    auto const &northWest = textures.find(MakeRegion(x - 1, z - 1));
+    if (northWest != textures.end()) {
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
+      northWest->second->fTexture->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->northWest.get() != nullptr) {
+        fGLUniforms->northWest->set(8);
+      }
+    }
+
+    fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
+    fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fGLBuffer->iBuffer);
+
+    fGLAttributes->enable(fGLContext);
+    glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
+    fGLAttributes->disable(fGLContext);
+  }
+
+  instantiateTextures(lookAt);
+}
+
+void MapViewComponent::drawBackground() {
+  Point<int> size = fSize.load();
+  const int width = size.x;
+  const int height = size.y;
+  const float desktopScale = (float)fGLContext.getRenderingScale();
+
+  std::unique_ptr<LowLevelGraphicsContext> glRenderer(createOpenGLGraphicsContext(fGLContext,
+                                                                                  roundToInt(desktopScale * width),
+                                                                                  roundToInt(desktopScale * height)));
+
+  if (glRenderer.get() == nullptr) {
+    return;
+  }
+
+  LookAt current = clampedLookAt();
+
+  Graphics g(*glRenderer);
+  g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
+
+  Point<float> mapOriginPx = getViewCoordinateFromMap({0.0f, 0.0f}, current);
+  int const xoffset = int(floor(mapOriginPx.x)) % (2 * kCheckeredPatternSize);
+  int const yoffset = int(floor(mapOriginPx.y)) % (2 * kCheckeredPatternSize);
+
+  g.setColour(Colour::fromRGB(236, 236, 236));
+
+  const int w = width / kCheckeredPatternSize + 5;
+  const int h = height / kCheckeredPatternSize + 5;
+  for (int j = 0; j < h; j++) {
+    const int y = (j - 2) * kCheckeredPatternSize + yoffset;
+    for (int i = (j % 2 == 0 ? 0 : 1); i < w; i += 2) {
+      const int x = (i - 2) * kCheckeredPatternSize + xoffset;
+      g.fillRect(x, y, kCheckeredPatternSize, kCheckeredPatternSize);
+    }
+  }
+  g.setColour(Colour::fromRGB(245, 245, 245));
+  for (int i = 0; i < w; i++) {
+    const int x = (i - 2) * kCheckeredPatternSize + xoffset;
+    g.drawVerticalLine(x, 0, height);
+  }
+  for (int j = 0; j < h; j++) {
+    const int y = (j - 2) * kCheckeredPatternSize + yoffset;
+    g.drawHorizontalLine(y, 0, width);
+  }
+
+  std::set<Region> loadingRegions;
+  {
+    std::lock_guard<std::mutex> lock(fMut);
+    loadingRegions = fLoadingRegions;
+  }
+  g.setColour(Colour::fromRGBA(0, 0, 0, 37));
+  for (Region region : loadingRegions) {
+    int const x = region.first * 512;
+    int const z = region.second * 512;
+    Point<float> topLeft = getViewCoordinateFromMap(Point<float>(x, z), current);
+    float const regionSize = 512.0f / current.fBlocksPerPixel;
+    g.fillRect(topLeft.x, topLeft.y, regionSize, regionSize);
+  }
+}
+
+void MapViewComponent::openGLContextClosing() {
+  fTextures.clear();
+  fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
+  fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
+}
+
+float MapViewComponent::DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region) {
+  float const regionCenterX = region.first * 512 - 256;
+  float const regionCenterZ = region.second * 512 - 256;
+  float const dx = regionCenterX - lookAt.fX;
+  float const dz = regionCenterZ - lookAt.fZ;
+  return dx * dx + dz * dz;
+}
+
+void MapViewComponent::setWorldDirectory(File directory, Dimension dim) {
+  if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
+    return;
+  }
+
+  fRegionUpdateChecker->setDirectory(directory, dim);
+
+  fOverworld->setEnabled(dim != Dimension::Overworld);
+  fNether->setEnabled(dim != Dimension::TheNether);
+  fEnd->setEnabled(dim != Dimension::TheEnd);
+
+  fLoadingFinished = false;
+  fCaptureButton->setEnabled(false);
+
+  File worldDataFile = WorldData::WorldDataPath(directory);
+  WorldData data = WorldData::Load(worldDataFile);
+
+  if (fPool) {
+    fPool->removeAllJobs(true, 0);
+    fPoolTomb.push_back(std::move(fPool));
+  }
+  fPool.reset(CreateThreadPool());
+
+  auto garbageTextures = std::make_shared<std::map<Region, std::shared_ptr<RegionTextureCache>>>();
+  garbageTextures->swap(fTextures);
+  fGLContext.executeOnGLThread([this, garbageTextures](OpenGLContext &) {
+    garbageTextures->clear();
+  },
+                               true);
+
+  {
+    std::lock_guard<std::mutex> lk(fMut);
+
+    LookAt const lookAt = fLookAt.load();
+
+    fLoadingRegions.clear();
+    fWorldDirectory = directory;
+    fDimension = dim;
+    fWorldData = data;
+    resetPinComponents();
+
+    int minX = 0;
+    int maxX = 0;
+    int minZ = 0;
+    int maxZ = 0;
+
+    RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
+    std::vector<File> files;
+    for (DirectoryEntry entry : it) {
+      File f = entry.getFile();
+      auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
+      if (!r) {
+        continue;
+      }
+      minX = std::min(minX, r->fX);
+      maxX = std::max(maxX, r->fX);
+      minZ = std::min(minZ, r->fZ);
+      maxZ = std::max(maxZ, r->fZ);
+      files.push_back(f);
+    }
+
+    LookAt next = lookAt;
+    next.fX = 0;
+    next.fZ = 0;
+    fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+    setLookAt(next);
+
+    std::sort(files.begin(), files.end(), [next](File const &a, File const &b) {
+      auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
+      auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
+      auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
+      auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
+      return distanceA < distanceB;
+    });
+
+    queueTextureLoading(files, dim, true);
+  }
+}
+
+void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension dim, bool useCache) {
+  if (files.empty()) {
+    return;
+  }
+
+  if (OpenGLContext::getCurrentContext() == &fGLContext) {
+    queueTextureLoadingImpl(fGLContext, files, fWorldDirectory, dim, useCache);
+  } else {
+    juce::File worldDirectory = fWorldDirectory;
+    fGLContext.executeOnGLThread([this, files, worldDirectory, dim, useCache](OpenGLContext &ctx) {
+      queueTextureLoadingImpl(ctx, files, worldDirectory, dim, useCache);
+    },
+                                 false);
+  }
+}
+
+void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, juce::File worldDirectory, Dimension dim, bool useCache) {
+  std::lock_guard<std::mutex> lock(fMut);
+  fLoadingFinished = false;
+
+  Rectangle<int> visibleRegions = fVisibleRegions.load();
+  int minX = visibleRegions.getX();
+  int maxX = visibleRegions.getRight();
+  int minY = visibleRegions.getY();
+  int maxY = visibleRegions.getBottom();
+
+  for (File const &f : files) {
+    auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
+    auto region = MakeRegion(r->fX, r->fZ);
+    RegionToTexture *job = new RegionToTexture(worldDirectory, f, region, dim, useCache, this);
+    fPool->addJob(job, true);
+    fLoadingRegions.insert(region);
+    minX = std::min(minX, r->fX);
+    maxX = std::max(maxX, r->fX + 1);
+    minY = std::min(minY, r->fZ);
+    maxY = std::max(maxY, r->fZ + 1);
+  }
+
+  fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
+  if (!isTimerRunning()) {
+    startTimer(16); // 60fps
+  }
 }
 
 void MapViewComponent::regionToTextureDidFinishJob(std::shared_ptr<RegionToTexture::Result> result) {
-    {
-        std::lock_guard<std::mutex> lock(fMut);
-        fGLJobResults.push_back(result);
-        fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
-    }
-    triggerAsyncUpdate();
+  {
+    std::lock_guard<std::mutex> lock(fMut);
+    fGLJobResults.push_back(result);
+    fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
+  }
+  triggerAsyncUpdate();
 }
 
-Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
-{
-    Point<int> size = fSize.load();
-    float const width = size.x;
-    float const height = size.y;
-    float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
-    float const bz = lookAt.fZ + (p.y - height / 2) * lookAt.fBlocksPerPixel;
-    return Point<float>(bx, bz);
+Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const {
+  Point<int> size = fSize.load();
+  float const width = size.x;
+  float const height = size.y;
+  float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
+  float const bz = lookAt.fZ + (p.y - height / 2) * lookAt.fBlocksPerPixel;
+  return Point<float>(bx, bz);
 }
 
-Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const
-{
-    Point<int> size = fSize.load();
-    float const width = size.x;
-    float const height = size.y;
-    float const x = (p.x - lookAt.fX) / lookAt.fBlocksPerPixel + width / 2;
-    float const y = (p.y - lookAt.fZ) / lookAt.fBlocksPerPixel + height / 2;
-    return Point<float>(x, y);
+Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p, LookAt lookAt) const {
+  Point<int> size = fSize.load();
+  float const width = size.x;
+  float const height = size.y;
+  float const x = (p.x - lookAt.fX) / lookAt.fBlocksPerPixel + width / 2;
+  float const y = (p.y - lookAt.fZ) / lookAt.fBlocksPerPixel + height / 2;
+  return Point<float>(x, y);
 }
 
-Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const
-{
-    LookAt const current = clampedLookAt();
-    return getMapCoordinateFromView(p, current);
+Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p) const {
+  LookAt const current = clampedLookAt();
+  return getMapCoordinateFromView(p, current);
 }
 
-Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p) const
-{
-    LookAt const current = clampedLookAt();
-    return getViewCoordinateFromMap(p, current);
+Point<float> MapViewComponent::getViewCoordinateFromMap(Point<float> p) const {
+  LookAt const current = clampedLookAt();
+  return getViewCoordinateFromMap(p, current);
 }
 
-void MapViewComponent::magnify(Point<float> p, float rate)
-{
-    LookAt const current = clampedLookAt();
-    LookAt next = current;
+void MapViewComponent::magnify(Point<float> p, float rate) {
+  LookAt const current = clampedLookAt();
+  LookAt next = current;
 
-    next.fBlocksPerPixel = (std::min)((std::max)(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
+  next.fBlocksPerPixel = (std::min)((std::max)(current.fBlocksPerPixel / rate, kMinScale), kMaxScale);
 
-    float const width = getWidth();
-    float const height = getHeight();
-    Point<float> const pivot = getMapCoordinateFromView(p);
-    float const dx = (p.x - width / 2);
-    float const dz = (p.y - height / 2);
-    next.fX = pivot.x - dx * next.fBlocksPerPixel;
-    next.fZ = pivot.y - dz * next.fBlocksPerPixel;
+  float const width = getWidth();
+  float const height = getHeight();
+  Point<float> const pivot = getMapCoordinateFromView(p);
+  float const dx = (p.x - width / 2);
+  float const dz = (p.y - height / 2);
+  next.fX = pivot.x - dx * next.fBlocksPerPixel;
+  next.fZ = pivot.y - dz * next.fBlocksPerPixel;
 
-    setLookAt(next);
+  setLookAt(next);
 
-    triggerRepaint();
+  triggerRepaint();
 }
 
-void MapViewComponent::mouseMagnify(MouseEvent const& event, float scaleFactor)
-{
-    magnify(event.position, scaleFactor);
+void MapViewComponent::mouseMagnify(MouseEvent const &event, float scaleFactor) {
+  magnify(event.position, scaleFactor);
 }
 
-void MapViewComponent::mouseWheelMove(MouseEvent const& event, MouseWheelDetails const& wheel)
-{
-    float factor = 1.0f + wheel.deltaY;
-    magnify(event.position, factor);
+void MapViewComponent::mouseWheelMove(MouseEvent const &event, MouseWheelDetails const &wheel) {
+  float factor = 1.0f + wheel.deltaY;
+  magnify(event.position, factor);
 }
 
-void MapViewComponent::mouseDrag(MouseEvent const& event)
-{
-    if (event.mods.isRightButtonDown()) {
-        return;
-    }
-    LookAt const current = clampedLookAt();
-    float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
-    float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
-    LookAt next = current;
-    next.fX = fCenterWhenDragStart.x - dx;
-    next.fZ = fCenterWhenDragStart.y - dy;
-    setLookAt(next);
+void MapViewComponent::mouseDrag(MouseEvent const &event) {
+  if (event.mods.isRightButtonDown()) {
+    return;
+  }
+  LookAt const current = clampedLookAt();
+  float const dx = event.getDistanceFromDragStartX() * current.fBlocksPerPixel;
+  float const dy = event.getDistanceFromDragStartY() * current.fBlocksPerPixel;
+  LookAt next = current;
+  next.fX = fCenterWhenDragStart.x - dx;
+  next.fZ = fCenterWhenDragStart.y - dy;
+  setLookAt(next);
 
-    fMouse = event.position;
+  fMouse = event.position;
 
-    triggerRepaint();
+  triggerRepaint();
 
-    fLastDragPosition.push_back(event);
-    if (fLastDragPosition.size() > 2) {
-        fLastDragPosition.pop_front();
-    }
+  fLastDragPosition.push_back(event);
+  if (fLastDragPosition.size() > 2) {
+    fLastDragPosition.pop_front();
+  }
 }
 
-void MapViewComponent::mouseDown(MouseEvent const& e)
-{
-    if (e.mods.isRightButtonDown()) {
-        return;
-    }
-    LookAt const current = clampedLookAt();
-    fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
-    
-    fScrollerTimer.stopTimer();
+void MapViewComponent::mouseDown(MouseEvent const &e) {
+  if (e.mods.isRightButtonDown()) {
+    return;
+  }
+  LookAt const current = clampedLookAt();
+  fCenterWhenDragStart = Point<float>(current.fX, current.fZ);
+
+  fScrollerTimer.stopTimer();
 }
 
-void MapViewComponent::mouseMove(MouseEvent const& event)
-{
+void MapViewComponent::mouseMove(MouseEvent const &event) {
 
-    fMouse = event.position;
-    triggerRepaint();
+  fMouse = event.position;
+  triggerRepaint();
 }
 
 class TextInputDialog : public Component {
 public:
-    TextInputDialog()
-    {
-        fInputLabel.reset(new Label());
-        fInputLabel->setEditable(true);
-        String name
+  TextInputDialog() {
+    fInputLabel.reset(new Label());
+    fInputLabel->setEditable(true);
+    String name
 #if JUCE_WINDOWS
-            = "Yu Gothic UI";
+        = "Yu Gothic UI";
 #else
-            = "Hiragino Kaku Gothic Pro";
+        = "Hiragino Kaku Gothic Pro";
 #endif
-        Font font(name, 14, 0);
-        fInputLabel->setFont(font);
-        fInputLabel->setColour(Label::ColourIds::backgroundColourId, Colours::white);
-        fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
-        fInputLabel->setColour(Label::ColourIds::textWhenEditingColourId, Colours::black);
-        fInputLabel->setJustificationType(Justification::topLeft);
-        addAndMakeVisible(*fInputLabel);
-        fOkButton.reset(new TextButton());
-        fOkButton->setButtonText("OK");
-        fOkButton->onClick = [this]() {
-            close(1);
-        };
-        addAndMakeVisible(*fOkButton);
-        fCancelButton.reset(new TextButton());
-        fCancelButton->setButtonText(TRANS("Cancel"));
-        fCancelButton->onClick = [this]() {
-            close(-1);
-        };
-        addAndMakeVisible(*fCancelButton);
-        setSize(300, 160);
+    Font font(name, 14, 0);
+    fInputLabel->setFont(font);
+    fInputLabel->setColour(Label::ColourIds::backgroundColourId, Colours::white);
+    fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
+    fInputLabel->setColour(Label::ColourIds::textWhenEditingColourId, Colours::black);
+    fInputLabel->setJustificationType(Justification::topLeft);
+    addAndMakeVisible(*fInputLabel);
+    fOkButton.reset(new TextButton());
+    fOkButton->setButtonText("OK");
+    fOkButton->onClick = [this]() {
+      close(1);
+    };
+    addAndMakeVisible(*fOkButton);
+    fCancelButton.reset(new TextButton());
+    fCancelButton->setButtonText(TRANS("Cancel"));
+    fCancelButton->onClick = [this]() {
+      close(-1);
+    };
+    addAndMakeVisible(*fCancelButton);
+    setSize(300, 160);
+  }
+
+  void resized() override {
+    int const pad = 20;
+    int const width = getWidth();
+    int const height = getHeight();
+    int const buttonWidth = 100;
+    int const buttonHeight = 40;
+    int const inputHeight = height - 3 * pad - buttonHeight;
+
+    if (fInputLabel) {
+      fInputLabel->setBounds(pad, pad, width - 2 * pad, inputHeight);
     }
-    
-    void resized() override
-    {
-        int const pad = 20;
-        int const width = getWidth();
-        int const height = getHeight();
-        int const buttonWidth = 100;
-        int const buttonHeight = 40;
-        int const inputHeight = height - 3 * pad - buttonHeight;
-        
-        if (fInputLabel) {
-            fInputLabel->setBounds(pad, pad, width - 2 * pad, inputHeight);
-        }
-        if (fOkButton) {
-            fOkButton->setBounds(width - pad - buttonWidth - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
-        }
-        if (fCancelButton) {
-            fCancelButton->setBounds(width - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
-        }
+    if (fOkButton) {
+      fOkButton->setBounds(width - pad - buttonWidth - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
     }
-
-    static std::pair<int, String> show(Component *target, String title, String init)
-    {
-        static std::unique_ptr<TextInputDialog> sComponent(new TextInputDialog());
-        sComponent->fInputLabel->setText(init, dontSendNotification);
-        DialogWindow::showDialog(title, sComponent.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
-        return std::make_pair(sComponent->fResultMenuId, sComponent->fInputLabel->getText());
-
-        TextInputDialog* dialog = new TextInputDialog();
-        DialogWindow::LaunchOptions o;
-        o.dialogTitle = title;
-        o.content.setOwned(dialog);
-        o.componentToCentreAround = target;
-        o.dialogBackgroundColour = target->getLookAndFeel().findColour(TextButton::buttonColourId);
-        o.escapeKeyTriggersCloseButton = true;
-        o.useNativeTitleBar = false;
-        o.resizable = false;
-        o.useBottomRightCornerResizer = false;
-
-        o.launchAsync();
-
+    if (fCancelButton) {
+      fCancelButton->setBounds(width - pad - buttonWidth, pad + inputHeight + pad, buttonWidth, buttonHeight);
     }
-    
+  }
+
+  static std::pair<int, String> show(Component *target, String title, String init) {
+    static std::unique_ptr<TextInputDialog> sComponent(new TextInputDialog());
+    sComponent->fInputLabel->setText(init, dontSendNotification);
+    DialogWindow::showDialog(title, sComponent.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
+    return std::make_pair(sComponent->fResultMenuId, sComponent->fInputLabel->getText());
+
+    TextInputDialog *dialog = new TextInputDialog();
+    DialogWindow::LaunchOptions o;
+    o.dialogTitle = title;
+    o.content.setOwned(dialog);
+    o.componentToCentreAround = target;
+    o.dialogBackgroundColour = target->getLookAndFeel().findColour(TextButton::buttonColourId);
+    o.escapeKeyTriggersCloseButton = true;
+    o.useNativeTitleBar = false;
+    o.resizable = false;
+    o.useBottomRightCornerResizer = false;
+
+    o.launchAsync();
+  }
+
 private:
-    void close(int result)
-    {
-        fResultMenuId = result;
-        Component *pivot = this;
-        while (pivot) {
-            DialogWindow *dlg = dynamic_cast<DialogWindow *>(pivot);
-            if (dlg) {
-                dlg->closeButtonPressed();
-                return;
-            }
-            pivot = pivot->getParentComponent();
-        }
+  void close(int result) {
+    fResultMenuId = result;
+    Component *pivot = this;
+    while (pivot) {
+      DialogWindow *dlg = dynamic_cast<DialogWindow *>(pivot);
+      if (dlg) {
+        dlg->closeButtonPressed();
+        return;
+      }
+      pivot = pivot->getParentComponent();
     }
-    
+  }
+
 private:
-    String fMessage;
-    String fResult;
-    int fResultMenuId = -1;
-    
-    std::unique_ptr<Label> fInputLabel;
-    std::unique_ptr<TextButton> fOkButton;
-    std::unique_ptr<TextButton> fCancelButton;
+  String fMessage;
+  String fResult;
+  int fResultMenuId = -1;
+
+  std::unique_ptr<Label> fInputLabel;
+  std::unique_ptr<TextButton> fOkButton;
+  std::unique_ptr<TextButton> fCancelButton;
 };
 
-void MapViewComponent::mouseUp(MouseEvent const& e)
-{
-    if (e.mods.isRightButtonDown()) {
-        mouseRightClicked(e);
-        return;
-    }
-    if (fLastDragPosition.size() != 2) {
-        return;
-    }
+void MapViewComponent::mouseUp(MouseEvent const &e) {
+  if (e.mods.isRightButtonDown()) {
+    mouseRightClicked(e);
+    return;
+  }
+  if (fLastDragPosition.size() != 2) {
+    return;
+  }
 
-    MouseEvent p0 = fLastDragPosition.front();
-    MouseEvent p1 = fLastDragPosition.back();
-    fLastDragPosition.clear();
-    
-    float const dt = (p1.eventTime.toMilliseconds() - p0.eventTime.toMilliseconds()) / 1000.0f;
-    if (dt <= 0.0f) {
-        return;
-    }
-    float const dx = p1.x - p0.x;
-    float const dz = p1.y - p0.y;
-    float const vx = -dx / dt;
-    float const vz = -dz / dt;
-    LookAt current = clampedLookAt();
+  MouseEvent p0 = fLastDragPosition.front();
+  MouseEvent p1 = fLastDragPosition.back();
+  fLastDragPosition.clear();
 
-    Rectangle<int> visible = fVisibleRegions.load();
-    fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
-                    vx, vz,
-                    visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
-                    visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
-    fScrollerTimer.stopTimer();
-    fScrollerTimer.startTimerHz(kScrollUpdateHz);
+  float const dt = (p1.eventTime.toMilliseconds() - p0.eventTime.toMilliseconds()) / 1000.0f;
+  if (dt <= 0.0f) {
+    return;
+  }
+  float const dx = p1.x - p0.x;
+  float const dz = p1.y - p0.y;
+  float const vx = -dx / dt;
+  float const vz = -dz / dt;
+  LookAt current = clampedLookAt();
+
+  Rectangle<int> visible = fVisibleRegions.load();
+  fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
+                  vx, vz,
+                  visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
+                  visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
+  fScrollerTimer.stopTimer();
+  fScrollerTimer.startTimerHz(kScrollUpdateHz);
 }
 
-void MapViewComponent::mouseRightClicked(MouseEvent const& e)
-{
-    if (!fWorldDirectory.exists()) {
-        return;
+void MapViewComponent::mouseRightClicked(MouseEvent const &e) {
+  if (!fWorldDirectory.exists()) {
+    return;
+  }
+  if (!fShowPin) {
+    return;
+  }
+  LookAt current = clampedLookAt();
+  Dimension dim = fDimension;
+
+  PopupMenu menu;
+  menu.addItem(1, TRANS("Put a pin here"));
+  Point<int> pos = e.getScreenPosition();
+  menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
+    if (menuId != 1) {
+      return;
     }
-    if (!fShowPin) {
-        return;
-    }
-    LookAt current = clampedLookAt();
-    Dimension dim = fDimension;
-
-    PopupMenu menu;
-    menu.addItem(1, TRANS("Put a pin here"));
-    Point<int> pos = e.getScreenPosition();
-    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
-        if (menuId != 1) {
-            return;
-        }
-        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
-        if (result.first != 1) {
-            return;
-        }
-        String message = result.second;
-        Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
-        std::shared_ptr<Pin> p = std::make_shared<Pin>();
-        p->fX = floor(pinPos.x);
-        p->fZ = floor(pinPos.y) + 1;
-        p->fDim = dim;
-        p->fMessage = message;
-        addPinComponent(p);
-        fWorldData.fPins.push_back(p);
-        saveWorldData();
-        triggerRepaint();
-    });
-}
-
-void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin)
-{
-    PinComponent *pinComponent = new PinComponent(pin);
-    pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
-    pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
-        handlePinRightClicked(pin, screenPos);
-    };
-    pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
-        handlePinDoubleClicked(pin, screenPos);
-    };
-    pinComponent->onDrag = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
-        handlePinDrag(pin, screenPos);
-    };
-    pinComponent->onDragEnd = [this](std::shared_ptr<Pin> pin) {
-        saveWorldData();
-    };
-    addAndMakeVisible(pinComponent);
-    fPinComponents.emplace_back(pinComponent);
-}
-
-void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
-{
-    PopupMenu menu;
-    menu.addItem(1, TRANS("Delete") + " \"" + pin->fMessage + "\"");
-    menu.addItem(2, TRANS("Rename") + " \"" + pin->fMessage + "\"");
-    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(screenPos, screenPos)), [this, pin](int menuId) {
-        if (menuId == 1) {
-            for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
-                if (!(*it)->isPresenting(pin)) {
-                    continue;
-                }
-                removeChildComponent(it->get());
-                fPinComponents.erase(it);
-                break;
-            }
-            fWorldData.fPins.erase(std::remove_if(fWorldData.fPins.begin(), fWorldData.fPins.end(), [pin](auto it) {
-                return it.get() == pin.get();
-            }), fWorldData.fPins.end());
-            saveWorldData();
-            triggerRepaint();
-        } else if (menuId == 2) {
-            auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
-            if (result.first != 1) {
-                return;
-            }
-            String message = result.second;
-            pin->fMessage = message;
-            saveWorldData();
-            triggerRepaint();
-        }
-    });
-}
-
-void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
-{
-    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
+    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
     if (result.first != 1) {
-        return;
+      return;
     }
     String message = result.second;
-    pin->fMessage = message;
+    Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
+    std::shared_ptr<Pin> p = std::make_shared<Pin>();
+    p->fX = floor(pinPos.x);
+    p->fZ = floor(pinPos.y) + 1;
+    p->fDim = dim;
+    p->fMessage = message;
+    addPinComponent(p);
+    fWorldData.fPins.push_back(p);
     saveWorldData();
     triggerRepaint();
+  });
 }
 
-void MapViewComponent::handlePinDrag(std::shared_ptr<Pin> const& pin, Point<int> screenPos)
-{
-    Point<int> p = getScreenPosition();
-    LookAt lookAt = fLookAt.load();
-    Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
-    Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
-    pin->fX = floor(mapPos.x);
-    pin->fZ = floor(mapPos.y) + 1;
-    for (auto const& comp : fPinComponents) {
-        if (!comp->isPresenting(pin)) {
-            continue;
+void MapViewComponent::addPinComponent(std::shared_ptr<Pin> pin) {
+  PinComponent *pinComponent = new PinComponent(pin);
+  pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
+  pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    handlePinRightClicked(pin, screenPos);
+  };
+  pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    handlePinDoubleClicked(pin, screenPos);
+  };
+  pinComponent->onDrag = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    handlePinDrag(pin, screenPos);
+  };
+  pinComponent->onDragEnd = [this](std::shared_ptr<Pin> pin) {
+    saveWorldData();
+  };
+  addAndMakeVisible(pinComponent);
+  fPinComponents.emplace_back(pinComponent);
+}
+
+void MapViewComponent::handlePinRightClicked(std::shared_ptr<Pin> const &pin, Point<int> screenPos) {
+  PopupMenu menu;
+  menu.addItem(1, TRANS("Delete") + " \"" + pin->fMessage + "\"");
+  menu.addItem(2, TRANS("Rename") + " \"" + pin->fMessage + "\"");
+  menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(screenPos, screenPos)), [this, pin](int menuId) {
+    if (menuId == 1) {
+      for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
+        if (!(*it)->isPresenting(pin)) {
+          continue;
         }
-        comp->updatePinPosition(getViewCoordinateFromMap(comp->getMapCoordinate(), lookAt));
+        removeChildComponent(it->get());
+        fPinComponents.erase(it);
         break;
-    }
-}
-
-void MapViewComponent::updateAllPinComponentPosition()
-{
-    LookAt const lookAt = clampedLookAt();
-    for (auto const& pin : fPinComponents) {
-        Point<float> pos = pin->getMapCoordinate();
-        if (fDimension == Dimension::TheNether) {
-            if (pin->getDimension() != Dimension::TheNether) {
-                pos = Point<float>(pos.x / 8, pos.y / 8);
-                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
-            } else {
-                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
-            }
-        } else if (fDimension == Dimension::Overworld) {
-            if (pin->getDimension() != Dimension::Overworld) {
-                pos = Point<float>(pos.x * 8, pos.y * 8);
-                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
-            } else {
-                pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
-            }
-        } else {
-            pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
-        }
-    }
-}
-
-void MapViewComponent::resetPinComponents()
-{
-    fPinComponents.clear();
-    if (!fShowPin) {
+      }
+      fWorldData.fPins.erase(std::remove_if(fWorldData.fPins.begin(), fWorldData.fPins.end(), [pin](auto it) {
+                               return it.get() == pin.get();
+                             }),
+                             fWorldData.fPins.end());
+      saveWorldData();
+      triggerRepaint();
+    } else if (menuId == 2) {
+      auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
+      if (result.first != 1) {
         return;
+      }
+      String message = result.second;
+      pin->fMessage = message;
+      saveWorldData();
+      triggerRepaint();
     }
-    for (auto const& p : fWorldData.fPins) {
-        if (fDimension == Dimension::TheEnd) {
-            if (p->fDim != fDimension) {
-                continue;
-            }
-        } else {
-            if (p->fDim == Dimension::TheEnd) {
-                continue;
-            }
-        }
-        addPinComponent(p);
-    }
+  });
 }
 
-void MapViewComponent::saveWorldData()
-{
-    File f = WorldData::WorldDataPath(fWorldDirectory);
-    fWorldData.save(f);
+void MapViewComponent::handlePinDoubleClicked(std::shared_ptr<Pin> const &pin, Point<int> screenPos) {
+  auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
+  if (result.first != 1) {
+    return;
+  }
+  String message = result.second;
+  pin->fMessage = message;
+  saveWorldData();
+  triggerRepaint();
 }
 
-void MapViewComponent::changeListenerCallback(ChangeBroadcaster *source)
-{
-    ComponentAnimator *animator = dynamic_cast<ComponentAnimator *>(source);
-    if (!animator) {
-        return;
+void MapViewComponent::handlePinDrag(std::shared_ptr<Pin> const &pin, Point<int> screenPos) {
+  Point<int> p = getScreenPosition();
+  LookAt lookAt = fLookAt.load();
+  Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
+  Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
+  pin->fX = floor(mapPos.x);
+  pin->fZ = floor(mapPos.y) + 1;
+  for (auto const &comp : fPinComponents) {
+    if (!comp->isPresenting(pin)) {
+      continue;
     }
-    updateAllPinComponentPosition();
-    if (animator->isAnimating()) {
-        fAnimationTimer.startTimerHz(kScrollUpdateHz);
+    comp->updatePinPosition(getViewCoordinateFromMap(comp->getMapCoordinate(), lookAt));
+    break;
+  }
+}
+
+void MapViewComponent::updateAllPinComponentPosition() {
+  LookAt const lookAt = clampedLookAt();
+  for (auto const &pin : fPinComponents) {
+    Point<float> pos = pin->getMapCoordinate();
+    if (fDimension == Dimension::TheNether) {
+      if (pin->getDimension() != Dimension::TheNether) {
+        pos = Point<float>(pos.x / 8, pos.y / 8);
+        pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+      } else {
+        pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+      }
+    } else if (fDimension == Dimension::Overworld) {
+      if (pin->getDimension() != Dimension::Overworld) {
+        pos = Point<float>(pos.x * 8, pos.y * 8);
+        pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+      } else {
+        pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
+      }
     } else {
-        fAnimationTimer.stopTimer();
+      pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
     }
+  }
 }
 
-ThreadPool* MapViewComponent::CreateThreadPool()
-{
-    auto const threads = (std::max)(1, (int)std::thread::hardware_concurrency() - 1);
-    return new ThreadPool(threads);
-}
-
-void MapViewComponent::triggerRepaint()
-{
-    repaint();
-    fGLContext.triggerRepaint();
-}
-
-void MapViewComponent::resized()
-{
-    int const width = getWidth();
-    fSize = Point<int>(getWidth(), getHeight());
-    
-    {
-        int y = kMargin;
-        fBrowserOpenButton->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
-        y += kMargin;
-        fOverworld->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
-        y += kMargin;
-        fNether->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
-        y += kMargin;
-        fEnd->setBounds(kMargin, y, kButtonSize, kButtonSize); y += kButtonSize;
-        y += kMargin;
-    }
-    
-    {
-        fCaptureButton->setBounds(width - kButtonSize - kMargin, kMargin, kButtonSize, kButtonSize);
-        fSettingsButton->setBounds(width - kButtonSize - kMargin, kMargin * 2 + kButtonSize, kButtonSize, kButtonSize);
-    }
-}
-
-void MapViewComponent::setBrowserOpened(bool opened)
-{
-    if (opened) {
-        fBrowserOpenButton->setImages(fBrowserOpenButtonImageClose.get());
+void MapViewComponent::resetPinComponents() {
+  fPinComponents.clear();
+  if (!fShowPin) {
+    return;
+  }
+  for (auto const &p : fWorldData.fPins) {
+    if (fDimension == Dimension::TheEnd) {
+      if (p->fDim != fDimension) {
+        continue;
+      }
     } else {
-        fBrowserOpenButton->setImages(fBrowserOpenButtonImageOpen.get());
+      if (p->fDim == Dimension::TheEnd) {
+        continue;
+      }
     }
+    addPinComponent(p);
+  }
 }
 
-Rectangle<int> MapViewComponent::regionBoundingBox()
-{
-    int minX, maxX, minZ, maxZ;
-    minX = maxX = fTextures.begin()->first.first;
-    minZ = maxZ = fTextures.begin()->first.second;
-    for (auto const& it : fTextures) {
-        auto region = it.first;
-        int const x = region.first;
-        int const z = region.second;
-        minX = std::min(minX, x);
-        maxX = std::max(maxX, x);
-        minZ = std::min(minZ, z);
-        maxZ = std::max(maxZ, z);
-    }
-    return Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
+void MapViewComponent::saveWorldData() {
+  File f = WorldData::WorldDataPath(fWorldDirectory);
+  fWorldData.save(f);
+}
+
+void MapViewComponent::changeListenerCallback(ChangeBroadcaster *source) {
+  ComponentAnimator *animator = dynamic_cast<ComponentAnimator *>(source);
+  if (!animator) {
+    return;
+  }
+  updateAllPinComponentPosition();
+  if (animator->isAnimating()) {
+    fAnimationTimer.startTimerHz(kScrollUpdateHz);
+  } else {
+    fAnimationTimer.stopTimer();
+  }
+}
+
+ThreadPool *MapViewComponent::CreateThreadPool() {
+  auto const threads = (std::max)(1, (int)std::thread::hardware_concurrency() - 1);
+  return new ThreadPool(threads);
+}
+
+void MapViewComponent::triggerRepaint() {
+  repaint();
+  fGLContext.triggerRepaint();
+}
+
+void MapViewComponent::resized() {
+  int const width = getWidth();
+  fSize = Point<int>(getWidth(), getHeight());
+
+  {
+    int y = kMargin;
+    fBrowserOpenButton->setBounds(kMargin, y, kButtonSize, kButtonSize);
+    y += kButtonSize;
+    y += kMargin;
+    fOverworld->setBounds(kMargin, y, kButtonSize, kButtonSize);
+    y += kButtonSize;
+    y += kMargin;
+    fNether->setBounds(kMargin, y, kButtonSize, kButtonSize);
+    y += kButtonSize;
+    y += kMargin;
+    fEnd->setBounds(kMargin, y, kButtonSize, kButtonSize);
+    y += kButtonSize;
+    y += kMargin;
+  }
+
+  {
+    fCaptureButton->setBounds(width - kButtonSize - kMargin, kMargin, kButtonSize, kButtonSize);
+    fSettingsButton->setBounds(width - kButtonSize - kMargin, kMargin * 2 + kButtonSize, kButtonSize, kButtonSize);
+  }
+}
+
+void MapViewComponent::setBrowserOpened(bool opened) {
+  if (opened) {
+    fBrowserOpenButton->setImages(fBrowserOpenButtonImageClose.get());
+  } else {
+    fBrowserOpenButton->setImages(fBrowserOpenButtonImageOpen.get());
+  }
+}
+
+Rectangle<int> MapViewComponent::regionBoundingBox() {
+  int minX, maxX, minZ, maxZ;
+  minX = maxX = fTextures.begin()->first.first;
+  minZ = maxZ = fTextures.begin()->first.second;
+  for (auto const &it : fTextures) {
+    auto region = it.first;
+    int const x = region.first;
+    int const z = region.second;
+    minX = std::min(minX, x);
+    maxX = std::max(maxX, x);
+    minZ = std::min(minZ, z);
+    maxZ = std::max(maxZ, z);
+  }
+  return Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
 }
 
 class SavePNGProgressWindow : public ThreadWithProgressWindow {
 public:
-    SavePNGProgressWindow(MapViewComponent *component, OpenGLContext &openGLContext, File file)
-        : ThreadWithProgressWindow(TRANS("Writing image file"), true, false)
-        , fComponent(component)
-        , fGLContext(openGLContext)
-        , fFile(file)
-    {
+  SavePNGProgressWindow(MapViewComponent *component, OpenGLContext &openGLContext, File file)
+      : ThreadWithProgressWindow(TRANS("Writing image file"), true, false), fComponent(component), fGLContext(openGLContext), fFile(file) {
+  }
+
+  void run() {
+    Rectangle<int> bounds;
+    fGLContext.executeOnGLThread([this, &bounds](OpenGLContext &) {
+      bounds = fComponent->regionBoundingBox();
+    },
+                                 true);
+
+    if (bounds.getWidth() == 0 || bounds.getHeight() == 0) {
+      return;
     }
-    
-    void run()
-    {
-        Rectangle<int> bounds;
-        fGLContext.executeOnGLThread([this, &bounds](OpenGLContext&) {
-            bounds = fComponent->regionBoundingBox();
-        }, true);
-        
-        if (bounds.getWidth() == 0 || bounds.getHeight() == 0) {
-            return;
+
+    int const minBlockX = bounds.getX() * 512;
+    int const minBlockZ = bounds.getY() * 512;
+    int const maxBlockX = (bounds.getRight() + 1) * 512 - 1;
+    int const maxBlockZ = (bounds.getBottom() + 1) * 512 - 1;
+
+    int const width = maxBlockX - minBlockX + 1;
+    int const height = maxBlockZ - minBlockZ + 1;
+
+    int const kMaxMemoryUsage = 32 * 1024 * 1024;
+    int const row = std::max(kMaxMemoryUsage / ((int)sizeof(PixelARGB) * width), 128);
+
+    std::vector<PixelARGB> pixels(width * row);
+    PixelARGB *pixelsPtr = pixels.data();
+    int const numFrames = (int)ceil(height / float(row));
+
+    FileOutputStream stream(fFile);
+    stream.truncate();
+    stream.setPosition(0);
+    PNGWriter writer(width, height, stream);
+
+    fGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext &ctx) {
+      int y = 0;
+      for (int i = 0; i < numFrames; i++) {
+        std::fill_n(pixelsPtr, width, PixelARGB());
+
+        std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
+        buffer->initialise(ctx, width, row);
+        buffer->makeCurrentRenderingTarget();
+
+        MapViewComponent::LookAt lookAt;
+        lookAt.fX = minBlockX + width / 2.0f;
+        lookAt.fZ = minBlockZ + i * row + row / 2.0f;
+        lookAt.fBlocksPerPixel = 1;
+        fComponent->render(width, row, lookAt, false);
+
+        buffer->readPixels(pixelsPtr, Rectangle<int>(0, 0, width, row));
+        buffer->releaseAsRenderingTarget();
+
+        buffer->release();
+        buffer.reset();
+
+        for (int j = row; --j >= 0;) {
+          writer.writeRow(pixelsPtr + width * j);
+          y++;
+          setProgress(y / float(height));
+          if (y >= height) {
+            break;
+          }
         }
-        
-        int const minBlockX = bounds.getX() * 512;
-        int const minBlockZ = bounds.getY() * 512;
-        int const maxBlockX = (bounds.getRight() + 1) * 512 - 1;
-        int const maxBlockZ = (bounds.getBottom() + 1) * 512 - 1;
-        
-        int const width = maxBlockX - minBlockX + 1;
-        int const height = maxBlockZ - minBlockZ + 1;
+      }
+    },
+                                 true);
 
-        int const kMaxMemoryUsage = 32 * 1024 * 1024;
-        int const row = std::max(kMaxMemoryUsage / ((int)sizeof(PixelARGB) * width), 128);
-        
-        std::vector<PixelARGB> pixels(width * row);
-        PixelARGB *pixelsPtr = pixels.data();
-        int const numFrames = (int)ceil(height / float(row));
+    setProgress(1);
+  }
 
-        FileOutputStream stream(fFile);
-        stream.truncate();
-        stream.setPosition(0);
-        PNGWriter writer(width, height, stream);
-
-        fGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext& ctx) {
-            int y = 0;
-            for (int i = 0; i < numFrames; i++) {
-                std::fill_n(pixelsPtr, width, PixelARGB());
-                
-                std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
-                buffer->initialise(ctx, width, row);
-                buffer->makeCurrentRenderingTarget();
-                
-                MapViewComponent::LookAt lookAt;
-                lookAt.fX = minBlockX + width / 2.0f;
-                lookAt.fZ = minBlockZ + i * row + row / 2.0f;
-                lookAt.fBlocksPerPixel = 1;
-                fComponent->render(width, row, lookAt, false);
-                
-                buffer->readPixels(pixelsPtr, Rectangle<int>(0, 0, width, row));
-                buffer->releaseAsRenderingTarget();
-                
-                buffer->release();
-                buffer.reset();
-                
-                for (int j = row; --j >= 0;) {
-                    writer.writeRow(pixelsPtr + width * j);
-                    y++;
-                    setProgress(y / float(height));
-                    if (y >= height) {
-                        break;
-                    }
-                }
-            }
-        }, true);
-        
-        setProgress(1);
-    }
-    
 private:
-    MapViewComponent *fComponent;
-    OpenGLContext &fGLContext;
-    File fFile;
+  MapViewComponent *fComponent;
+  OpenGLContext &fGLContext;
+  File fFile;
 };
 
-void MapViewComponent::captureToImage()
-{
-    fCaptureButton->setEnabled(false);
-    
-    fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
-    fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const& chooser) {
-        defer {
-            fCaptureButton->setEnabled(true);
-        };
-        File file = chooser.getResult();
-        if (file == File()) {
-            return;
+void MapViewComponent::captureToImage() {
+  fCaptureButton->setEnabled(false);
+
+  fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
+  fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const &chooser) {
+    defer {
+      fCaptureButton->setEnabled(true);
+    };
+    File file = chooser.getResult();
+    if (file == File()) {
+      return;
+    }
+    SavePNGProgressWindow wnd(this, fGLContext, file);
+    wnd.run();
+  });
+}
+
+void MapViewComponent::handleAsyncUpdate() {
+  std::deque<AsyncUpdateQueue> queue;
+  {
+    std::lock_guard<std::mutex> lock(fMut);
+    queue.swap(fAsyncUpdateQueue);
+  }
+  for (auto const &q : queue) {
+    if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
+      fCaptureButton->setEnabled(fLoadingFinished.get());
+    } else if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
+      for (int i = (int)fPoolTomb.size() - 1; i >= 0; i--) {
+        auto &pool = fPoolTomb[i];
+        if (pool->getNumJobs() == 0) {
+          pool.reset();
+          fPoolTomb.erase(fPoolTomb.begin() + i);
         }
-        SavePNGProgressWindow wnd(this, fGLContext, file);
-        wnd.run();
-    });
-}
-
-void MapViewComponent::handleAsyncUpdate()
-{
-    std::deque<AsyncUpdateQueue> queue;
-    {
-        std::lock_guard<std::mutex> lock(fMut);
-        queue.swap(fAsyncUpdateQueue);
+      }
     }
-    for (auto const& q : queue) {
-        if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
-            fCaptureButton->setEnabled(fLoadingFinished.get());
-        } else if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
-            for (int i = (int)fPoolTomb.size() - 1; i >= 0; i--) {
-                auto& pool = fPoolTomb[i];
-                if (pool->getNumJobs() == 0) {
-                    pool.reset();
-                    fPoolTomb.erase(fPoolTomb.begin() + i);
-                }
-            }
-        }
-    }
+  }
 }
 
-void MapViewComponent::timerCallback()
-{
-    fGLContext.triggerRepaint();
+void MapViewComponent::timerCallback() {
+  fGLContext.triggerRepaint();
 }
 
-void MapViewComponent::setWaterOpticalDensity(float v)
-{
-    fWaterOpticalDensity = v;
-    triggerRepaint();
+void MapViewComponent::setWaterOpticalDensity(float v) {
+  fWaterOpticalDensity = v;
+  triggerRepaint();
 }
 
-void MapViewComponent::setWaterTranslucent(bool translucent)
-{
-    fWaterTranslucent = translucent;
-    triggerRepaint();
+void MapViewComponent::setWaterTranslucent(bool translucent) {
+  fWaterTranslucent = translucent;
+  triggerRepaint();
 }
 
-void MapViewComponent::setBiomeEnable(bool enable)
-{
-    fEnableBiome = enable;
-    triggerRepaint();
+void MapViewComponent::setBiomeEnable(bool enable) {
+  fEnableBiome = enable;
+  triggerRepaint();
 }
 
-void MapViewComponent::setBiomeBlend(int blend)
-{
-    fBiomeBlend = blend;
-    triggerRepaint();
+void MapViewComponent::setBiomeBlend(int blend) {
+  fBiomeBlend = blend;
+  triggerRepaint();
 }
 
-void MapViewComponent::setShowPin(bool show)
-{
-    fShowPin = show;
-    resetPinComponents();
-    triggerRepaint();
+void MapViewComponent::setShowPin(bool show) {
+  fShowPin = show;
+  resetPinComponents();
+  triggerRepaint();
 }
 
-MapViewComponent::LookAt MapViewComponent::clampedLookAt() const
-{
-    return clampLookAt(fLookAt.load());
+MapViewComponent::LookAt MapViewComponent::clampedLookAt() const {
+  return clampLookAt(fLookAt.load());
 }
 
-MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const
-{
-    Rectangle<int> visibleRegions = fVisibleRegions.load();
+MapViewComponent::LookAt MapViewComponent::clampLookAt(LookAt l) const {
+  Rectangle<int> visibleRegions = fVisibleRegions.load();
 
-    if (visibleRegions.getWidth() == 0 && visibleRegions.getHeight() == 0) {
-        return l;
-    }
-
-    float const minX = visibleRegions.getX() * 512;
-    float const minZ = visibleRegions.getY() * 512;
-    float const maxX = visibleRegions.getRight() * 512;
-    float const maxZ = visibleRegions.getBottom() * 512;
-
-    l.fX = std::min(std::max(l.fX, minX), maxX);
-    l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
-
+  if (visibleRegions.getWidth() == 0 && visibleRegions.getHeight() == 0) {
     return l;
+  }
+
+  float const minX = visibleRegions.getX() * 512;
+  float const minZ = visibleRegions.getY() * 512;
+  float const maxX = visibleRegions.getRight() * 512;
+  float const maxZ = visibleRegions.getBottom() * 512;
+
+  l.fX = std::min(std::max(l.fX, minX), maxX);
+  l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
+
+  return l;
 }
 
-void MapViewComponent::setLookAt(LookAt next)
-{
-    fLookAt = clampLookAt(next);
-    updateAllPinComponentPosition();
+void MapViewComponent::setLookAt(LookAt next) {
+  fLookAt = clampLookAt(next);
+  updateAllPinComponentPosition();
 }
 
-MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent* comp)
-    : Thread("RegionUpdateChecker")
-    , fDim(Dimension::Overworld)
-    , fMapView(comp)
-{
+MapViewComponent::RegionUpdateChecker::RegionUpdateChecker(MapViewComponent *comp)
+    : Thread("RegionUpdateChecker"), fDim(Dimension::Overworld), fMapView(comp) {
 }
 
-void MapViewComponent::RegionUpdateChecker::run()
-{
-    std::map<std::string, int64_t> updated;
-    
-    while (!currentThreadShouldExit()) {
-        try {
-            Thread::sleep(1000);
-            checkUpdatedFiles(updated);
-        } catch (...) {
-        }
+void MapViewComponent::RegionUpdateChecker::run() {
+  std::map<std::string, int64_t> updated;
+
+  while (!currentThreadShouldExit()) {
+    try {
+      Thread::sleep(1000);
+      checkUpdatedFiles(updated);
+    } catch (...) {
     }
+  }
 }
 
-void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim)
-{
-	ScopedLock lk(fSection);
-	fDirectory = f;
-    fDim = dim;
+void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim) {
+  ScopedLock lk(fSection);
+  fDirectory = f;
+  fDim = dim;
 }
 
-void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::string, int64_t>& updated)
-{
-    File d;
-    Dimension dim;
-    {
-        ScopedLock lk(fSection);
-        d = fDirectory;
-        dim = fDim;
+void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::string, int64_t> &updated) {
+  File d;
+  Dimension dim;
+  {
+    ScopedLock lk(fSection);
+    d = fDirectory;
+    dim = fDim;
+  }
+
+  if (!d.exists()) {
+    return;
+  }
+
+  File const root = DimensionDirectory(d, dim);
+
+  std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
+                                        std::string s = it.first;
+                                        String path(s);
+                                        File f(path);
+                                        return f.getParentDirectory().getFullPathName() == root.getFullPathName();
+                                      }),
+                                      updated.end());
+
+  RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
+  std::vector<File> files;
+  for (DirectoryEntry entry : it) {
+    File f = entry.getFile();
+    auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
+    if (!r) {
+      continue;
     }
+    Time modified = f.getLastModificationTime();
+    std::string fullpath = f.getFullPathName().toStdString();
 
-    if (!d.exists()) {
-        return;
+    auto j = copy.find(fullpath);
+    if (j == copy.end()) {
+      copy[fullpath] = modified.toMilliseconds();
+    } else {
+      if (j->second < modified.toMilliseconds()) {
+        copy[fullpath] = modified.toMilliseconds();
+        files.push_back(f);
+      }
     }
+  }
 
-    File const root = DimensionDirectory(d, dim);
+  copy.swap(updated);
 
-    std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
-        std::string s = it.first;
-        String path(s);
-        File f(path);
-        return f.getParentDirectory().getFullPathName() == root.getFullPathName();
-        }), updated.end());
-
-    RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
-    std::vector<File> files;
-    for (DirectoryEntry entry : it) {
-        File f = entry.getFile();
-        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-        if (!r) {
-            continue;
-        }
-        Time modified = f.getLastModificationTime();
-        std::string fullpath = f.getFullPathName().toStdString();
-
-        auto j = copy.find(fullpath);
-        if (j == copy.end()) {
-            copy[fullpath] = modified.toMilliseconds();
-        } else {
-            if (j->second < modified.toMilliseconds()) {
-                copy[fullpath] = modified.toMilliseconds();
-                files.push_back(f);
-            }
-        }
-    }
-
-    copy.swap(updated);
-
-    if (!files.empty()) {
-        fMapView->queueTextureLoading(files, dim, false);
-    }
+  if (!files.empty()) {
+    fMapView->queueTextureLoading(files, dim, false);
+  }
 }

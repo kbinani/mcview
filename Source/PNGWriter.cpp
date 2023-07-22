@@ -27,272 +27,269 @@
   ==============================================================================
 */
 
-namespace juce
-{
+namespace juce {
 
-JUCE_BEGIN_IGNORE_WARNINGS_MSVC (4390 4611 4365 4267 4616 2544 2545 6297)
+JUCE_BEGIN_IGNORE_WARNINGS_MSVC(4390 4611 4365 4267 4616 2544 2545 6297)
 
-namespace zlibNamespace
-{
+namespace zlibNamespace {
 #if JUCE_INCLUDE_ZLIB_CODE
-  #undef OS_CODE
-  #undef fdopen
-  #define ZLIB_INTERNAL
-  #define NO_DUMMY_DECL
-  #include <juce_core/zip/zlib/zlib.h>
-  #undef OS_CODE
+#undef OS_CODE
+#undef fdopen
+#define ZLIB_INTERNAL
+#define NO_DUMMY_DECL
+#include <juce_core/zip/zlib/zlib.h>
+#undef OS_CODE
 #else
-  #include JUCE_ZLIB_INCLUDE_PATH
+#include JUCE_ZLIB_INCLUDE_PATH
 #endif
-}
+} // namespace zlibNamespace
 
-#if ! defined (jmp_buf) || ! defined (longjmp)
- #include <setjmp.h>
+#if !defined(jmp_buf) || !defined(longjmp)
+#include <setjmp.h>
 #endif
 
-namespace pnglibNamespace
-{
-  using namespace zlibNamespace;
+namespace pnglibNamespace {
+using namespace zlibNamespace;
 
-#if JUCE_INCLUDE_PNGLIB_CODE || ! defined (JUCE_INCLUDE_PNGLIB_CODE)
+#if JUCE_INCLUDE_PNGLIB_CODE || !defined(JUCE_INCLUDE_PNGLIB_CODE)
 
-  #if _MSC_VER != 1310
-   using std::calloc; // (causes conflict in VS.NET 2003)
-   using std::malloc;
-   using std::free;
-  #endif
+#if _MSC_VER != 1310
+using std::calloc; // (causes conflict in VS.NET 2003)
+using std::free;
+using std::malloc;
+#endif
 
-   JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wsign-conversion",
-                                        "-Wimplicit-fallthrough",
-                                        "-Wtautological-constant-out-of-range-compare",
-                                        "-Wzero-as-null-pointer-constant",
-                                        "-Wcomma",
-                                        "-Wmaybe-uninitialized")
+JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE("-Wsign-conversion",
+                                    "-Wimplicit-fallthrough",
+                                    "-Wtautological-constant-out-of-range-compare",
+                                    "-Wzero-as-null-pointer-constant",
+                                    "-Wcomma",
+                                    "-Wmaybe-uninitialized")
 
-  #undef check
-  using std::abs;
-  #define NO_DUMMY_DECL
-  #define PNGLCONF_H 1
+#undef check
+using std::abs;
+#define NO_DUMMY_DECL
+#define PNGLCONF_H 1
 
- #if JUCE_ANDROID
-  #define PNG_ARM_NEON_SUPPORTED
- #endif
+#if JUCE_ANDROID
+#define PNG_ARM_NEON_SUPPORTED
+#endif
 
- #ifndef Byte
-  using Byte = uint8_t;
- #endif
+#ifndef Byte
+using Byte = uint8_t;
+#endif
 
-  #define PNG_16BIT_SUPPORTED
-  #define PNG_ALIGNED_MEMORY_SUPPORTED
-  #define PNG_BENIGN_ERRORS_SUPPORTED
-  #define PNG_BENIGN_READ_ERRORS_SUPPORTED
-  #define PNG_CHECK_FOR_INVALID_INDEX_SUPPORTED
-  #define PNG_COLORSPACE_SUPPORTED
-  #define PNG_CONSOLE_IO_SUPPORTED
-  #define PNG_EASY_ACCESS_SUPPORTED
-  #define PNG_FIXED_POINT_SUPPORTED
-  #define PNG_FLOATING_ARITHMETIC_SUPPORTED
-  #define PNG_FLOATING_POINT_SUPPORTED
-  #define PNG_FORMAT_AFIRST_SUPPORTED
-  #define PNG_FORMAT_BGR_SUPPORTED
-  #define PNG_GAMMA_SUPPORTED
-  #define PNG_GET_PALETTE_MAX_SUPPORTED
-  #define PNG_HANDLE_AS_UNKNOWN_SUPPORTED
-  #define PNG_INCH_CONVERSIONS_SUPPORTED
-  #define PNG_INFO_IMAGE_SUPPORTED
-  #define PNG_IO_STATE_SUPPORTED
-  #define PNG_POINTER_INDEXING_SUPPORTED
-  #define PNG_PROGRESSIVE_READ_SUPPORTED
-  #define PNG_READ_16BIT_SUPPORTED
-  #define PNG_READ_ALPHA_MODE_SUPPORTED
-  #define PNG_READ_ANCILLARY_CHUNKS_SUPPORTED
-  #define PNG_READ_BACKGROUND_SUPPORTED
-  #define PNG_READ_BGR_SUPPORTED
-  #define PNG_READ_CHECK_FOR_INVALID_INDEX_SUPPORTED
-  #define PNG_READ_COMPOSITE_NODIV_SUPPORTED
-  #define PNG_READ_COMPRESSED_TEXT_SUPPORTED
-  #define PNG_READ_EXPAND_16_SUPPORTED
-  #define PNG_READ_EXPAND_SUPPORTED
-  #define PNG_READ_FILLER_SUPPORTED
-  #define PNG_READ_GAMMA_SUPPORTED
-  #define PNG_READ_GET_PALETTE_MAX_SUPPORTED
-  #define PNG_READ_GRAY_TO_RGB_SUPPORTED
-  #define PNG_READ_INTERLACING_SUPPORTED
-  #define PNG_READ_INT_FUNCTIONS_SUPPORTED
-  #define PNG_READ_INVERT_ALPHA_SUPPORTED
-  #define PNG_READ_INVERT_SUPPORTED
-  #define PNG_READ_OPT_PLTE_SUPPORTED
-  #define PNG_READ_PACKSWAP_SUPPORTED
-  #define PNG_READ_PACK_SUPPORTED
-  #define PNG_READ_QUANTIZE_SUPPORTED
-  #define PNG_READ_RGB_TO_GRAY_SUPPORTED
-  #define PNG_READ_SCALE_16_TO_8_SUPPORTED
-  #define PNG_READ_SHIFT_SUPPORTED
-  #define PNG_READ_STRIP_16_TO_8_SUPPORTED
-  #define PNG_READ_STRIP_ALPHA_SUPPORTED
-  #define PNG_READ_SUPPORTED
-  #define PNG_READ_SWAP_ALPHA_SUPPORTED
-  #define PNG_READ_SWAP_SUPPORTED
-  #define PNG_READ_TEXT_SUPPORTED
-  #define PNG_READ_TRANSFORMS_SUPPORTED
-  #define PNG_READ_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_READ_USER_CHUNKS_SUPPORTED
-  #define PNG_READ_USER_TRANSFORM_SUPPORTED
-  #define PNG_READ_bKGD_SUPPORTED
-  #define PNG_READ_cHRM_SUPPORTED
-  #define PNG_READ_gAMA_SUPPORTED
-  #define PNG_READ_hIST_SUPPORTED
-  #define PNG_READ_iCCP_SUPPORTED
-  #define PNG_READ_iTXt_SUPPORTED
-  #define PNG_READ_oFFs_SUPPORTED
-  #define PNG_READ_pCAL_SUPPORTED
-  #define PNG_READ_pHYs_SUPPORTED
-  #define PNG_READ_sBIT_SUPPORTED
-  #define PNG_READ_sCAL_SUPPORTED
-  #define PNG_READ_sPLT_SUPPORTED
-  #define PNG_READ_sRGB_SUPPORTED
-  #define PNG_READ_tEXt_SUPPORTED
-  #define PNG_READ_tIME_SUPPORTED
-  #define PNG_READ_tRNS_SUPPORTED
-  #define PNG_READ_zTXt_SUPPORTED
-  #define PNG_SAVE_INT_32_SUPPORTED
-  #define PNG_SAVE_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_SEQUENTIAL_READ_SUPPORTED
-  #define PNG_SET_CHUNK_CACHE_LIMIT_SUPPORTED
-  #define PNG_SET_CHUNK_MALLOC_LIMIT_SUPPORTED
-  #define PNG_SET_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_SET_USER_LIMITS_SUPPORTED
-  #define PNG_SIMPLIFIED_READ_AFIRST_SUPPORTED
-  #define PNG_SIMPLIFIED_READ_BGR_SUPPORTED
-  #define PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED
-  #define PNG_SIMPLIFIED_WRITE_BGR_SUPPORTED
-  #define PNG_STDIO_SUPPORTED
-  #define PNG_STORE_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_TEXT_SUPPORTED
-  #define PNG_TIME_RFC1123_SUPPORTED
-  #define PNG_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_USER_CHUNKS_SUPPORTED
-  #define PNG_USER_LIMITS_SUPPORTED
-  #define PNG_USER_TRANSFORM_INFO_SUPPORTED
-  #define PNG_USER_TRANSFORM_PTR_SUPPORTED
-  #define PNG_WARNINGS_SUPPORTED
-  #define PNG_WRITE_16BIT_SUPPORTED
-  #define PNG_WRITE_ANCILLARY_CHUNKS_SUPPORTED
-  #define PNG_WRITE_BGR_SUPPORTED
-  #define PNG_WRITE_CHECK_FOR_INVALID_INDEX_SUPPORTED
-  #define PNG_WRITE_COMPRESSED_TEXT_SUPPORTED
-  #define PNG_WRITE_CUSTOMIZE_ZTXT_COMPRESSION_SUPPORTED
-  #define PNG_WRITE_FILLER_SUPPORTED
-  #define PNG_WRITE_FILTER_SUPPORTED
-  #define PNG_WRITE_FLUSH_SUPPORTED
-  #define PNG_WRITE_GET_PALETTE_MAX_SUPPORTED
-  #define PNG_WRITE_INTERLACING_SUPPORTED
-  #define PNG_WRITE_INT_FUNCTIONS_SUPPORTED
-  #define PNG_WRITE_INVERT_ALPHA_SUPPORTED
-  #define PNG_WRITE_INVERT_SUPPORTED
-  #define PNG_WRITE_OPTIMIZE_CMF_SUPPORTED
-  #define PNG_WRITE_PACKSWAP_SUPPORTED
-  #define PNG_WRITE_PACK_SUPPORTED
-  #define PNG_WRITE_SHIFT_SUPPORTED
-  #define PNG_WRITE_SUPPORTED
-  #define PNG_WRITE_SWAP_ALPHA_SUPPORTED
-  #define PNG_WRITE_SWAP_SUPPORTED
-  #define PNG_WRITE_TEXT_SUPPORTED
-  #define PNG_WRITE_TRANSFORMS_SUPPORTED
-  #define PNG_WRITE_UNKNOWN_CHUNKS_SUPPORTED
-  #define PNG_WRITE_USER_TRANSFORM_SUPPORTED
-  #define PNG_WRITE_WEIGHTED_FILTER_SUPPORTED
-  #define PNG_WRITE_bKGD_SUPPORTED
-  #define PNG_WRITE_cHRM_SUPPORTED
-  #define PNG_WRITE_gAMA_SUPPORTED
-  #define PNG_WRITE_hIST_SUPPORTED
-  #define PNG_WRITE_iCCP_SUPPORTED
-  #define PNG_WRITE_iTXt_SUPPORTED
-  #define PNG_WRITE_oFFs_SUPPORTED
-  #define PNG_WRITE_pCAL_SUPPORTED
-  #define PNG_WRITE_pHYs_SUPPORTED
-  #define PNG_WRITE_sBIT_SUPPORTED
-  #define PNG_WRITE_sCAL_SUPPORTED
-  #define PNG_WRITE_sPLT_SUPPORTED
-  #define PNG_WRITE_sRGB_SUPPORTED
-  #define PNG_WRITE_tEXt_SUPPORTED
-  #define PNG_WRITE_tIME_SUPPORTED
-  #define PNG_WRITE_tRNS_SUPPORTED
-  #define PNG_WRITE_zTXt_SUPPORTED
-  #define PNG_bKGD_SUPPORTED
-  #define PNG_cHRM_SUPPORTED
-  #define PNG_gAMA_SUPPORTED
-  #define PNG_hIST_SUPPORTED
-  #define PNG_iCCP_SUPPORTED
-  #define PNG_iTXt_SUPPORTED
-  #define PNG_oFFs_SUPPORTED
-  #define PNG_pCAL_SUPPORTED
-  #define PNG_pHYs_SUPPORTED
-  #define PNG_sBIT_SUPPORTED
-  #define PNG_sCAL_SUPPORTED
-  #define PNG_sPLT_SUPPORTED
-  #define PNG_sRGB_SUPPORTED
-  #define PNG_tEXt_SUPPORTED
-  #define PNG_tIME_SUPPORTED
-  #define PNG_tRNS_SUPPORTED
-  #define PNG_zTXt_SUPPORTED
+#define PNG_16BIT_SUPPORTED
+#define PNG_ALIGNED_MEMORY_SUPPORTED
+#define PNG_BENIGN_ERRORS_SUPPORTED
+#define PNG_BENIGN_READ_ERRORS_SUPPORTED
+#define PNG_CHECK_FOR_INVALID_INDEX_SUPPORTED
+#define PNG_COLORSPACE_SUPPORTED
+#define PNG_CONSOLE_IO_SUPPORTED
+#define PNG_EASY_ACCESS_SUPPORTED
+#define PNG_FIXED_POINT_SUPPORTED
+#define PNG_FLOATING_ARITHMETIC_SUPPORTED
+#define PNG_FLOATING_POINT_SUPPORTED
+#define PNG_FORMAT_AFIRST_SUPPORTED
+#define PNG_FORMAT_BGR_SUPPORTED
+#define PNG_GAMMA_SUPPORTED
+#define PNG_GET_PALETTE_MAX_SUPPORTED
+#define PNG_HANDLE_AS_UNKNOWN_SUPPORTED
+#define PNG_INCH_CONVERSIONS_SUPPORTED
+#define PNG_INFO_IMAGE_SUPPORTED
+#define PNG_IO_STATE_SUPPORTED
+#define PNG_POINTER_INDEXING_SUPPORTED
+#define PNG_PROGRESSIVE_READ_SUPPORTED
+#define PNG_READ_16BIT_SUPPORTED
+#define PNG_READ_ALPHA_MODE_SUPPORTED
+#define PNG_READ_ANCILLARY_CHUNKS_SUPPORTED
+#define PNG_READ_BACKGROUND_SUPPORTED
+#define PNG_READ_BGR_SUPPORTED
+#define PNG_READ_CHECK_FOR_INVALID_INDEX_SUPPORTED
+#define PNG_READ_COMPOSITE_NODIV_SUPPORTED
+#define PNG_READ_COMPRESSED_TEXT_SUPPORTED
+#define PNG_READ_EXPAND_16_SUPPORTED
+#define PNG_READ_EXPAND_SUPPORTED
+#define PNG_READ_FILLER_SUPPORTED
+#define PNG_READ_GAMMA_SUPPORTED
+#define PNG_READ_GET_PALETTE_MAX_SUPPORTED
+#define PNG_READ_GRAY_TO_RGB_SUPPORTED
+#define PNG_READ_INTERLACING_SUPPORTED
+#define PNG_READ_INT_FUNCTIONS_SUPPORTED
+#define PNG_READ_INVERT_ALPHA_SUPPORTED
+#define PNG_READ_INVERT_SUPPORTED
+#define PNG_READ_OPT_PLTE_SUPPORTED
+#define PNG_READ_PACKSWAP_SUPPORTED
+#define PNG_READ_PACK_SUPPORTED
+#define PNG_READ_QUANTIZE_SUPPORTED
+#define PNG_READ_RGB_TO_GRAY_SUPPORTED
+#define PNG_READ_SCALE_16_TO_8_SUPPORTED
+#define PNG_READ_SHIFT_SUPPORTED
+#define PNG_READ_STRIP_16_TO_8_SUPPORTED
+#define PNG_READ_STRIP_ALPHA_SUPPORTED
+#define PNG_READ_SUPPORTED
+#define PNG_READ_SWAP_ALPHA_SUPPORTED
+#define PNG_READ_SWAP_SUPPORTED
+#define PNG_READ_TEXT_SUPPORTED
+#define PNG_READ_TRANSFORMS_SUPPORTED
+#define PNG_READ_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_READ_USER_CHUNKS_SUPPORTED
+#define PNG_READ_USER_TRANSFORM_SUPPORTED
+#define PNG_READ_bKGD_SUPPORTED
+#define PNG_READ_cHRM_SUPPORTED
+#define PNG_READ_gAMA_SUPPORTED
+#define PNG_READ_hIST_SUPPORTED
+#define PNG_READ_iCCP_SUPPORTED
+#define PNG_READ_iTXt_SUPPORTED
+#define PNG_READ_oFFs_SUPPORTED
+#define PNG_READ_pCAL_SUPPORTED
+#define PNG_READ_pHYs_SUPPORTED
+#define PNG_READ_sBIT_SUPPORTED
+#define PNG_READ_sCAL_SUPPORTED
+#define PNG_READ_sPLT_SUPPORTED
+#define PNG_READ_sRGB_SUPPORTED
+#define PNG_READ_tEXt_SUPPORTED
+#define PNG_READ_tIME_SUPPORTED
+#define PNG_READ_tRNS_SUPPORTED
+#define PNG_READ_zTXt_SUPPORTED
+#define PNG_SAVE_INT_32_SUPPORTED
+#define PNG_SAVE_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_SEQUENTIAL_READ_SUPPORTED
+#define PNG_SET_CHUNK_CACHE_LIMIT_SUPPORTED
+#define PNG_SET_CHUNK_MALLOC_LIMIT_SUPPORTED
+#define PNG_SET_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_SET_USER_LIMITS_SUPPORTED
+#define PNG_SIMPLIFIED_READ_AFIRST_SUPPORTED
+#define PNG_SIMPLIFIED_READ_BGR_SUPPORTED
+#define PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED
+#define PNG_SIMPLIFIED_WRITE_BGR_SUPPORTED
+#define PNG_STDIO_SUPPORTED
+#define PNG_STORE_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_TEXT_SUPPORTED
+#define PNG_TIME_RFC1123_SUPPORTED
+#define PNG_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_USER_CHUNKS_SUPPORTED
+#define PNG_USER_LIMITS_SUPPORTED
+#define PNG_USER_TRANSFORM_INFO_SUPPORTED
+#define PNG_USER_TRANSFORM_PTR_SUPPORTED
+#define PNG_WARNINGS_SUPPORTED
+#define PNG_WRITE_16BIT_SUPPORTED
+#define PNG_WRITE_ANCILLARY_CHUNKS_SUPPORTED
+#define PNG_WRITE_BGR_SUPPORTED
+#define PNG_WRITE_CHECK_FOR_INVALID_INDEX_SUPPORTED
+#define PNG_WRITE_COMPRESSED_TEXT_SUPPORTED
+#define PNG_WRITE_CUSTOMIZE_ZTXT_COMPRESSION_SUPPORTED
+#define PNG_WRITE_FILLER_SUPPORTED
+#define PNG_WRITE_FILTER_SUPPORTED
+#define PNG_WRITE_FLUSH_SUPPORTED
+#define PNG_WRITE_GET_PALETTE_MAX_SUPPORTED
+#define PNG_WRITE_INTERLACING_SUPPORTED
+#define PNG_WRITE_INT_FUNCTIONS_SUPPORTED
+#define PNG_WRITE_INVERT_ALPHA_SUPPORTED
+#define PNG_WRITE_INVERT_SUPPORTED
+#define PNG_WRITE_OPTIMIZE_CMF_SUPPORTED
+#define PNG_WRITE_PACKSWAP_SUPPORTED
+#define PNG_WRITE_PACK_SUPPORTED
+#define PNG_WRITE_SHIFT_SUPPORTED
+#define PNG_WRITE_SUPPORTED
+#define PNG_WRITE_SWAP_ALPHA_SUPPORTED
+#define PNG_WRITE_SWAP_SUPPORTED
+#define PNG_WRITE_TEXT_SUPPORTED
+#define PNG_WRITE_TRANSFORMS_SUPPORTED
+#define PNG_WRITE_UNKNOWN_CHUNKS_SUPPORTED
+#define PNG_WRITE_USER_TRANSFORM_SUPPORTED
+#define PNG_WRITE_WEIGHTED_FILTER_SUPPORTED
+#define PNG_WRITE_bKGD_SUPPORTED
+#define PNG_WRITE_cHRM_SUPPORTED
+#define PNG_WRITE_gAMA_SUPPORTED
+#define PNG_WRITE_hIST_SUPPORTED
+#define PNG_WRITE_iCCP_SUPPORTED
+#define PNG_WRITE_iTXt_SUPPORTED
+#define PNG_WRITE_oFFs_SUPPORTED
+#define PNG_WRITE_pCAL_SUPPORTED
+#define PNG_WRITE_pHYs_SUPPORTED
+#define PNG_WRITE_sBIT_SUPPORTED
+#define PNG_WRITE_sCAL_SUPPORTED
+#define PNG_WRITE_sPLT_SUPPORTED
+#define PNG_WRITE_sRGB_SUPPORTED
+#define PNG_WRITE_tEXt_SUPPORTED
+#define PNG_WRITE_tIME_SUPPORTED
+#define PNG_WRITE_tRNS_SUPPORTED
+#define PNG_WRITE_zTXt_SUPPORTED
+#define PNG_bKGD_SUPPORTED
+#define PNG_cHRM_SUPPORTED
+#define PNG_gAMA_SUPPORTED
+#define PNG_hIST_SUPPORTED
+#define PNG_iCCP_SUPPORTED
+#define PNG_iTXt_SUPPORTED
+#define PNG_oFFs_SUPPORTED
+#define PNG_pCAL_SUPPORTED
+#define PNG_pHYs_SUPPORTED
+#define PNG_sBIT_SUPPORTED
+#define PNG_sCAL_SUPPORTED
+#define PNG_sPLT_SUPPORTED
+#define PNG_sRGB_SUPPORTED
+#define PNG_tEXt_SUPPORTED
+#define PNG_tIME_SUPPORTED
+#define PNG_tRNS_SUPPORTED
+#define PNG_zTXt_SUPPORTED
 
-  #define PNG_STRING_COPYRIGHT "";
-  #define PNG_STRING_NEWLINE "\n"
-  #define PNG_LITERAL_SHARP 0x23
-  #define PNG_LITERAL_LEFT_SQUARE_BRACKET 0x5b
-  #define PNG_LITERAL_RIGHT_SQUARE_BRACKET 0x5d
+#define PNG_STRING_COPYRIGHT "";
+#define PNG_STRING_NEWLINE "\n"
+#define PNG_LITERAL_SHARP 0x23
+#define PNG_LITERAL_LEFT_SQUARE_BRACKET 0x5b
+#define PNG_LITERAL_RIGHT_SQUARE_BRACKET 0x5d
 
-  #define PNG_API_RULE 0
-  #define PNG_CALLOC_SUPPORTED
-  #define PNG_COST_SHIFT 3
-  #define PNG_DEFAULT_READ_MACROS 1
-  #define PNG_GAMMA_THRESHOLD_FIXED 5000
-  #define PNG_IDAT_READ_SIZE PNG_ZBUF_SIZE
-  #define PNG_INFLATE_BUF_SIZE 1024
-  #define PNG_MAX_GAMMA_8 11
-  #define PNG_QUANTIZE_BLUE_BITS 5
-  #define PNG_QUANTIZE_GREEN_BITS 5
-  #define PNG_QUANTIZE_RED_BITS 5
-  #define PNG_TEXT_Z_DEFAULT_COMPRESSION (-1)
-  #define PNG_TEXT_Z_DEFAULT_STRATEGY 0
-  #define PNG_WEIGHT_SHIFT 8
-  #define PNG_ZBUF_SIZE 8192
-  #define PNG_Z_DEFAULT_COMPRESSION (-1)
-  #define PNG_Z_DEFAULT_NOFILTER_STRATEGY 0
-  #define PNG_Z_DEFAULT_STRATEGY 1
-  #define PNG_sCAL_PRECISION 5
-  #define PNG_sRGB_PROFILE_CHECKS 2
+#define PNG_API_RULE 0
+#define PNG_CALLOC_SUPPORTED
+#define PNG_COST_SHIFT 3
+#define PNG_DEFAULT_READ_MACROS 1
+#define PNG_GAMMA_THRESHOLD_FIXED 5000
+#define PNG_IDAT_READ_SIZE PNG_ZBUF_SIZE
+#define PNG_INFLATE_BUF_SIZE 1024
+#define PNG_MAX_GAMMA_8 11
+#define PNG_QUANTIZE_BLUE_BITS 5
+#define PNG_QUANTIZE_GREEN_BITS 5
+#define PNG_QUANTIZE_RED_BITS 5
+#define PNG_TEXT_Z_DEFAULT_COMPRESSION (-1)
+#define PNG_TEXT_Z_DEFAULT_STRATEGY 0
+#define PNG_WEIGHT_SHIFT 8
+#define PNG_ZBUF_SIZE 8192
+#define PNG_Z_DEFAULT_COMPRESSION (-1)
+#define PNG_Z_DEFAULT_NOFILTER_STRATEGY 0
+#define PNG_Z_DEFAULT_STRATEGY 1
+#define PNG_sCAL_PRECISION 5
+#define PNG_sRGB_PROFILE_CHECKS 2
 
-  #define PNG_LINKAGE_API
-  #define PNG_LINKAGE_FUNCTION
+#define PNG_LINKAGE_API
+#define PNG_LINKAGE_FUNCTION
 
-  #define PNG_ARM_NEON_OPT 0
+#define PNG_ARM_NEON_OPT 0
 
-  #if ! defined (PNG_USER_WIDTH_MAX)
-   #define PNG_USER_WIDTH_MAX 1000000
-  #endif
+#if !defined(PNG_USER_WIDTH_MAX)
+#define PNG_USER_WIDTH_MAX 1000000
+#endif
 
-  #if ! defined (PNG_USER_HEIGHT_MAX)
-   #define PNG_USER_HEIGHT_MAX 1000000
-  #endif
+#if !defined(PNG_USER_HEIGHT_MAX)
+#define PNG_USER_HEIGHT_MAX 1000000
+#endif
 
-  #define png_debug(a, b)
-  #define png_debug1(a, b, c)
-  #define png_debug2(a, b, c, d)
+#define png_debug(a, b)
+#define png_debug1(a, b, c)
+#define png_debug2(a, b, c, d)
 
-  #include "pnglib/png.h"
-  #include "pnglib/pngconf.h"
+#include "pnglib/png.h"
+#include "pnglib/pngconf.h"
 
-  #define PNG_NO_EXTERN
+#define PNG_NO_EXTERN
 #if 0 // begin mcview customization
-  #include "pnglib/png.c"
-  #include "pnglib/pngerror.c"
-  #include "pnglib/pngget.c"
-  #include "pnglib/pngmem.c"
-  #include "pnglib/pngread.c"
-  #include "pnglib/pngpread.c"
-  #include "pnglib/pngrio.c"
+#include "pnglib/png.c"
+#include "pnglib/pngerror.c"
+#include "pnglib/pngget.c"
+#include "pnglib/pngmem.c"
+#include "pnglib/pngpread.c"
+#include "pnglib/pngread.c"
+#include "pnglib/pngrio.c"
 
   void png_do_expand_palette (png_row_infop, png_bytep, png_const_colorp, png_const_bytep, int);
   void png_do_expand (png_row_infop, png_bytep, png_const_color_16p);
@@ -311,26 +308,25 @@ namespace pnglibNamespace
   void png_do_read_invert_alpha (png_row_infop, png_bytep);
   void png_do_read_swap_alpha (png_row_infop, png_bytep);
 
-  #include "pnglib/pngrtran.c"
-  #include "pnglib/pngrutil.c"
-  #include "pnglib/pngset.c"
-  #include "pnglib/pngtrans.c"
-  #include "pnglib/pngwio.c"
-  #include "pnglib/pngwrite.c"
-  #include "pnglib/pngwtran.c"
-  #include "pnglib/pngwutil.c"
+#include "pnglib/pngrtran.c"
+#include "pnglib/pngrutil.c"
+#include "pnglib/pngset.c"
+#include "pnglib/pngtrans.c"
+#include "pnglib/pngwio.c"
+#include "pnglib/pngwrite.c"
+#include "pnglib/pngwtran.c"
+#include "pnglib/pngwutil.c"
 #endif // end mcview customization
 
-  JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
 #else
-  extern "C"
-  {
-    #include <png.h>
-    #include <pngconf.h>
-  }
-#endif
+extern "C" {
+#include <png.h>
+#include <pngconf.h>
 }
+#endif
+} // namespace pnglibNamespace
 
 #undef max
 #undef min
@@ -339,18 +335,16 @@ namespace pnglibNamespace
 JUCE_END_IGNORE_WARNINGS_MSVC
 
 //==============================================================================
-namespace PNGHelpers
-{
-    using namespace pnglibNamespace;
+namespace PNGHelpers {
+using namespace pnglibNamespace;
 
-    static void JUCE_CDECL writeDataCallback (png_structp png, png_bytep data, png_size_t length)
-    {
-        static_cast<OutputStream*> (png_get_io_ptr (png))->write (data, length);
-    }
+static void JUCE_CDECL writeDataCallback(png_structp png, png_bytep data, png_size_t length) {
+  static_cast<OutputStream *>(png_get_io_ptr(png))->write(data, length);
+}
 
 #if 0 // begin mcview customization
 
-   #if ! JUCE_USING_COREIMAGE_LOADER
+#if !JUCE_USING_COREIMAGE_LOADER
     static void JUCE_CDECL readCallback (png_structp png, png_bytep data, png_size_t length)
     {
         static_cast<InputStream*> (png_get_io_ptr (png))->read (data, (int) length);
@@ -360,11 +354,11 @@ namespace PNGHelpers
 
     static void JUCE_CDECL errorCallback (png_structp p, png_const_charp)
     {
-       #ifdef PNG_SETJMP_SUPPORTED
+#ifdef PNG_SETJMP_SUPPORTED
         setjmp(png_jmpbuf(p));
-       #else
+#else
         longjmp (*(jmp_buf*) p->error_ptr, 1);
-       #endif
+#endif
     }
 
     static void JUCE_CDECL warningCallback (png_structp, png_const_charp) {}
@@ -510,9 +504,9 @@ namespace PNGHelpers
 
         return Image();
     }
-   #endif
+#endif
 #endif // end mcview customization
-}
+} // namespace PNGHelpers
 
 #if 0 // begin mcview customization
 //==============================================================================
@@ -539,11 +533,11 @@ bool PNGImageFormat::canUnderstand (InputStream& in)
 
 Image PNGImageFormat::decodeImage (InputStream& in)
 {
-   #if JUCE_USING_COREIMAGE_LOADER
+#if JUCE_USING_COREIMAGE_LOADER
     return juce_loadWithCoreImage (in);
-   #else
+#else
     return PNGHelpers::readImage (in);
-   #endif
+#endif
 }
 
 bool PNGImageFormat::writeImageToStream (const Image& image, OutputStream& out)
@@ -638,83 +632,73 @@ bool PNGImageFormat::writeImageToStream (const Image& image, OutputStream& out)
 using namespace juce;
 
 PNGWriter::PNGWriter(int width, int height, OutputStream &stream)
-    : fStream(stream)
-    , fWidth(width)
-    , fHeight(height)
-    , fWriteStruct(nullptr)
-    , fInfoStruct(nullptr)
-    , fRowData(width * 4)
-{
-    using namespace pnglibNamespace;
-    
-    auto pngWriteStruct = png_create_write_struct (PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    fWriteStruct = pngWriteStruct;
-    
-    if (pngWriteStruct == nullptr)
-        return;
-    
-    auto pngInfoStruct = png_create_info_struct (pngWriteStruct);
-    
-    if (pngInfoStruct == nullptr)
-    {
-        png_destroy_write_struct (&pngWriteStruct, nullptr);
-        return;
-    }
-    fInfoStruct = pngInfoStruct;
-    
-    png_set_write_fn (pngWriteStruct, &fStream, PNGHelpers::writeDataCallback, nullptr);
-    
-    png_set_IHDR (pngWriteStruct, pngInfoStruct, (png_uint_32) width, (png_uint_32) height, 8,
-                  PNG_COLOR_TYPE_RGB_ALPHA,
-                  PNG_INTERLACE_NONE,
-                  PNG_COMPRESSION_TYPE_BASE,
-                  PNG_FILTER_TYPE_BASE);
-    
-    png_color_8 sig_bit;
-    sig_bit.red   = 8;
-    sig_bit.green = 8;
-    sig_bit.blue  = 8;
-    sig_bit.gray  = 0;
-    sig_bit.alpha = 8;
-    png_set_sBIT (pngWriteStruct, pngInfoStruct, &sig_bit);
-    
-    png_write_info (pngWriteStruct, pngInfoStruct);
-    
-    png_set_shift (pngWriteStruct, &sig_bit);
-    png_set_packing (pngWriteStruct);
-    
+    : fStream(stream), fWidth(width), fHeight(height), fWriteStruct(nullptr), fInfoStruct(nullptr), fRowData(width * 4) {
+  using namespace pnglibNamespace;
+
+  auto pngWriteStruct = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+  fWriteStruct = pngWriteStruct;
+
+  if (pngWriteStruct == nullptr)
+    return;
+
+  auto pngInfoStruct = png_create_info_struct(pngWriteStruct);
+
+  if (pngInfoStruct == nullptr) {
+    png_destroy_write_struct(&pngWriteStruct, nullptr);
+    return;
+  }
+  fInfoStruct = pngInfoStruct;
+
+  png_set_write_fn(pngWriteStruct, &fStream, PNGHelpers::writeDataCallback, nullptr);
+
+  png_set_IHDR(pngWriteStruct, pngInfoStruct, (png_uint_32)width, (png_uint_32)height, 8,
+               PNG_COLOR_TYPE_RGB_ALPHA,
+               PNG_INTERLACE_NONE,
+               PNG_COMPRESSION_TYPE_BASE,
+               PNG_FILTER_TYPE_BASE);
+
+  png_color_8 sig_bit;
+  sig_bit.red = 8;
+  sig_bit.green = 8;
+  sig_bit.blue = 8;
+  sig_bit.gray = 0;
+  sig_bit.alpha = 8;
+  png_set_sBIT(pngWriteStruct, pngInfoStruct, &sig_bit);
+
+  png_write_info(pngWriteStruct, pngInfoStruct);
+
+  png_set_shift(pngWriteStruct, &sig_bit);
+  png_set_packing(pngWriteStruct);
 }
 
-PNGWriter::~PNGWriter()
-{
-    if (!fWriteStruct || !fInfoStruct) {
-        return;
-    }
-    using namespace pnglibNamespace;
+PNGWriter::~PNGWriter() {
+  if (!fWriteStruct || !fInfoStruct) {
+    return;
+  }
+  using namespace pnglibNamespace;
 
-    png_structrp pngWriteStruct = (png_structrp)fWriteStruct;
-    png_infop pngInfoStruct = (png_infop)fInfoStruct;
-    png_write_end (pngWriteStruct, pngInfoStruct);
-    png_destroy_write_struct (&pngWriteStruct, &pngInfoStruct);
+  png_structrp pngWriteStruct = (png_structrp)fWriteStruct;
+  png_infop pngInfoStruct = (png_infop)fInfoStruct;
+  png_write_end(pngWriteStruct, pngInfoStruct);
+  png_destroy_write_struct(&pngWriteStruct, &pngInfoStruct);
 }
 
-void PNGWriter::writeRow(PixelARGB *row)
-{
-    using namespace pnglibNamespace;
+void PNGWriter::writeRow(PixelARGB *row) {
+  using namespace pnglibNamespace;
 
-    uint8* dst = fRowData;
-    
-    for (int i = fWidth; --i >= 0;) {
-        PixelARGB p = row[fWidth - i - 1];
-        p.unpremultiply();
-        
-        *dst++ = p.getRed();
-        *dst++ = p.getGreen();
-        *dst++ = p.getBlue();
-        *dst++ = p.getAlpha();
-    }
-    
-    png_bytep rowPtr = fRowData;
-    png_structp pngWriteStruct = (png_structp)fWriteStruct;
-    png_write_rows (pngWriteStruct, &rowPtr, 1);
+  uint8 *dst = fRowData;
+
+  for (int i = fWidth; --i >= 0;) {
+    PixelARGB p = row[fWidth - i - 1];
+    p.unpremultiply();
+
+    *dst++ = p.getRed();
+    *dst++ = p.getGreen();
+    *dst++ = p.getBlue();
+    *dst++ = p.getAlpha();
+  }
+
+  png_bytep rowPtr = fRowData;
+  png_structp pngWriteStruct = (png_structp)fWriteStruct;
+  png_write_rows(pngWriteStruct, &rowPtr, 1);
 }

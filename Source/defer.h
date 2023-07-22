@@ -8,19 +8,18 @@
 
 class defer_t {
 public:
-    template<class T, class = typename std::enable_if<std::is_void<decltype((std::declval<T>())())>::value>::type>
-    defer_t(T const& f)
-        : fDeferred(f)
-    {}
+  template <class T, class = typename std::enable_if<std::is_void<decltype((std::declval<T>())())>::value>::type>
+  defer_t(T const &f)
+      : fDeferred(f) {}
 
-    ~defer_t() {
-        fDeferred();
-    }
+  ~defer_t() {
+    fDeferred();
+  }
 
 private:
-    std::function<void(void)> fDeferred;
+  std::function<void(void)> fDeferred;
 };
 
-#define defer_helper2(line) defer_tmp ## line
+#define defer_helper2(line) defer_tmp##line
 #define defer_helper(line) defer_helper2(line)
-#define defer defer_t defer_helper(__LINE__) = [&](void)->void
+#define defer defer_t defer_helper(__LINE__) = [&](void) -> void

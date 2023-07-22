@@ -7,9 +7,9 @@
 #undef fdopen
 #define ZLIB_INTERNAL
 #define NO_DUMMY_DECL
-#include <zlib.h>
 #include <juce_core/zip/zlib/adler32.c>
 #include <juce_core/zip/zlib/compress.c>
+#include <zlib.h>
 #undef DO1
 #undef DO8
 
