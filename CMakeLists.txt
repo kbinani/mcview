@@ -89,6 +89,12 @@ set(mcview_files
   Source/LookAt.hpp
   Source/TextInputDialog.hpp
   Source/TexturePackJob.hpp
+  Source/RegionUpdateChecker.hpp
+  Source/GLUniforms.hpp
+  Source/GLVertex.hpp
+  Source/GLAttributes.hpp
+  Source/GLBuffer.hpp
+  Source/DirectoryBrowserModel.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

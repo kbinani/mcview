@@ -9,7 +9,8 @@ class MapViewComponent
       private juce::Timer,
       public juce::ChangeListener,
       public TexturePackJob::Delegate,
-      public SavePNGProgressWindow ::Delegate {
+      public SavePNGProgressWindow ::Delegate,
+      public RegionUpdateChecker::Delegate {
   struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
 
@@ -255,17 +256,17 @@ public:
   void newOpenGLContextCreated() override {
     using namespace juce::gl;
 
-    std::unique_ptr<Buffer> buffer(new Buffer());
+    std::unique_ptr<GLBuffer> buffer(new GLBuffer());
 
     fGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
     fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
-    std::vector<Vertex> vertices = {
+    std::vector<GLVertex> vertices = {
         {{0, 0}, {0.0, 0.0}},
         {{1, 0}, {1.0, 0.0}},
         {{1, 1}, {1.0, 1.0}},
         {{0, 1}, {0.0, 1.0}},
     };
-    fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 
     fGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
     fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
@@ -410,6 +411,10 @@ public:
       fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
     }
     triggerAsyncUpdate();
+  }
+
+  void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) override {
+    queueTextureLoading(files, dimension, false);
   }
 
   void setWorldDirectory(juce::File directory, Dimension dim) {
@@ -708,7 +713,7 @@ public:
       fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fGLBuffer->iBuffer);
 
       fGLAttributes->enable(fGLContext);
-      glDrawElements(GL_QUADS, Buffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
+      glDrawElements(GL_QUADS, GLBuffer::kNumPoints, GL_UNSIGNED_INT, nullptr);
       fGLAttributes->disable(fGLContext);
     }
 
@@ -850,8 +855,8 @@ private:
     newShader->link();
     newShader->use();
 
-    fGLUniforms.reset(new Uniforms(fGLContext, *newShader));
-    fGLAttributes.reset(new Attributes(fGLContext, *newShader));
+    fGLUniforms.reset(new GLUniforms(fGLContext, *newShader));
+    fGLAttributes.reset(new GLAttributes(fGLContext, *newShader));
 
     fGLShader.reset(newShader.release());
   }
@@ -1328,189 +1333,6 @@ private:
     }
   }
 
-  struct Uniforms {
-    Uniforms(juce::OpenGLContext &openGLContext, juce::OpenGLShaderProgram &shader) {
-      texture.reset(createUniform(openGLContext, shader, "texture"));
-      fade.reset(createUniform(openGLContext, shader, "fade"));
-      heightmap.reset(createUniform(openGLContext, shader, "heightmap"));
-      blocksPerPixel.reset(createUniform(openGLContext, shader, "blocksPerPixel"));
-      width.reset(createUniform(openGLContext, shader, "width"));
-      height.reset(createUniform(openGLContext, shader, "height"));
-      Xr.reset(createUniform(openGLContext, shader, "Xr"));
-      Zr.reset(createUniform(openGLContext, shader, "Zr"));
-      Cx.reset(createUniform(openGLContext, shader, "Cx"));
-      Cz.reset(createUniform(openGLContext, shader, "Cz"));
-      grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
-      foliageBlockId.reset(createUniform(openGLContext, shader, "foliageBlockId"));
-      netherrackBlockId.reset(createUniform(openGLContext, shader, "netherrackBlockId"));
-      north.reset(createUniform(openGLContext, shader, "north"));
-      northEast.reset(createUniform(openGLContext, shader, "norhtEast"));
-      east.reset(createUniform(openGLContext, shader, "east"));
-      southEast.reset(createUniform(openGLContext, shader, "southEast"));
-      south.reset(createUniform(openGLContext, shader, "south"));
-      southWest.reset(createUniform(openGLContext, shader, "southWest"));
-      west.reset(createUniform(openGLContext, shader, "west"));
-      northWest.reset(createUniform(openGLContext, shader, "northWest"));
-      waterOpticalDensity.reset(createUniform(openGLContext, shader, "waterOpticalDensity"));
-      waterTranslucent.reset(createUniform(openGLContext, shader, "waterTranslucent"));
-      biomeBlend.reset(createUniform(openGLContext, shader, "biomeBlend"));
-      enableBiome.reset(createUniform(openGLContext, shader, "enableBiome"));
-      dimension.reset(createUniform(openGLContext, shader, "dimension"));
-    }
-
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, dimension;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
-
-  private:
-    static juce::OpenGLShaderProgram::Uniform *createUniform(juce::OpenGLContext &openGLContext,
-                                                             juce::OpenGLShaderProgram &shader,
-                                                             const char *uniformName) {
-      if (openGLContext.extensions.glGetUniformLocation(shader.getProgramID(), uniformName) < 0) {
-        return nullptr;
-      }
-
-      return new juce::OpenGLShaderProgram::Uniform(shader, uniformName);
-    }
-  };
-
-  struct Vertex {
-    float position[2];
-    float texCoord[2];
-  };
-
-  struct Attributes {
-    Attributes(juce::OpenGLContext &openGLContext, juce::OpenGLShaderProgram &shader) {
-      position.reset(createAttribute(openGLContext, shader, "position"));
-      textureCoordIn.reset(createAttribute(openGLContext, shader, "textureCoordIn"));
-    }
-
-    void enable(juce::OpenGLContext &openGLContext) {
-      using namespace juce::gl;
-
-      if (position.get() != nullptr) {
-        openGLContext.extensions.glVertexAttribPointer(position->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
-        openGLContext.extensions.glEnableVertexAttribArray(position->attributeID);
-      }
-
-      if (textureCoordIn.get() != nullptr) {
-        openGLContext.extensions.glVertexAttribPointer(textureCoordIn->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid *)(sizeof(float) * 2));
-        openGLContext.extensions.glEnableVertexAttribArray(textureCoordIn->attributeID);
-      }
-    }
-
-    void disable(juce::OpenGLContext &openGLContext) {
-      if (position.get() != nullptr)
-        openGLContext.extensions.glDisableVertexAttribArray(position->attributeID);
-      if (textureCoordIn.get() != nullptr)
-        openGLContext.extensions.glDisableVertexAttribArray(textureCoordIn->attributeID);
-    }
-
-    std::unique_ptr<juce::OpenGLShaderProgram::Attribute> position, textureCoordIn;
-
-  private:
-    static juce::OpenGLShaderProgram::Attribute *createAttribute(juce::OpenGLContext &openGLContext,
-                                                                 juce::OpenGLShaderProgram &shader,
-                                                                 const char *attributeName) {
-      if (openGLContext.extensions.glGetAttribLocation(shader.getProgramID(), attributeName) < 0)
-        return nullptr;
-
-      return new juce::OpenGLShaderProgram::Attribute(shader, attributeName);
-    }
-  };
-
-  struct Buffer {
-    GLuint vBuffer;
-    GLuint iBuffer;
-
-    static GLsizei const kNumPoints = 4;
-  };
-
-  class RegionUpdateChecker : public juce::Thread {
-  public:
-    RegionUpdateChecker(MapViewComponent *comp)
-        : Thread("RegionUpdateChecker"), fDim(Dimension::Overworld), fMapView(comp) {
-    }
-
-    void run() override {
-      std::map<std::string, int64_t> updated;
-
-      while (!currentThreadShouldExit()) {
-        try {
-          Thread::sleep(1000);
-          checkUpdatedFiles(updated);
-        } catch (...) {
-        }
-      }
-    }
-
-    void setDirectory(juce::File f, Dimension dim) {
-      juce::ScopedLock lk(fSection);
-      fDirectory = f;
-      fDim = dim;
-    }
-
-  private:
-    void checkUpdatedFiles(std::map<std::string, int64_t> &updated) {
-      using namespace juce;
-      File d;
-      Dimension dim;
-      {
-        ScopedLock lk(fSection);
-        d = fDirectory;
-        dim = fDim;
-      }
-
-      if (!d.exists()) {
-        return;
-      }
-
-      File const root = DimensionDirectory(d, dim);
-
-      std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
-                                            std::string s = it.first;
-                                            String path(s);
-                                            File f(path);
-                                            return f.getParentDirectory().getFullPathName() == root.getFullPathName();
-                                          }),
-                                          updated.end());
-
-      RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
-      std::vector<File> files;
-      for (DirectoryEntry entry : it) {
-        File f = entry.getFile();
-        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-        if (!r) {
-          continue;
-        }
-        Time modified = f.getLastModificationTime();
-        std::string fullpath = f.getFullPathName().toStdString();
-
-        auto j = copy.find(fullpath);
-        if (j == copy.end()) {
-          copy[fullpath] = modified.toMilliseconds();
-        } else {
-          if (j->second < modified.toMilliseconds()) {
-            copy[fullpath] = modified.toMilliseconds();
-            files.push_back(f);
-          }
-        }
-      }
-
-      copy.swap(updated);
-
-      if (!files.empty()) {
-        fMapView->queueTextureLoading(files, dim, false);
-      }
-    }
-
-  private:
-    juce::CriticalSection fSection;
-    juce::File fDirectory;
-    Dimension fDim;
-    MapViewComponent *const fMapView;
-  };
-
 private:
   juce::OpenGLContext fGLContext;
   juce::File fWorldDirectory;
@@ -1522,9 +1344,9 @@ private:
   Dimension fDimension;
   std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
   std::unique_ptr<juce::OpenGLShaderProgram> fGLShader;
-  std::unique_ptr<Uniforms> fGLUniforms;
-  std::unique_ptr<Attributes> fGLAttributes;
-  std::unique_ptr<Buffer> fGLBuffer;
+  std::unique_ptr<GLUniforms> fGLUniforms;
+  std::unique_ptr<GLAttributes> fGLAttributes;
+  std::unique_ptr<GLBuffer> fGLBuffer;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<juce::Rectangle<int>> fVisibleRegions;
