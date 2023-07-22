@@ -65,7 +65,7 @@ private:
   juce::Colour fBackgroundColorOn;
   Delegate *const fDelegate;
 
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserModel);
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserModel)
 };
 
 } // namespace mcview

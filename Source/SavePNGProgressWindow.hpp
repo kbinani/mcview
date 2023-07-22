@@ -81,6 +81,8 @@ private:
   juce::OpenGLContext &fGLContext;
   juce::File fFile;
   juce::Rectangle<int> fRegionBoundingBox;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SavePNGProgressWindow)
 };
 
 } // namespace mcview

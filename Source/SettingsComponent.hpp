@@ -266,6 +266,8 @@ private:
   std::unique_ptr<juce::GroupComponent> fGroupBiome;
   std::unique_ptr<juce::GroupComponent> fGroupPin;
   std::unique_ptr<juce::HyperlinkButton> fAboutButton;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SettingsComponent)
 };
 
 } // namespace mcview

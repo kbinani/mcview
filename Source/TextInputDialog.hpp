@@ -98,6 +98,8 @@ private:
   std::unique_ptr<juce::Label> fInputLabel;
   std::unique_ptr<juce::TextButton> fOkButton;
   std::unique_ptr<juce::TextButton> fCancelButton;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TextInputDialog)
 };
 
 } // namespace mcview

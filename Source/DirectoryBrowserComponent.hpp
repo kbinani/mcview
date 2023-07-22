@@ -26,7 +26,7 @@ public:
 private:
   std::unique_ptr<DirectoryBrowserModel> fModel;
 
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserComponent);
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserComponent)
 };
 
 } // namespace mcview

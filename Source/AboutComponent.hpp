@@ -153,6 +153,8 @@ private:
   std::unique_ptr<juce::Drawable> fLogo;
   std::unique_ptr<Content> fContent;
   std::unique_ptr<juce::Viewport> fViewport;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AboutComponent)
 };
 
 } // namespace mcview
