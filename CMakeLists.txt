@@ -95,6 +95,7 @@ set(mcview_files
   Source/WorldData.cpp
   Source/WorldData.hpp
   Source/File.hpp
+  Source/MainWindow.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
