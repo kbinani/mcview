@@ -233,7 +233,7 @@ void main() {
         vec4 lc = foliageColorFromBiome(enableBiome ? biomeId : -1);
         c = vec4(lc.rgb, alpha);
     } else if (blockId == grassBlockId) {
-        float v = (height - 63.0) / 193.0;
+        float v = (height - 63.0) / 384.0;
         vec4 g = colormap(v);
         c = vec4(g.r, g.g, g.b, alpha);
     } else if (blockId == netherrackBlockId) {
