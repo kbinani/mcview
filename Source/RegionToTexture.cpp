@@ -1,10 +1,14 @@
-#include "RegionToTexture.h"
-#include "File.h"
-#include <cassert>
 #include "minecraft-file.hpp"
 #include <colormap/colormap.h>
+
+#include <cassert>
 #include <map>
 #include <set>
+
+#include "defer.h"
+
+#include "RegionToTexture.h"
+#include "File.h"
 
 using namespace juce;
 
@@ -1271,12 +1275,14 @@ File RegionToTexture::CacheFile(File const& file)
     return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
 }
 
-RegionToTexture::RegionToTexture(File const& mcaFile, Region region, Dimension dim, bool useCache)
+RegionToTexture::RegionToTexture(File const& worldDirectory, File const& mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
     : ThreadPoolJob(mcaFile.getFileName())
     , fRegionFile(mcaFile)
     , fRegion(region)
+    , fWorldDirectory(worldDirectory)
     , fDimension(dim)
     , fUseCache(useCache)
+    , fDelegate(delegate)
 {
 }
 
@@ -1286,6 +1292,10 @@ RegionToTexture::~RegionToTexture()
 
 ThreadPoolJob::JobStatus RegionToTexture::runJob()
 {
+    auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
+    defer{
+        fDelegate->regionToTextureDidFinishJob(result);
+    };
     try {
         int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();
         File cache = CacheFile(fRegionFile);
@@ -1298,9 +1308,9 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
                 return ThreadPoolJob::jobHasFinished;
             }
             if (cachedModificationTime >= modified) {
-                fPixels.reset(new PixelARGB[512 * 512]);
-                if (ungzip.read(fPixels.get(), expectedBytes) != expectedBytes) {
-                    fPixels.reset();
+                result->fPixels.reset(new PixelARGB[512 * 512]);
+                if (ungzip.read(result->fPixels.get(), expectedBytes) != expectedBytes) {
+                    result->fPixels.reset();
                 }
                 return ThreadPoolJob::jobHasFinished;
             }
@@ -1310,8 +1320,8 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
         if (!region) {
             return ThreadPoolJob::jobHasFinished;
         }
-        Load(*region, this, fDimension, [this](PixelARGB *pixels) {
-            fPixels.reset(pixels);
+        Load(*region, this, fDimension, [this, &result](PixelARGB *pixels) {
+            result->fPixels.reset(pixels);
         });
         if (shouldExit()) {
             return ThreadPoolJob::jobHasFinished;
@@ -1320,18 +1330,18 @@ ThreadPoolJob::JobStatus RegionToTexture::runJob()
         out.truncate();
         out.setPosition(0);
         GZIPCompressorOutputStream gzip(out, 9);
-        if (fPixels) {
+        if (result->fPixels) {
             gzip.write(&modified, sizeof(modified));
-            gzip.write(fPixels.get(), sizeof(PixelARGB) * 512 * 512);
+            gzip.write(result->fPixels.get(), sizeof(PixelARGB) * 512 * 512);
         }
         return ThreadPoolJob::jobHasFinished;
     } catch (std::exception &e) {
         Logger::writeToLog(e.what());
-        fPixels.reset();
+        result->fPixels.reset();
         return ThreadPoolJob::jobHasFinished;
     } catch (...) {
         Logger::writeToLog("Unknown error");
-        fPixels.reset();
+        result->fPixels.reset();
         return ThreadPoolJob::jobHasFinished;
     }
 }

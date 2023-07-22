@@ -49,20 +49,31 @@ inline Biome ToBiome(mcfile::biomes::BiomeId b)
 
 class RegionToTexture : public juce::ThreadPoolJob {
 public:
-    RegionToTexture(juce::File const& mcaFile, Region region, Dimension dim, bool useCache);
+    class Result {
+    public:
+        Result(Region region, juce::File regionFile, juce::File worldDirectory, Dimension dimension) : fRegion(region), fRegionFile(regionFile), fWorldDirectory(worldDirectory), fDimension(dimension) {}
+
+        Region const fRegion;
+        juce::File const fRegionFile;
+        std::unique_ptr<juce::PixelARGB[]> fPixels;
+        juce::File const fWorldDirectory;
+        Dimension const fDimension;
+    };
+
+    class Delegate {
+    public:
+        virtual ~Delegate() = default;
+        virtual void regionToTextureDidFinishJob(std::shared_ptr<Result> result) = 0;
+    };
+
+    RegionToTexture(juce::File const& worldDirectory, juce::File const& mcaFile, Region region, Dimension dim, bool useCache, Delegate* delegate);
     ~RegionToTexture();
     ThreadPoolJob::JobStatus runJob() override;
-    
-    static void Load(mcfile::je::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(juce::PixelARGB *)> completion);
+
+    static void Load(mcfile::je::Region const& region, ThreadPoolJob* job, Dimension dim, std::function<void(juce::PixelARGB*)> completion);
     static juce::File CacheFile(juce::File const& file);
-    
+
 public:
-    juce::File const fRegionFile;
-    Region const fRegion;
-    Dimension const fDimension;
-    std::unique_ptr<juce::PixelARGB[]> fPixels;
-    bool const fUseCache;
-    
     static std::map<mcfile::blocks::BlockId, juce::Colour> const kBlockToColor;
 
     static juce::Colour const kDefaultOceanColor;
@@ -70,6 +81,14 @@ public:
 
     static juce::Colour const kDefaultFoliageColor;
     static std::map<Biome, juce::Colour> const kFoliageToColor;
+
+private:
+    juce::File const fRegionFile;
+    Region const fRegion;
+    juce::File const fWorldDirectory;
+    Dimension const fDimension;
+    bool const fUseCache;
+    Delegate* const fDelegate;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionToTexture)
 };

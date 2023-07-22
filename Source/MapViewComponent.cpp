@@ -139,6 +139,9 @@ MapViewComponent::~MapViewComponent()
 
     fGLContext.detach();
     fPool->removeAllJobs(true, -1);
+    for (auto& pool : fPoolTomb) {
+        pool->removeAllJobs(true, -1);
+    }
     fRegionUpdateChecker->signalThreadShouldExit();
     fRegionUpdateChecker->waitForThreadToExit(-1);
 }
@@ -716,38 +719,37 @@ static float CubicEaseInOut(float t, float start, float end, float duration) {
 void MapViewComponent::instantiateTextures(LookAt lookAt)
 {
     bool loadingFinished = false;
+    juce::File worldDirectory;
+    Dimension dimension;
+    std::vector<std::shared_ptr<RegionToTexture::Result>> remove;
+    std::vector<std::pair<std::shared_ptr<RegionToTexture::Result>, float>> distances;
+    {
+        std::lock_guard<std::mutex> lock(fMut);
+        worldDirectory = fWorldDirectory;
+        dimension = fDimension;
 
-    std::vector<std::pair<RegionToTexture*, float>> distances;
-    for (int i = 0; i < fJobs.size(); i++) {
-        auto& job = fJobs[i];
-        if (fPool->contains(job.get())) {
-            continue;
+        for (size_t i = 0; i < fGLJobResults.size(); i++) {
+            auto const& result = fGLJobResults[i];
+            if (result->fWorldDirectory != worldDirectory) {
+                remove.push_back(result);
+                continue;
+            }
+            if (result->fDimension != dimension) {
+                remove.push_back(result);
+                continue;
+            }
+            float distance = DistanceSqBetweenRegionAndLookAt(lookAt, result->fRegion);
+            distances.push_back(std::make_pair(result, distance));
         }
-        float distance = DistanceSqBetweenRegionAndLookAt(lookAt, job->fRegion);
-        distances.emplace_back(job.get(), distance);
     }
     std::sort(distances.begin(), distances.end(), [](auto const& a, auto const& b) {
         return a.second < b.second;
-    });
+        });
 
     int constexpr kNumLoadTexturesPerFrame = 16;
     for (int i = 0; i < kNumLoadTexturesPerFrame && i < distances.size(); i++) {
-        RegionToTexture* job = distances[i].first;
-        fPool->removeJob(job, false, 0);
-
-        std::unique_ptr<RegionToTexture> j;
-        for (auto it = fJobs.begin(); it != fJobs.end(); it++) {
-            if (it->get() == job) {
-                j.reset(it->release());
-                fJobs.erase(it);
-                break;
-            }
-        }
-
-        assert(j);
-        if (!j) {
-            continue;
-        }
+        std::shared_ptr<RegionToTexture::Result> j = distances[i].first;
+        remove.push_back(j);
 
         auto before = fTextures.find(j->fRegion);
         if (j->fPixels) {
@@ -763,7 +765,7 @@ void MapViewComponent::instantiateTextures(LookAt lookAt)
             }
         }
 
-        fLoadingRegionsLock.enter();
+        std::lock_guard<std::mutex> lock(fMut);
         auto it = fLoadingRegions.find(j->fRegion);
         if (it != fLoadingRegions.end()) {
             fLoadingRegions.erase(it);
@@ -772,13 +774,27 @@ void MapViewComponent::instantiateTextures(LookAt lookAt)
             fLoadingFinished = true;
             loadingFinished = true;
         }
-        fLoadingRegionsLock.exit();
+    }
+    {
+        std::lock_guard<std::mutex> lock(fMut);
+        for (auto const& it : remove) {
+            for (size_t i = 0; i < fGLJobResults.size(); i++) {
+                if (it.get() == fGLJobResults[i].get()) {
+                    fGLJobResults.erase(fGLJobResults.begin() + i);
+                    break;
+                }
+            }
+        }
     }
 
     if (loadingFinished) {
-        callAfterDelay(kFadeDurationMS, [this](){
+        callAfterDelay(kFadeDurationMS, [this]() {
             stopTimer();
-        });
+            });
+        {
+            std::lock_guard<std::mutex> lock(fMut);
+            fAsyncUpdateQueue.push_back(AsyncUpdateQueueUpdateCaptureButtonStatus{});
+        }
         triggerAsyncUpdate();
     }
 }
@@ -1026,10 +1042,12 @@ void MapViewComponent::drawBackground()
         const int y = (j - 2) * kCheckeredPatternSize + yoffset;
         g.drawHorizontalLine(y, 0, width);
     }
-    
-    fLoadingRegionsLock.enter();
-    std::set<Region> loadingRegions(fLoadingRegions);
-    fLoadingRegionsLock.exit();
+
+    std::set<Region> loadingRegions;
+    {
+        std::lock_guard<std::mutex> lock(fMut);
+        loadingRegions = fLoadingRegions;
+    }
     g.setColour(Colour::fromRGBA(0, 0, 0, 37));
     for (Region region : loadingRegions) {
         int const x = region.first * 512;
@@ -1073,17 +1091,21 @@ void MapViewComponent::setWorldDirectory(File directory, Dimension dim)
 
     File worldDataFile = WorldData::WorldDataPath(directory);
     WorldData data = WorldData::Load(worldDataFile);
-    
-    fGLContext.executeOnGLThread([this](OpenGLContext&) {
-        std::unique_ptr<ThreadPool> prev(fPool.release());
-        fPool.reset(CreateThreadPool());
-        prev->removeAllJobs(true, -1);
-        fJobs.clear();
-        fTextures.clear();
-    }, true);
+
+    if (fPool) {
+        fPool->removeAllJobs(true, 0);
+        fPoolTomb.push_back(std::move(fPool));
+    }
+    fPool.reset(CreateThreadPool());
+
+    auto garbageTextures = std::make_shared<std::map<Region, std::shared_ptr<RegionTextureCache>>>();
+    garbageTextures->swap(fTextures);
+    fGLContext.executeOnGLThread([this, garbageTextures](OpenGLContext&) {
+        garbageTextures->clear();
+        }, true);
 
     {
-        ScopedLock lk(fLoadingRegionsLock);
+        std::lock_guard<std::mutex> lk(fMut);
 
         LookAt const lookAt = fLookAt.load();
 
@@ -1138,20 +1160,18 @@ void MapViewComponent::queueTextureLoading(std::vector<File> files, Dimension di
     }
 
     if (OpenGLContext::getCurrentContext() == &fGLContext) {
-        queueTextureLoadingImpl(fGLContext, files, dim, useCache);
+        queueTextureLoadingImpl(fGLContext, files, fWorldDirectory, dim, useCache);
     } else {
-        fGLContext.executeOnGLThread([this, files, dim, useCache](OpenGLContext &ctx) {
-            queueTextureLoadingImpl(ctx, files, dim, useCache);
+        juce::File worldDirectory = fWorldDirectory;
+        fGLContext.executeOnGLThread([this, files, worldDirectory, dim, useCache](OpenGLContext &ctx) {
+            queueTextureLoadingImpl(ctx, files, worldDirectory, dim, useCache);
         }, false);
     }
 }
 
-void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<File> files, Dimension dim, bool useCache)
+void MapViewComponent::queueTextureLoadingImpl(OpenGLContext& ctx, std::vector<File> files, juce::File worldDirectory, Dimension dim, bool useCache)
 {
-    fLoadingRegionsLock.enter();
-    defer {
-        fLoadingRegionsLock.exit();
-    };
+    std::lock_guard<std::mutex> lock(fMut);
     fLoadingFinished = false;
 
     Rectangle<int> visibleRegions = fVisibleRegions.load();
@@ -1162,20 +1182,29 @@ void MapViewComponent::queueTextureLoadingImpl(OpenGLContext &ctx, std::vector<F
 
     for (File const& f : files) {
         auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-        RegionToTexture* job = new RegionToTexture(f, MakeRegion(r->fX, r->fZ), dim, useCache);
-        fJobs.emplace_back(job);
-        fPool->addJob(job, false);
-        fLoadingRegions.insert(job->fRegion);
+        auto region = MakeRegion(r->fX, r->fZ);
+        RegionToTexture* job = new RegionToTexture(worldDirectory, f, region, dim, useCache, this);
+        fPool->addJob(job, true);
+        fLoadingRegions.insert(region);
         minX = std::min(minX, r->fX);
         maxX = std::max(maxX, r->fX + 1);
         minY = std::min(minY, r->fZ);
         maxY = std::max(maxY, r->fZ + 1);
     }
-    
+
     fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
     if (!isTimerRunning()) {
         startTimer(16); // 60fps
     }
+}
+
+void MapViewComponent::regionToTextureDidFinishJob(std::shared_ptr<RegionToTexture::Result> result) {
+    {
+        std::lock_guard<std::mutex> lock(fMut);
+        fGLJobResults.push_back(result);
+        fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
+    }
+    triggerAsyncUpdate();
 }
 
 Point<float> MapViewComponent::getMapCoordinateFromView(Point<float> p, LookAt lookAt) const
@@ -1338,10 +1367,24 @@ public:
 
     static std::pair<int, String> show(Component *target, String title, String init)
     {
-        std::unique_ptr<TextInputDialog> component(new TextInputDialog());
-        component->fInputLabel->setText(init, dontSendNotification);
-        DialogWindow::showDialog(title, component.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
-        return std::make_pair(component->fResultMenuId, component->fInputLabel->getText());
+        static std::unique_ptr<TextInputDialog> sComponent(new TextInputDialog());
+        sComponent->fInputLabel->setText(init, dontSendNotification);
+        DialogWindow::showDialog(title, sComponent.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
+        return std::make_pair(sComponent->fResultMenuId, sComponent->fInputLabel->getText());
+
+        TextInputDialog* dialog = new TextInputDialog();
+        DialogWindow::LaunchOptions o;
+        o.dialogTitle = title;
+        o.content.setOwned(dialog);
+        o.componentToCentreAround = target;
+        o.dialogBackgroundColour = target->getLookAndFeel().findColour(TextButton::buttonColourId);
+        o.escapeKeyTriggersCloseButton = true;
+        o.useNativeTitleBar = false;
+        o.resizable = false;
+        o.useBottomRightCornerResizer = false;
+
+        o.launchAsync();
+
     }
     
 private:
@@ -1748,7 +1791,24 @@ void MapViewComponent::captureToImage()
 
 void MapViewComponent::handleAsyncUpdate()
 {
-    fCaptureButton->setEnabled(fLoadingFinished.get());
+    std::deque<AsyncUpdateQueue> queue;
+    {
+        std::lock_guard<std::mutex> lock(fMut);
+        queue.swap(fAsyncUpdateQueue);
+    }
+    for (auto const& q : queue) {
+        if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
+            fCaptureButton->setEnabled(fLoadingFinished.get());
+        } else if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
+            for (int i = (int)fPoolTomb.size() - 1; i >= 0; i--) {
+                auto& pool = fPoolTomb[i];
+                if (pool->getNumJobs() == 0) {
+                    pool.reset();
+                    fPoolTomb.erase(fPoolTomb.begin() + i);
+                }
+            }
+        }
+    }
 }
 
 void MapViewComponent::timerCallback()
@@ -1844,7 +1904,7 @@ void MapViewComponent::RegionUpdateChecker::setDirectory(File f, Dimension dim)
     fDim = dim;
 }
 
-void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::string, int64_t> &updated)
+void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::string, int64_t>& updated)
 {
     File d;
     Dimension dim;
@@ -1853,20 +1913,20 @@ void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::stri
         d = fDirectory;
         dim = fDim;
     }
-    
+
     if (!d.exists()) {
         return;
     }
-    
+
     File const root = DimensionDirectory(d, dim);
-    
+
     std::map<std::string, int64_t> copy(std::find_if(updated.begin(), updated.end(), [root](auto it) {
         std::string s = it.first;
         String path(s);
         File f(path);
         return f.getParentDirectory().getFullPathName() == root.getFullPathName();
-    }), updated.end());
-    
+        }), updated.end());
+
     RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
     std::vector<File> files;
     for (DirectoryEntry entry : it) {
@@ -1877,7 +1937,7 @@ void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::stri
         }
         Time modified = f.getLastModificationTime();
         std::string fullpath = f.getFullPathName().toStdString();
-        
+
         auto j = copy.find(fullpath);
         if (j == copy.end()) {
             copy[fullpath] = modified.toMilliseconds();
@@ -1888,9 +1948,9 @@ void MapViewComponent::RegionUpdateChecker::checkUpdatedFiles(std::map<std::stri
             }
         }
     }
-    
+
     copy.swap(updated);
-    
+
     if (!files.empty()) {
         fMapView->queueTextureLoading(files, dim, false);
     }

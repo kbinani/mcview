@@ -12,20 +12,26 @@
 #include <set>
 #include <deque>
 #include <memory>
+#include <variant>
 
-class MapViewComponent : public juce::Component, private juce::OpenGLRenderer, private juce::AsyncUpdater, private juce::Timer, public juce::ChangeListener
+class MapViewComponent : public juce::Component, private juce::OpenGLRenderer, private juce::AsyncUpdater, private juce::Timer, public juce::ChangeListener, public RegionToTexture::Delegate
 {
+    struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
+    struct AsyncUpdateQueueReleaseGarbageThreadPool {};
+ 
+    using AsyncUpdateQueue = std::variant<AsyncUpdateQueueUpdateCaptureButtonStatus, AsyncUpdateQueueReleaseGarbageThreadPool>;
+
 public:
     std::function<void()> onOpenButtonClicked;
     std::function<void()> onSettingsButtonClicked;
-    
+
 public:
     MapViewComponent();
     ~MapViewComponent();
 
-    void paint(juce::Graphics &g) override;
+    void paint(juce::Graphics& g) override;
     void resized() override;
-    
+
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
@@ -37,11 +43,13 @@ public:
     void mouseMove(juce::MouseEvent const& event) override;
     void mouseUp(juce::MouseEvent const& event) override;
 
-    void changeListenerCallback(juce::ChangeBroadcaster *) override;
+    void changeListenerCallback(juce::ChangeBroadcaster*) override;
+
+    void regionToTextureDidFinishJob(std::shared_ptr<RegionToTexture::Result> result) override;
 
     void setWorldDirectory(juce::File directory, Dimension dim);
     void queueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache);
-    
+
     void setBrowserOpened(bool opened);
 
     struct LookAt {
@@ -49,13 +57,13 @@ public:
         float fZ;
         float fBlocksPerPixel;
     };
-    
+
     void render(int const width, int const height, LookAt const lookAt, bool enableUI);
     juce::Rectangle<int> regionBoundingBox();
 
     void handleAsyncUpdate() override;
     void timerCallback() override;
-    
+
     void setWaterOpticalDensity(float v);
     void setWaterTranslucent(bool translucent);
     void setBiomeEnable(bool enable);
@@ -75,7 +83,7 @@ private:
     LookAt clampLookAt(LookAt lookAt) const;
     LookAt clampedLookAt() const;
     void setLookAt(LookAt next);
-    void queueTextureLoadingImpl(juce::OpenGLContext &ctx, std::vector<juce::File> files, Dimension dim, bool useCache);
+    void queueTextureLoadingImpl(juce::OpenGLContext& ctx, std::vector<juce::File> files, juce::File worldDirectory, Dimension dim, bool useCache);
     void instantiateTextures(LookAt lookAt);
     void mouseRightClicked(juce::MouseEvent const& e);
     void saveWorldData();
@@ -91,7 +99,7 @@ private:
 
     struct Uniforms
     {
-        Uniforms (juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
+        Uniforms(juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
         {
             texture.reset(createUniform(openGLContext, shader, "texture"));
             fade.reset(createUniform(openGLContext, shader, "fade"));
@@ -127,14 +135,14 @@ private:
 
     private:
         static juce::OpenGLShaderProgram::Uniform* createUniform(juce::OpenGLContext& openGLContext,
-                                                                 juce::OpenGLShaderProgram& shader,
-                                                                 const char* uniformName)
+            juce::OpenGLShaderProgram& shader,
+            const char* uniformName)
         {
             if (openGLContext.extensions.glGetUniformLocation(shader.getProgramID(), uniformName) < 0) {
                 return nullptr;
             }
 
-            return new juce::OpenGLShaderProgram::Uniform (shader, uniformName);
+            return new juce::OpenGLShaderProgram::Uniform(shader, uniformName);
         }
     };
 
@@ -146,71 +154,71 @@ private:
 
     struct Attributes
     {
-        Attributes (juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
+        Attributes(juce::OpenGLContext& openGLContext, juce::OpenGLShaderProgram& shader)
         {
             position.reset(createAttribute(openGLContext, shader, "position"));
             textureCoordIn.reset(createAttribute(openGLContext, shader, "textureCoordIn"));
         }
 
-        void enable (juce::OpenGLContext& openGLContext)
+        void enable(juce::OpenGLContext& openGLContext)
         {
             using namespace juce::gl;
 
             if (position.get() != nullptr)
             {
-                openGLContext.extensions.glVertexAttribPointer (position->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof (Vertex), nullptr);
-                openGLContext.extensions.glEnableVertexAttribArray (position->attributeID);
+                openGLContext.extensions.glVertexAttribPointer(position->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+                openGLContext.extensions.glEnableVertexAttribArray(position->attributeID);
             }
 
             if (textureCoordIn.get() != nullptr)
             {
-                openGLContext.extensions.glVertexAttribPointer (textureCoordIn->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof (Vertex), (GLvoid*) (sizeof (float) * 2));
-                openGLContext.extensions.glEnableVertexAttribArray (textureCoordIn->attributeID);
+                openGLContext.extensions.glVertexAttribPointer(textureCoordIn->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(sizeof(float) * 2));
+                openGLContext.extensions.glEnableVertexAttribArray(textureCoordIn->attributeID);
             }
         }
 
-        void disable (juce::OpenGLContext& openGLContext)
+        void disable(juce::OpenGLContext& openGLContext)
         {
-            if (position.get() != nullptr)        openGLContext.extensions.glDisableVertexAttribArray (position->attributeID);
-            if (textureCoordIn.get() != nullptr)  openGLContext.extensions.glDisableVertexAttribArray (textureCoordIn->attributeID);
+            if (position.get() != nullptr)        openGLContext.extensions.glDisableVertexAttribArray(position->attributeID);
+            if (textureCoordIn.get() != nullptr)  openGLContext.extensions.glDisableVertexAttribArray(textureCoordIn->attributeID);
         }
 
         std::unique_ptr<juce::OpenGLShaderProgram::Attribute> position, textureCoordIn;
 
     private:
-        static juce::OpenGLShaderProgram::Attribute* createAttribute (juce::OpenGLContext& openGLContext,
+        static juce::OpenGLShaderProgram::Attribute* createAttribute(juce::OpenGLContext& openGLContext,
             juce::OpenGLShaderProgram& shader,
-                                                                const char* attributeName)
+            const char* attributeName)
         {
-            if (openGLContext.extensions.glGetAttribLocation (shader.getProgramID(), attributeName) < 0)
+            if (openGLContext.extensions.glGetAttribLocation(shader.getProgramID(), attributeName) < 0)
                 return nullptr;
 
-            return new juce::OpenGLShaderProgram::Attribute (shader, attributeName);
+            return new juce::OpenGLShaderProgram::Attribute(shader, attributeName);
         }
     };
 
     struct Buffer {
         GLuint vBuffer;
         GLuint iBuffer;
-        
+
         static GLsizei const kNumPoints = 4;
     };
 
     class RegionUpdateChecker : public juce::Thread
     {
     public:
-        explicit RegionUpdateChecker(MapViewComponent *component);
+        explicit RegionUpdateChecker(MapViewComponent* component);
         void run() override;
         void setDirectory(juce::File f, Dimension dim);
 
     private:
-        void checkUpdatedFiles(std::map<std::string, int64_t> &updated);
-        
+        void checkUpdatedFiles(std::map<std::string, int64_t>& updated);
+
     private:
         juce::CriticalSection fSection;
         juce::File fDirectory;
         Dimension fDim;
-        MapViewComponent * const fMapView;
+        MapViewComponent* const fMapView;
     };
 
 private:
@@ -238,14 +246,15 @@ private:
     juce::Point<float> fCenterWhenDragStart;
 
     juce::Point<float> fMouse;
-    
+
     std::unique_ptr<juce::ThreadPool> fPool;
-    std::vector<std::unique_ptr<RegionToTexture>> fJobs;
+    std::deque<std::unique_ptr<juce::ThreadPool>> fPoolTomb;
+    std::deque<std::shared_ptr<RegionToTexture::Result>> fGLJobResults;
 
     static int constexpr kCheckeredPatternSize = 16;
-    
+
     std::set<Region> fLoadingRegions;
-    juce::CriticalSection fLoadingRegionsLock;
+    std::mutex fMut;
 
     std::unique_ptr<juce::DrawableButton> fBrowserOpenButton;
     std::unique_ptr<juce::Drawable> fBrowserOpenButtonImageOpen;
@@ -253,37 +262,38 @@ private:
 
     std::unique_ptr<juce::DrawableButton> fOverworld;
     std::unique_ptr<juce::Drawable> fOverworldImage;
-    
+
     std::unique_ptr<juce::DrawableButton> fNether;
     std::unique_ptr<juce::Drawable> fNetherImage;
-    
+
     std::unique_ptr<juce::DrawableButton> fEnd;
     std::unique_ptr<juce::Drawable> fEndImage;
-    
+
     std::unique_ptr<juce::DrawableButton> fCaptureButton;
     std::unique_ptr<juce::Drawable> fCaptureButtonImage;
-    
+
     std::unique_ptr<juce::DrawableButton> fSettingsButton;
     std::unique_ptr<juce::Drawable> fSettingsButtonImage;
-    
+
     std::unique_ptr<juce::TooltipWindow> fTooltipWindow;
-    
+
     juce::Atomic<bool> fLoadingFinished;
-    
+
     OverScroller fScroller;
     std::deque<juce::MouseEvent> fLastDragPosition;
     TimerInstance fScrollerTimer;
     TimerInstance fAnimationTimer;
-    
+
     juce::Atomic<float> fWaterOpticalDensity;
     juce::Atomic<bool> fWaterTranslucent;
-    
+
     juce::Atomic<bool> fEnableBiome;
     juce::Atomic<int> fBiomeBlend;
-    
+
     std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
-    
+
     std::unique_ptr<juce::FileChooser> fFileChooser;
-    
+    std::deque<AsyncUpdateQueue> fAsyncUpdateQueue;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
