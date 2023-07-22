@@ -132,7 +132,9 @@ juce_add_binary_data(app-data
     Resource/icon_512x512@2x.png
     Resource/icon_small.png
     Resource/icon_large.png
-    Resource/japanese.lang)
+    Resource/japanese.lang
+    Resource/shader/tile.vert
+    Resource/shader/color.frag)
 
 target_link_libraries(mcview
   PRIVATE
