@@ -1,10 +1,10 @@
+#include <colormap/colormap.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
 #include <minecraft-file.hpp>
-#include <colormap/colormap.h>
 
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 #include <variant>
 
 // clang-format off
