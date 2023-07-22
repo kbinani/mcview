@@ -1,7 +1,7 @@
-#include "PinComponent.h"
-#include "GraphicsHelper.h"
-#include "WorldData.h"
-#include "defer.h"
+#include "PinComponent.hpp"
+#include "GraphicsHelper.hpp"
+#include "WorldData.hpp"
+#include "defer.hpp"
 
 using namespace juce;
 

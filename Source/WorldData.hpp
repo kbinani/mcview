@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Pin.h"
+#include "Pin.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class WorldData {

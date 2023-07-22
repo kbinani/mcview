@@ -1,6 +1,6 @@
-#include "WorldData.h"
-#include "Pin.h"
-#include "Settings.h"
+#include "WorldData.hpp"
+#include "Pin.hpp"
+#include "Settings.hpp"
 
 using namespace juce;
 

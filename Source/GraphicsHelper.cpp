@@ -1,5 +1,5 @@
-#include "GraphicsHelper.h"
-#include "defer.h"
+#include "GraphicsHelper.hpp"
+#include "defer.hpp"
 
 using namespace juce;
 

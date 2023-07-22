@@ -1,5 +1,5 @@
-#include "Settings.h"
-#include "SettingsComponent.h"
+#include "Settings.hpp"
+#include "SettingsComponent.hpp"
 
 using namespace juce;
 

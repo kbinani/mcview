@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Settings.h"
+#include "Settings.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class SettingsComponent : public juce::Component {

@@ -1,6 +1,6 @@
-#include "SettingsComponent.h"
-#include "AboutComponent.h"
-#include "defer.h"
+#include "SettingsComponent.hpp"
+#include "AboutComponent.hpp"
+#include "defer.hpp"
 
 using namespace juce;
 

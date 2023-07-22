@@ -1,7 +1,7 @@
 #pragma once
-#include "Dimension.h"
-#include "Region.h"
-#include "RegionToTexture.h"
+#include "Dimension.hpp"
+#include "Region.hpp"
+#include "RegionToTexture.hpp"
 #include "minecraft-file.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 

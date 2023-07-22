@@ -8,12 +8,12 @@
   ==============================================================================
 */
 
-#include "AboutComponent.h"
-#include "GraphicsHelper.h"
-#include "LocalizationHelper.h"
-#include "LookAndFeel.h"
-#include "MainComponent.h"
-#include "MapViewComponent.h"
+#include "AboutComponent.hpp"
+#include "GraphicsHelper.hpp"
+#include "LocalizationHelper.hpp"
+#include "LookAndFeel.hpp"
+#include "MainComponent.hpp"
+#include "MapViewComponent.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 //==============================================================================

@@ -5,10 +5,10 @@
 #include <map>
 #include <set>
 
-#include "defer.h"
+#include "defer.hpp"
 
-#include "File.h"
-#include "RegionToTexture.h"
+#include "File.hpp"
+#include "RegionToTexture.hpp"
 
 using namespace juce;
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DirectoryBrowserComponent.h"
-#include "GraphicsHelper.h"
+#include "DirectoryBrowserComponent.hpp"
+#include "GraphicsHelper.hpp"
 
 namespace mcview {
 

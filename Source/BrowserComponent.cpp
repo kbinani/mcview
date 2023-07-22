@@ -1,8 +1,8 @@
-#include "BrowserComponent.h"
+#include "BrowserComponent.hpp"
 #include "BinaryData.h"
-#include "LookAndFeel.h"
-#include "MainComponent.h"
-#include "defer.h"
+#include "LookAndFeel.hpp"
+#include "MainComponent.hpp"
+#include "defer.hpp"
 
 using namespace juce;
 

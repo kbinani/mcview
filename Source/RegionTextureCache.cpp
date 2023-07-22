@@ -1,5 +1,5 @@
-#include "RegionTextureCache.h"
-#include "RegionToTexture.h"
+#include "RegionTextureCache.hpp"
+#include "RegionToTexture.hpp"
 #include <cassert>
 #include <minecraft-file.hpp>
 

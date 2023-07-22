@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DirectoryBrowserComponent.h"
+#include "DirectoryBrowserComponent.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class BrowserComponent : public juce::Component, private juce::Timer {

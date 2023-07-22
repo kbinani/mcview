@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "BrowserComponent.h"
-#include "Dimension.h"
-#include "MapViewComponent.h"
-#include "Settings.h"
-#include "SettingsComponent.h"
+#include "BrowserComponent.hpp"
+#include "Dimension.hpp"
+#include "MapViewComponent.hpp"
+#include "Settings.hpp"
+#include "SettingsComponent.hpp"
 #include <iostream>
 
 //==============================================================================

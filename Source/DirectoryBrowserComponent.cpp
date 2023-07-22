@@ -1,6 +1,6 @@
-#include "DirectoryBrowserComponent.h"
-#include "GraphicsHelper.h"
-#include "defer.h"
+#include "DirectoryBrowserComponent.hpp"
+#include "GraphicsHelper.hpp"
+#include "defer.hpp"
 
 using namespace juce;
 

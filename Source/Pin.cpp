@@ -1,4 +1,4 @@
-#include "Pin.h"
+#include "Pin.hpp"
 
 using namespace juce;
 

@@ -59,42 +59,42 @@ juce_add_gui_app(mcview
 
 set(mcview_files
   Source/AboutComponent.cpp
-  Source/AboutComponent.h
+  Source/AboutComponent.hpp
   Source/BrowserComponent.cpp
-  Source/BrowserComponent.h
-  Source/defer.h
-  Source/Dimension.h
+  Source/BrowserComponent.hpp
+  Source/defer.hpp
+  Source/Dimension.hpp
   Source/DirectoryBrowserComponent.cpp
-  Source/DirectoryBrowserComponent.h
+  Source/DirectoryBrowserComponent.hpp
   Source/GraphicsHelper.cpp
-  Source/GraphicsHelper.h
+  Source/GraphicsHelper.hpp
   Source/LocalizationHelper.cpp
-  Source/LocalizationHelper.h
-  Source/LookAndFeel.h
+  Source/LocalizationHelper.hpp
+  Source/LookAndFeel.hpp
   Source/Main.cpp
-  Source/MainComponent.h
+  Source/MainComponent.hpp
   Source/MapViewComponent.cpp
-  Source/MapViewComponent.h
+  Source/MapViewComponent.hpp
   Source/OverScroller.hpp
   Source/Pin.cpp
-  Source/Pin.h
+  Source/Pin.hpp
   Source/PinComponent.cpp
-  Source/PinComponent.h
+  Source/PinComponent.hpp
   Source/PNGWriter.cpp
-  Source/PNGWriter.h
-  Source/Region.h
+  Source/PNGWriter.hpp
+  Source/Region.hpp
   Source/RegionTextureCache.cpp
-  Source/RegionTextureCache.h
+  Source/RegionTextureCache.hpp
   Source/RegionToTexture.cpp
-  Source/RegionToTexture.h
+  Source/RegionToTexture.hpp
   Source/Settings.cpp
-  Source/Settings.h
+  Source/Settings.hpp
   Source/SettingsComponent.cpp
-  Source/SettingsComponent.h
-  Source/TimerInstance.h
+  Source/SettingsComponent.hpp
+  Source/TimerInstance.hpp
   Source/WorldData.cpp
-  Source/WorldData.h
-  Source/File.h
+  Source/WorldData.hpp
+  Source/File.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Dimension.h"
+#include "Dimension.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class Pin {

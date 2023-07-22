@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Dimension.h"
+#include "Dimension.hpp"
 #include "OverScroller.hpp"
-#include "PinComponent.h"
-#include "RegionTextureCache.h"
-#include "RegionToTexture.h"
-#include "TimerInstance.h"
-#include "WorldData.h"
+#include "PinComponent.hpp"
+#include "RegionTextureCache.hpp"
+#include "RegionToTexture.hpp"
+#include "TimerInstance.hpp"
+#include "WorldData.hpp"
 #include <deque>
 #include <map>
 #include <memory>

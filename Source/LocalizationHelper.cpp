@@ -1,4 +1,4 @@
-#include "LocalizationHelper.h"
+#include "LocalizationHelper.hpp"
 #include "BinaryData.h"
 
 #if JUCE_WINDOWS
