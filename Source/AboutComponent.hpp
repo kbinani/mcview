@@ -6,13 +6,14 @@ public:
     using namespace juce;
     fLines = {
         CreateLabel(String("Version: ") + String::fromUTF8(JUCE_APPLICATION_VERSION_STRING)),
-        CreateLabel("Copyright (C) 2019, 2022 kbinani"),
+        CreateLabel("Copyright (C) 2019, 2022, 2023 kbinani"),
         CreateLabel(""),
         CreateLabel("Acknowledgement"),
         CreateLabel(""),
 
         CreateLabel("JUCE"),
         CreateLink("https://github.com/juce-framework/JUCE"),
+        CreateLink("https://github.com/kbinani/JUCE"),
         CreateLabel(""),
 
         CreateLabel("Google Material Design Icon"),
