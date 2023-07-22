@@ -19,7 +19,7 @@ class LookAndFeel : public juce::LookAndFeel_V4 {
       g.setColour(label.findColour(Label::textColourId).withMultipliedAlpha(alpha));
       g.setFont(font);
 
-      Rectangle<float> textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds()).toFloat();
+      juce::Rectangle<float> textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds()).toFloat();
 
       GraphicsHelper::DrawFittedText(g, label.getText(), textArea, label.getJustificationType(),
                                      jmax(1, (int)(textArea.getHeight() / font.getHeight())),

@@ -14,7 +14,7 @@ public:
 
   void run() {
     using namespace juce;
-    Rectangle<int> bounds;
+    juce::Rectangle<int> bounds;
     fGLContext.executeOnGLThread([this, &bounds](OpenGLContext &) {
       bounds = fDelegate->savePNGProgressWindowRegionBoundingBox();
     },
@@ -59,7 +59,7 @@ public:
         lookAt.fBlocksPerPixel = 1;
         fDelegate->savePNGProgressWindowRender(width, row, lookAt);
 
-        buffer->readPixels(pixelsPtr, Rectangle<int>(0, 0, width, row));
+        buffer->readPixels(pixelsPtr, juce::Rectangle<int>(0, 0, width, row));
         buffer->releaseAsRenderingTarget();
 
         buffer->release();

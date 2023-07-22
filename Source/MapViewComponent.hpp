@@ -200,7 +200,7 @@ public:
       }
     }
 
-    Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
+    juce::Rectangle<float> const border(width - kMargin - kButtonSize - kMargin - coordLabelWidth, kMargin, coordLabelWidth, coordLabelHeight);
     g.setColour(Colour::fromFloatRGBA(1, 1, 1, 0.8));
     g.fillRoundedRectangle(border, 6.0f);
     g.setColour(Colours::lightgrey);
@@ -210,13 +210,13 @@ public:
     g.setColour(Colours::black);
     Font bold(14, Font::bold);
     Font regular(14);
-    Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+    juce::Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
     g.setFont(regular);
     g.drawText("X: ", line1, Justification::centredLeft);
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.x)), line1, Justification::centredRight, 1);
     y += lineHeight;
-    Rectangle<int> line2(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
+    juce::Rectangle<int> line2(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
     g.setFont(regular);
     g.drawText("Z: ", line2, Justification::centredLeft);
     g.setFont(bold);
@@ -379,7 +379,7 @@ public:
     float const vz = -dz / dt;
     LookAt current = clampedLookAt();
 
-    Rectangle<int> visible = fVisibleRegions.load();
+    juce::Rectangle<int> visible = fVisibleRegions.load();
     fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
                     vx, vz,
                     visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
@@ -475,7 +475,7 @@ public:
       LookAt next = lookAt;
       next.fX = 0;
       next.fZ = 0;
-      fVisibleRegions = Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+      fVisibleRegions = juce::Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
       setLookAt(next);
 
       std::sort(files.begin(), files.end(), [next](File const &a, File const &b) {
@@ -1354,7 +1354,7 @@ private:
     std::lock_guard<std::mutex> lock(fMut);
     fLoadingFinished = false;
 
-    Rectangle<int> visibleRegions = fVisibleRegions.load();
+    juce::Rectangle<int> visibleRegions = fVisibleRegions.load();
     int minX = visibleRegions.getX();
     int maxX = visibleRegions.getRight();
     int minY = visibleRegions.getY();
@@ -1372,7 +1372,7 @@ private:
       maxY = std::max(maxY, r->fZ + 1);
     }
 
-    fVisibleRegions = Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
+    fVisibleRegions = juce::Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
     if (!isTimerRunning()) {
       startTimer(16); // 60fps
     }
@@ -1474,7 +1474,7 @@ private:
     PopupMenu menu;
     menu.addItem(1, TRANS("Put a pin here"));
     Point<int> pos = e.getScreenPosition();
-    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
+    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(juce::Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
       if (menuId != 1) {
         return;
       }
@@ -1551,7 +1551,7 @@ private:
     PopupMenu menu;
     menu.addItem(1, TRANS("Delete") + " \"" + pin->fMessage + "\"");
     menu.addItem(2, TRANS("Rename") + " \"" + pin->fMessage + "\"");
-    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(Rectangle<int>(screenPos, screenPos)), [this, pin](int menuId) {
+    menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(juce::Rectangle<int>(screenPos, screenPos)), [this, pin](int menuId) {
       if (menuId == 1) {
         for (auto it = fPinComponents.begin(); it != fPinComponents.end(); it++) {
           if (!(*it)->isPresenting(pin)) {

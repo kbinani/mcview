@@ -50,7 +50,7 @@ public:
 
     {
       int const logoHeight = 120;
-      Rectangle<float> logoArea(margin, y, width - 2 * margin, logoHeight);
+      juce::Rectangle<float> logoArea(margin, y, width - 2 * margin, logoHeight);
       fLogo->drawWithin(g, logoArea, RectanglePlacement::centred, 1.0f);
       y += logoHeight + margin;
     }
