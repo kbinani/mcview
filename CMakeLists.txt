@@ -63,7 +63,6 @@ set(mcview_files
   Source/defer.hpp
   Source/Dimension.hpp
   Source/DirectoryBrowserComponent.hpp
-  Source/GraphicsHelper.hpp
   Source/LocalizationHelper.cpp
   Source/LocalizationHelper.hpp
   Source/LookAndFeel.hpp
@@ -95,6 +94,7 @@ set(mcview_files
   Source/GLAttributes.hpp
   Source/GLBuffer.hpp
   Source/DirectoryBrowserModel.hpp
+  Source/NotoSansTypeface.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
@@ -140,7 +140,15 @@ juce_add_binary_data(app-data
     Resource/icon_large.png
     Resource/japanese.lang
     Resource/shader/tile.vert
-    Resource/shader/color.frag)
+    Resource/shader/color.frag
+    Resource/NotoSans-Regular.ttf
+    Resource/NotoSans-Bold.ttf
+    Resource/NotoSansJP-Regular.ttf
+    Resource/NotoSansJP-Bold.ttf
+    Resource/NotoSansSC-Regular.otf
+    Resource/NotoSansSC-Bold.otf
+    Resource/NotoSansTC-Regular.otf
+    Resource/NotoSansTC-Bold.otf)
 
 target_link_libraries(mcview
   PRIVATE

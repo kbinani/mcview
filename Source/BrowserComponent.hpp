@@ -51,7 +51,7 @@ class BrowserComponent : public juce::Component, private juce::Timer {
         };
         g.setColour(juce::Colours::white);
         int const margin = 10;
-        GraphicsHelper::DrawFittedText(g, fTitle, margin, 0, getWidth() - 2 * margin, getHeight(), juce::Justification::centredLeft, 1);
+        g.drawFittedText(fTitle, margin, 0, getWidth() - 2 * margin, getHeight(), juce::Justification::centredLeft, 1);
       }
     }
 

@@ -193,11 +193,10 @@ public:
           for (int z = minRegionZ; z <= maxRegionZ; z++) {
             Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
             Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
-            GraphicsHelper::DrawFittedText(g,
-                                           String::formatted("r.%d.%d.mca", x, z),
-                                           tl.x, tl.y,
-                                           br.x - tl.x, br.y - tl.y,
-                                           Justification::centred, 1);
+            g.drawFittedText(String::formatted("r.%d.%d.mca", x, z),
+                             tl.x, tl.y,
+                             br.x - tl.x, br.y - tl.y,
+                             Justification::centred, 1);
           }
         }
       }

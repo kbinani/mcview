@@ -11,8 +11,8 @@
 #include "defer.hpp"
 
 #include "BinaryData.h"
-#include "GraphicsHelper.hpp"
 #include "LocalizationHelper.hpp"
+#include "NotoSansTypeface.hpp"
 #include "LookAndFeel.hpp"
 #include "Settings.hpp"
 #include "File.hpp"

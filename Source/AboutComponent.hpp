@@ -65,7 +65,7 @@ public:
       };
       g.setFont(titleHeight);
       g.setColour(Colours::white);
-      GraphicsHelper::DrawText(g, JUCE_APPLICATION_NAME_STRING, margin, y, width - 2 * margin, titleHeight, Justification::centred);
+      g.drawText(JUCE_APPLICATION_NAME_STRING, margin, y, width - 2 * margin, titleHeight, Justification::centred);
       y += titleHeight + margin;
     }
     for (auto const &line : fLines) {

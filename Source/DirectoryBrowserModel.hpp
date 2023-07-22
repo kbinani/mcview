@@ -41,7 +41,7 @@ public:
     g.setColour(rowIsSelected ? fTextColorOn : fTextColorOff);
 
     juce::String const name = fItems[rowNumber].getFileName();
-    GraphicsHelper::DrawFittedText(g, name, margin, 0, width - 2 * margin, height, juce::Justification::centredLeft, 1);
+    g.drawFittedText(name, margin, 0, width - 2 * margin, height, juce::Justification::centredLeft, 1);
   }
 
   void applyLookAndFeel(juce::LookAndFeel const &laf) {

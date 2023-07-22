@@ -7,13 +7,16 @@ namespace mcview {
 
 #if JUCE_MAC
 
-LocalisedStrings *LocalizationHelper::CurrentLocalisedStrings()
-{
+LocalisedStrings *LocalizationHelper::CurrentLocalisedStrings() {
     NSString * language = [[NSLocale preferredLanguages] firstObject];
     if ([language isEqualToString: @"ja-JP"]) {
         return Japanese();
     }
     return nullptr;
+}
+
+std::vector<juce::String> LocalizationHelper::PreferredLanguages() {
+    return {};
 }
 
 #endif

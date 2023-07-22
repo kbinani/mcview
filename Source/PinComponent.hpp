@@ -54,7 +54,7 @@ public:
     g.fillRect(stringBounds);
     g.setColour(juce::Colours::white);
     g.setFont(pinNameFontSize);
-    GraphicsHelper::DrawText(g, fPin->fMessage, stringBounds, juce::Justification::centred);
+    g.drawText(fPin->fMessage, stringBounds, juce::Justification::centred);
   }
 
   void mouseDown(juce::MouseEvent const &e) override {
