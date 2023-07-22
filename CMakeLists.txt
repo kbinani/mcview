@@ -123,7 +123,9 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
 endif()
 
-juce_add_binary_data(app-data
+juce_add_binary_data(binary-data
+  NAMESPACE mcview::BinaryData
+  HEADER_NAME BinaryData.hpp
   SOURCES
     Resource/baseline_add_white_18dp.png
     Resource/baseline_brightness_3_white_18dp.png
@@ -139,8 +141,6 @@ juce_add_binary_data(app-data
     Resource/icon_small.png
     Resource/icon_large.png
     Resource/japanese.lang
-    Resource/shader/tile.vert
-    Resource/shader/color.frag
     Resource/NotoSans-Regular.ttf
     Resource/NotoSans-Bold.ttf
     Resource/NotoSansJP-Regular.ttf
@@ -149,10 +149,17 @@ juce_add_binary_data(app-data
     Resource/NotoSansSC-Bold.otf
     Resource/NotoSansTC-Regular.otf
     Resource/NotoSansTC-Bold.otf)
+juce_add_binary_data(shader-data
+  NAMESPACE mcview::ShaderData
+  HEADER_NAME ShaderData.hpp
+  SOURCES
+    Resource/shader/tile.vert
+    Resource/shader/color.frag)
 
 target_link_libraries(mcview
   PRIVATE
-    app-data
+    binary-data
+    shader-data
     mcfile
     juce::juce_gui_extra
     juce::juce_opengl

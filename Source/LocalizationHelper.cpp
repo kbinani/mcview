@@ -1,6 +1,6 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "BinaryData.h"
+#include "BinaryData.hpp"
 
 #include "LocalizationHelper.hpp"
 

@@ -10,7 +10,8 @@
 // clang-format off
 #include "defer.hpp"
 
-#include "BinaryData.h"
+#include "BinaryData.hpp"
+#include "ShaderData.hpp"
 #include "LocalizationHelper.hpp"
 #include "NotoSansTypeface.hpp"
 #include "LookAndFeel.hpp"

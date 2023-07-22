@@ -747,12 +747,12 @@ private:
     using namespace juce;
     std::unique_ptr<juce::OpenGLShaderProgram> newShader(new juce::OpenGLShaderProgram(fGLContext));
 
-    newShader->addVertexShader(String::fromUTF8(BinaryData::tile_vert, BinaryData::tile_vertSize));
+    newShader->addVertexShader(String::fromUTF8(ShaderData::tile_vert, ShaderData::tile_vertSize));
 
     colormap::kbinani::Altitude altitude;
 
     std::ostringstream fragment;
-    fragment << String::fromUTF8(BinaryData::color_frag, BinaryData::color_fragSize);
+    fragment << String::fromUTF8(ShaderData::color_frag, ShaderData::color_fragSize);
     fragment << altitude.getSource() << std::endl;
 
     fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
