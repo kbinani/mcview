@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class MapViewComponent
     : public juce::Component,
       private juce::OpenGLRenderer,
@@ -1918,3 +1920,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
+
+} // namespace mcview

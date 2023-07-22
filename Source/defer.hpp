@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace mcview {
+
 class defer_t {
 public:
   template <class T, class = typename std::enable_if<std::is_void<decltype((std::declval<T>())())>::value>::type>
@@ -19,6 +21,8 @@ public:
 private:
   std::function<void(void)> fDeferred;
 };
+
+} // namespace mcview
 
 #define defer_helper2(line) defer_tmp##line
 #define defer_helper(line) defer_helper2(line)

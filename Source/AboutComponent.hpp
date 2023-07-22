@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class AboutComponent : public juce::Component {
 public:
   AboutComponent() {
@@ -99,3 +101,5 @@ private:
   std::unique_ptr<juce::Drawable> fLogo;
   juce::Array<std::unique_ptr<Component>> fLines;
 };
+
+} // namespace mcview

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class PinComponent : public juce::Component {
   static int constexpr pinHeadRadius = 6;
   static int constexpr pinNameFontSize = 14;
@@ -130,3 +132,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PinComponent)
 };
+
+} // namespace mcview

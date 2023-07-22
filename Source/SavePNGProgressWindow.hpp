@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class SavePNGProgressWindow : public juce::ThreadWithProgressWindow {
 public:
   class Delegate {
@@ -85,3 +87,5 @@ private:
   juce::OpenGLContext &fGLContext;
   juce::File fFile;
 };
+
+} // namespace mcview

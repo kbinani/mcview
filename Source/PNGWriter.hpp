@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class PNGWriter {
 public:
   PNGWriter(int width, int height, juce::OutputStream &stream);
@@ -15,3 +17,5 @@ private:
   void *fInfoStruct;
   juce::HeapBlock<juce::uint8> fRowData;
 };
+
+} // namespace mcview

@@ -40,6 +40,8 @@
 #include "MainWindow.hpp"
 // clang-format on
 
+namespace mcview {
+
 class Application : public juce::JUCEApplication {
 public:
   Application() {}
@@ -82,4 +84,6 @@ private:
   std::unique_ptr<mcview::LookAndFeel> fLookAndFeel;
 };
 
-START_JUCE_APPLICATION(Application)
+} // namespace mcview
+
+START_JUCE_APPLICATION(mcview::Application)

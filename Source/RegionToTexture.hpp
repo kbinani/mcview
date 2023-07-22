@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 enum class Biome : uint8_t {
   Other = 0,
   Swamp,
@@ -29,3 +31,5 @@ public:
   static juce::Colour const kDefaultFoliageColor;
   static std::map<Biome, juce::Colour> const kFoliageToColor;
 };
+
+} // namespace mcview

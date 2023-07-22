@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class GraphicsHelper {
 public:
   static void DrawText(juce::Graphics &g, juce::String const &text, float x, float y, float width, float height,
@@ -59,3 +61,5 @@ public:
 private:
   GraphicsHelper() = delete;
 };
+
+} // namespace mcview

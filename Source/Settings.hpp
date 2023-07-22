@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 static const juce::Identifier kDirectories("directories");
 static const juce::Identifier kWaterTranslucent("water_translucent");
 static const juce::Identifier kWaterOpticalDensity("water_optical_density");
@@ -216,3 +218,5 @@ private:
 private:
   juce::Array<juce::File> fDirectories;
 };
+
+} // namespace mcview

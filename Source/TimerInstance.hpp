@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class TimerInstance : public juce::Timer {
 public:
   TimerInstance() = default;
@@ -14,3 +16,5 @@ private:
     fTimerCallback(*this);
   }
 };
+
+} // namespace mcview

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class DirectoryBrowserModel : public juce::ListBoxModel {
 public:
   class Delegate {
@@ -92,3 +94,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserComponent);
 };
+
+} // namespace mcview

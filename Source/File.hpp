@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 inline std::filesystem::path PathFromFile(juce::File const &file) {
 #if defined(_WIN32)
   return std::filesystem::path(file.getFullPathName().toWideCharPointer());
@@ -17,3 +19,5 @@ static juce::File DefaultMinecraftSaveDirectory() {
   return library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
 #endif
 }
+
+} // namespace mcview

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class RegionTextureCache {
 public:
   RegionTextureCache(Region region, juce::String file)
@@ -22,3 +24,5 @@ public:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionTextureCache);
 };
+
+} // namespace mcview

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class BrowserComponent : public juce::Component, private juce::Timer {
   class Header : public juce::Component {
   public:
@@ -226,3 +228,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BrowserComponent)
 };
+
+} // namespace mcview

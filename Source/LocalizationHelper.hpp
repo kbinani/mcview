@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class LocalizationHelper {
 public:
   static juce::LocalisedStrings *CurrentLocalisedStrings();
@@ -18,3 +20,5 @@ private:
 
   LocalizationHelper() = delete;
 };
+
+} // namespace mcview

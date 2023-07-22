@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class MainComponent : public juce::Component, private juce::AsyncUpdater {
 public:
   MainComponent()
@@ -194,3 +196,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
+
+} // namespace mcview

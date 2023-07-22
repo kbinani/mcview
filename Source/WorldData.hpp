@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 static const juce::Identifier kPins("pins");
 
 class WorldData {
@@ -49,3 +51,5 @@ public:
 public:
   std::vector<std::shared_ptr<Pin>> fPins;
 };
+
+} // namespace mcview

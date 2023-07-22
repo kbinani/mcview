@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class TexturePackJob : public juce::ThreadPoolJob {
 public:
   class Result {
@@ -90,3 +92,5 @@ private:
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TexturePackJob)
 };
+
+} // namespace mcview

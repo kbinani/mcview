@@ -10,6 +10,8 @@
 
 using namespace juce;
 
+namespace mcview {
+
 #if !JUCE_MAC
 
 #if JUCE_WINDOWS
@@ -31,3 +33,5 @@ LocalisedStrings *LocalizationHelper::CurrentLocalisedStrings() {
 #endif
 
 #endif
+
+} // namespace mcview

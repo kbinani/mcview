@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 static const juce::Identifier kX = juce::Identifier("x");
 static const juce::Identifier kZ("z");
 static const juce::Identifier kMessage("message");
@@ -65,3 +67,5 @@ public:
   juce::String fMessage;
   Dimension fDim;
 };
+
+} // namespace mcview

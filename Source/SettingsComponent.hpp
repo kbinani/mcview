@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class SettingsComponent : public juce::Component {
   class GroupWater : public juce::GroupComponent {
   public:
@@ -265,3 +267,5 @@ private:
   std::unique_ptr<juce::GroupComponent> fGroupPin;
   std::unique_ptr<juce::HyperlinkButton> fAboutButton;
 };
+
+} // namespace mcview

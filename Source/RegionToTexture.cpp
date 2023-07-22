@@ -7,6 +7,9 @@
 #include "RegionToTexture.hpp"
 
 using namespace juce;
+using namespace mcview;
+
+namespace {
 
 static Colour const kColorPotter(135, 75, 58);
 static Colour const kColorPlanksBirch(244, 230, 161);
@@ -54,6 +57,64 @@ static Colour const kColorExposedCopper(150, 138, 104);
 static Colour const kColorWeatheredCopper(99, 158, 118);
 static Colour const kColorOxidizedCopper(75, 146, 130);
 
+static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
+  // [v3 pixel info]
+  // h:            9bit
+  // waterDepth:   7bit
+  // biome:        3bit
+  // block:       10bit
+  // biomeRadius:  3bit
+  static_assert((int)Biome::max_Biome <= 1 << 3, "");
+  static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
+
+  uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
+  if (waterDepth > 0 && depth == 0) {
+    depth = 1;
+  }
+
+  uint32_t const num = (0xFF800000 & (height << 23)) | (0x7F0000 & (uint32_t(depth) << 16)) | (0xE000 & (uint32_t(biome) << 13)) | (0x1FF8 & (uint32_t(block) << 3)) | (0x7 & (uint32_t)biomeRadius);
+  PixelARGB p;
+  p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
+  return p;
+}
+
+static inline Biome ToBiome(mcfile::biomes::BiomeId b) {
+  switch (b) {
+  case mcfile::biomes::minecraft::ocean:
+  case mcfile::biomes::minecraft::deep_ocean:
+    return Biome::Ocean;
+  case mcfile::biomes::minecraft::lukewarm_ocean:
+  case mcfile::biomes::minecraft::deep_lukewarm_ocean:
+    return Biome::LukewarmOcean;
+  case mcfile::biomes::minecraft::warm_ocean:
+  case mcfile::biomes::minecraft::deep_warm_ocean:
+    return Biome::WarmOcean;
+  case mcfile::biomes::minecraft::cold_ocean:
+  case mcfile::biomes::minecraft::deep_cold_ocean:
+  case mcfile::biomes::minecraft::frozen_ocean:
+  case mcfile::biomes::minecraft::deep_frozen_ocean:
+    return Biome::ColdOcean;
+  case mcfile::biomes::minecraft::swamp:
+  case mcfile::biomes::minecraft::swamp_hills:
+    return Biome::Swamp;
+  case mcfile::biomes::minecraft::badlands:
+    return Biome::Badlands;
+  case mcfile::biomes::minecraft::mangrove_swamp:
+    return Biome::MangroveSwamp;
+  default:
+    return Biome::Other;
+  }
+}
+
+struct PixelInfo {
+  int height;
+  int waterDepth;
+  mcfile::blocks::BlockId blockId;
+};
+
+} // namespace
+
+namespace mcview {
 std::map<mcfile::blocks::BlockId, Colour> const RegionToTexture::kBlockToColor{
     {mcfile::blocks::minecraft::stone, Colour(111, 111, 111)},
     {mcfile::blocks::minecraft::granite, kColorStoneGranite},
@@ -1034,61 +1095,6 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-static PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
-  // [v3 pixel info]
-  // h:            9bit
-  // waterDepth:   7bit
-  // biome:        3bit
-  // block:       10bit
-  // biomeRadius:  3bit
-  static_assert((int)Biome::max_Biome <= 1 << 3, "");
-  static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
-
-  uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
-  if (waterDepth > 0 && depth == 0) {
-    depth = 1;
-  }
-
-  uint32_t const num = (0xFF800000 & (height << 23)) | (0x7F0000 & (uint32_t(depth) << 16)) | (0xE000 & (uint32_t(biome) << 13)) | (0x1FF8 & (uint32_t(block) << 3)) | (0x7 & (uint32_t)biomeRadius);
-  PixelARGB p;
-  p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
-  return p;
-}
-
-static inline Biome ToBiome(mcfile::biomes::BiomeId b) {
-  switch (b) {
-  case mcfile::biomes::minecraft::ocean:
-  case mcfile::biomes::minecraft::deep_ocean:
-    return Biome::Ocean;
-  case mcfile::biomes::minecraft::lukewarm_ocean:
-  case mcfile::biomes::minecraft::deep_lukewarm_ocean:
-    return Biome::LukewarmOcean;
-  case mcfile::biomes::minecraft::warm_ocean:
-  case mcfile::biomes::minecraft::deep_warm_ocean:
-    return Biome::WarmOcean;
-  case mcfile::biomes::minecraft::cold_ocean:
-  case mcfile::biomes::minecraft::deep_cold_ocean:
-  case mcfile::biomes::minecraft::frozen_ocean:
-  case mcfile::biomes::minecraft::deep_frozen_ocean:
-    return Biome::ColdOcean;
-  case mcfile::biomes::minecraft::swamp:
-  case mcfile::biomes::minecraft::swamp_hills:
-    return Biome::Swamp;
-  case mcfile::biomes::minecraft::badlands:
-    return Biome::Badlands;
-  case mcfile::biomes::minecraft::mangrove_swamp:
-    return Biome::MangroveSwamp;
-  default:
-    return Biome::Other;
-  }
-}
-
-struct PixelInfo {
-  int height;
-  int waterDepth;
-  mcfile::blocks::BlockId blockId;
-};
-
 void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job, Dimension dim, std::function<void(PixelARGB *)> completion) {
   int const width = 512;
   int const height = 512;
@@ -1293,3 +1299,5 @@ File RegionToTexture::CacheFile(File const &file) {
   }
   return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
 }
+
+} // namespace mcview

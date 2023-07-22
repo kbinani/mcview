@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class TextInputDialog : public juce::Component {
 public:
   TextInputDialog() {
@@ -97,3 +99,5 @@ private:
   std::unique_ptr<juce::TextButton> fOkButton;
   std::unique_ptr<juce::TextButton> fCancelButton;
 };
+
+} // namespace mcview

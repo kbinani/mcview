@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 class MainWindow : public juce::DocumentWindow {
 public:
   MainWindow(juce::String name) : juce::DocumentWindow(name,
@@ -48,3 +50,5 @@ private:
 private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 };
+
+} // namespace mcview

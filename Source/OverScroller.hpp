@@ -18,6 +18,8 @@
 
 #include <chrono>
 
+namespace mcview {
+
 class AnimationUtils {
 public:
   static long currentAnimationTimeMillis() {
@@ -159,16 +161,16 @@ public:
 
 private:
   /*
-     * Get a signed deceleration that will reduce the velocity.
-     */
+   * Get a signed deceleration that will reduce the velocity.
+   */
   static float getDeceleration(int velocity) {
     return velocity > 0 ? -GRAVITY : GRAVITY;
   }
 
   /*
-     * Modifies mDuration to the duration it takes to get from start to newFinal using the
-     * spline interpolation. The previous duration was needed to get to oldFinal.
-     */
+   * Modifies mDuration to the duration it takes to get from start to newFinal using the
+   * spline interpolation. The previous duration was needed to get to oldFinal.
+   */
   void adjustDuration(int start, int oldFinal, int newFinal) {
     const int oldDistance = oldFinal - start;
     const int newDistance = newFinal - start;
@@ -412,10 +414,10 @@ public:
   }
 
   /*
-     * Update the current position and velocity for current time. Returns
-     * true if update has been done and false if animation duration has been
-     * reached.
-     */
+   * Update the current position and velocity for current time. Returns
+   * true if update has been done and false if animation duration has been
+   * reached.
+   */
   bool update() {
     const long time = AnimationUtils::currentAnimationTimeMillis();
     const long currentTime = time - mStartTime;
@@ -531,106 +533,106 @@ private:
 
 public:
   /**
-     * The amount of friction applied to flings. The default value
-     * is {@link ViewConfiguration#getScrollFriction}.
-     *
-     * @param friction A scalar dimension-less value representing the coefficient of
-     *         friction.
-     */
+   * The amount of friction applied to flings. The default value
+   * is {@link ViewConfiguration#getScrollFriction}.
+   *
+   * @param friction A scalar dimension-less value representing the coefficient of
+   *         friction.
+   */
   void setFriction(float friction) {
     mScrollerX.setFriction(friction);
     mScrollerY.setFriction(friction);
   }
 
   /**
-     *
-     * Returns whether the scroller has finished scrolling.
-     *
-     * @return True if the scroller has finished scrolling, false otherwise.
-     */
+   *
+   * Returns whether the scroller has finished scrolling.
+   *
+   * @return True if the scroller has finished scrolling, false otherwise.
+   */
   bool isFinished() {
     return mScrollerX.mFinished && mScrollerY.mFinished;
   }
 
   /**
-     * Force the finished field to a particular value. Contrary to
-     * {@link #abortAnimation()}, forcing the animation to finished
-     * does NOT cause the scroller to move to the final x and y
-     * position.
-     *
-     * @param finished The new finished value.
-     */
+   * Force the finished field to a particular value. Contrary to
+   * {@link #abortAnimation()}, forcing the animation to finished
+   * does NOT cause the scroller to move to the final x and y
+   * position.
+   *
+   * @param finished The new finished value.
+   */
   void forceFinished(bool finished) {
     mScrollerX.mFinished = mScrollerY.mFinished = finished;
   }
 
   /**
-     * Returns the current X offset in the scroll.
-     *
-     * @return The new X offset as an absolute distance from the origin.
-     */
+   * Returns the current X offset in the scroll.
+   *
+   * @return The new X offset as an absolute distance from the origin.
+   */
   int getCurrX() {
     return mScrollerX.mCurrentPosition;
   }
 
   /**
-     * Returns the current Y offset in the scroll.
-     *
-     * @return The new Y offset as an absolute distance from the origin.
-     */
+   * Returns the current Y offset in the scroll.
+   *
+   * @return The new Y offset as an absolute distance from the origin.
+   */
   int getCurrY() {
     return mScrollerY.mCurrentPosition;
   }
 
   /**
-     * Returns the absolute value of the current velocity.
-     *
-     * @return The original velocity less the deceleration, norm of the X and Y velocity vector.
-     */
+   * Returns the absolute value of the current velocity.
+   *
+   * @return The original velocity less the deceleration, norm of the X and Y velocity vector.
+   */
   float getCurrVelocity() {
     return (float)hypot(mScrollerX.mCurrVelocity, mScrollerY.mCurrVelocity);
   }
 
   /**
-     * Returns the start X offset in the scroll.
-     *
-     * @return The start X offset as an absolute distance from the origin.
-     */
+   * Returns the start X offset in the scroll.
+   *
+   * @return The start X offset as an absolute distance from the origin.
+   */
   int getStartX() {
     return mScrollerX.mStart;
   }
 
   /**
-     * Returns the start Y offset in the scroll.
-     *
-     * @return The start Y offset as an absolute distance from the origin.
-     */
+   * Returns the start Y offset in the scroll.
+   *
+   * @return The start Y offset as an absolute distance from the origin.
+   */
   int getStartY() {
     return mScrollerY.mStart;
   }
 
   /**
-     * Returns where the scroll will end. Valid only for "fling" scrolls.
-     *
-     * @return The final X offset as an absolute distance from the origin.
-     */
+   * Returns where the scroll will end. Valid only for "fling" scrolls.
+   *
+   * @return The final X offset as an absolute distance from the origin.
+   */
   int getFinalX() {
     return mScrollerX.mFinal;
   }
 
   /**
-     * Returns where the scroll will end. Valid only for "fling" scrolls.
-     *
-     * @return The final Y offset as an absolute distance from the origin.
-     */
+   * Returns where the scroll will end. Valid only for "fling" scrolls.
+   *
+   * @return The final Y offset as an absolute distance from the origin.
+   */
   int getFinalY() {
     return mScrollerY.mFinal;
   }
 
   /**
-     * Call this when you want to know the new location. If it returns true, the
-     * animation is not yet finished.
-     */
+   * Call this when you want to know the new location. If it returns true, the
+   * animation is not yet finished.
+   */
   bool computeScrollOffset() {
     if (isFinished()) {
       return false;
@@ -684,36 +686,36 @@ public:
   }
 
   /**
-     * Start scrolling by providing a starting point and the distance to travel.
-     * The scroll will use the default value of 250 milliseconds for the
-     * duration.
-     *
-     * @param startX Starting horizontal scroll offset in pixels. Positive
-     *        numbers will scroll the content to the left.
-     * @param startY Starting vertical scroll offset in pixels. Positive numbers
-     *        will scroll the content up.
-     * @param dx Horizontal distance to travel. Positive numbers will scroll the
-     *        content to the left.
-     * @param dy Vertical distance to travel. Positive numbers will scroll the
-     *        content up.
-     */
+   * Start scrolling by providing a starting point and the distance to travel.
+   * The scroll will use the default value of 250 milliseconds for the
+   * duration.
+   *
+   * @param startX Starting horizontal scroll offset in pixels. Positive
+   *        numbers will scroll the content to the left.
+   * @param startY Starting vertical scroll offset in pixels. Positive numbers
+   *        will scroll the content up.
+   * @param dx Horizontal distance to travel. Positive numbers will scroll the
+   *        content to the left.
+   * @param dy Vertical distance to travel. Positive numbers will scroll the
+   *        content up.
+   */
   void startScroll(int startX, int startY, int dx, int dy) {
     startScroll(startX, startY, dx, dy, DEFAULT_DURATION);
   }
 
   /**
-     * Start scrolling by providing a starting point and the distance to travel.
-     *
-     * @param startX Starting horizontal scroll offset in pixels. Positive
-     *        numbers will scroll the content to the left.
-     * @param startY Starting vertical scroll offset in pixels. Positive numbers
-     *        will scroll the content up.
-     * @param dx Horizontal distance to travel. Positive numbers will scroll the
-     *        content to the left.
-     * @param dy Vertical distance to travel. Positive numbers will scroll the
-     *        content up.
-     * @param duration Duration of the scroll in milliseconds.
-     */
+   * Start scrolling by providing a starting point and the distance to travel.
+   *
+   * @param startX Starting horizontal scroll offset in pixels. Positive
+   *        numbers will scroll the content to the left.
+   * @param startY Starting vertical scroll offset in pixels. Positive numbers
+   *        will scroll the content up.
+   * @param dx Horizontal distance to travel. Positive numbers will scroll the
+   *        content to the left.
+   * @param dy Vertical distance to travel. Positive numbers will scroll the
+   *        content up.
+   * @param duration Duration of the scroll in milliseconds.
+   */
   void startScroll(int startX, int startY, int dx, int dy, int duration) {
     mMode = SCROLL_MODE;
     mScrollerX.startScroll(startX, dx, duration);
@@ -721,17 +723,17 @@ public:
   }
 
   /**
-     * Call this when you want to 'spring back' into a valid coordinate range.
-     *
-     * @param startX Starting X coordinate
-     * @param startY Starting Y coordinate
-     * @param minX Minimum valid X value
-     * @param maxX Maximum valid X value
-     * @param minY Minimum valid Y value
-     * @param maxY Minimum valid Y value
-     * @return true if a springback was initiated, false if startX and startY were
-     *          already within the valid range.
-     */
+   * Call this when you want to 'spring back' into a valid coordinate range.
+   *
+   * @param startX Starting X coordinate
+   * @param startY Starting Y coordinate
+   * @param minX Minimum valid X value
+   * @param maxX Maximum valid X value
+   * @param minY Minimum valid Y value
+   * @param maxY Minimum valid Y value
+   * @return true if a springback was initiated, false if startX and startY were
+   *          already within the valid range.
+   */
   bool springBack(int startX, int startY, int minX, int maxX, int minY, int maxY) {
     mMode = FLING_MODE;
 
@@ -747,32 +749,32 @@ public:
   }
 
   /**
-     * Start scrolling based on a fling gesture. The distance traveled will
-     * depend on the initial velocity of the fling.
-     *
-     * @param startX Starting point of the scroll (X)
-     * @param startY Starting point of the scroll (Y)
-     * @param velocityX Initial velocity of the fling (X) measured in pixels per
-     *            second.
-     * @param velocityY Initial velocity of the fling (Y) measured in pixels per
-     *            second
-     * @param minX Minimum X value. The scroller will not scroll past this point
-     *            unless overX > 0. If overfling is allowed, it will use minX as
-     *            a springback boundary.
-     * @param maxX Maximum X value. The scroller will not scroll past this point
-     *            unless overX > 0. If overfling is allowed, it will use maxX as
-     *            a springback boundary.
-     * @param minY Minimum Y value. The scroller will not scroll past this point
-     *            unless overY > 0. If overfling is allowed, it will use minY as
-     *            a springback boundary.
-     * @param maxY Maximum Y value. The scroller will not scroll past this point
-     *            unless overY > 0. If overfling is allowed, it will use maxY as
-     *            a springback boundary.
-     * @param overX Overfling range. If > 0, horizontal overfling in either
-     *            direction will be possible.
-     * @param overY Overfling range. If > 0, vertical overfling in either
-     *            direction will be possible.
-     */
+   * Start scrolling based on a fling gesture. The distance traveled will
+   * depend on the initial velocity of the fling.
+   *
+   * @param startX Starting point of the scroll (X)
+   * @param startY Starting point of the scroll (Y)
+   * @param velocityX Initial velocity of the fling (X) measured in pixels per
+   *            second.
+   * @param velocityY Initial velocity of the fling (Y) measured in pixels per
+   *            second
+   * @param minX Minimum X value. The scroller will not scroll past this point
+   *            unless overX > 0. If overfling is allowed, it will use minX as
+   *            a springback boundary.
+   * @param maxX Maximum X value. The scroller will not scroll past this point
+   *            unless overX > 0. If overfling is allowed, it will use maxX as
+   *            a springback boundary.
+   * @param minY Minimum Y value. The scroller will not scroll past this point
+   *            unless overY > 0. If overfling is allowed, it will use minY as
+   *            a springback boundary.
+   * @param maxY Maximum Y value. The scroller will not scroll past this point
+   *            unless overY > 0. If overfling is allowed, it will use maxY as
+   *            a springback boundary.
+   * @param overX Overfling range. If > 0, horizontal overfling in either
+   *            direction will be possible.
+   * @param overY Overfling range. If > 0, vertical overfling in either
+   *            direction will be possible.
+   */
   void fling(int startX, int startY, int velocityX, int velocityY,
              int minX, int maxX, int minY, int maxY, int overX, int overY) {
     // Continue a scroll or fling in progress
@@ -792,52 +794,52 @@ public:
   }
 
   /**
-     * Notify the scroller that we've reached a horizontal boundary.
-     * Normally the information to handle this will already be known
-     * when the animation is started, such as in a call to one of the
-     * fling functions. However there are cases where this cannot be known
-     * in advance. This function will transition the current motion and
-     * animate from startX to finalX as appropriate.
-     *
-     * @param startX Starting/current X position
-     * @param finalX Desired final X position
-     * @param overX Magnitude of overscroll allowed. This should be the maximum
-     *              desired distance from finalX. Absolute value - must be positive.
-     */
+   * Notify the scroller that we've reached a horizontal boundary.
+   * Normally the information to handle this will already be known
+   * when the animation is started, such as in a call to one of the
+   * fling functions. However there are cases where this cannot be known
+   * in advance. This function will transition the current motion and
+   * animate from startX to finalX as appropriate.
+   *
+   * @param startX Starting/current X position
+   * @param finalX Desired final X position
+   * @param overX Magnitude of overscroll allowed. This should be the maximum
+   *              desired distance from finalX. Absolute value - must be positive.
+   */
   void notifyHorizontalEdgeReached(int startX, int finalX, int overX) {
     mScrollerX.notifyEdgeReached(startX, finalX, overX);
   }
 
   /**
-     * Notify the scroller that we've reached a vertical boundary.
-     * Normally the information to handle this will already be known
-     * when the animation is started, such as in a call to one of the
-     * fling functions. However there are cases where this cannot be known
-     * in advance. This function will animate a parabolic motion from
-     * startY to finalY.
-     *
-     * @param startY Starting/current Y position
-     * @param finalY Desired final Y position
-     * @param overY Magnitude of overscroll allowed. This should be the maximum
-     *              desired distance from finalY. Absolute value - must be positive.
-     */
+   * Notify the scroller that we've reached a vertical boundary.
+   * Normally the information to handle this will already be known
+   * when the animation is started, such as in a call to one of the
+   * fling functions. However there are cases where this cannot be known
+   * in advance. This function will animate a parabolic motion from
+   * startY to finalY.
+   *
+   * @param startY Starting/current Y position
+   * @param finalY Desired final Y position
+   * @param overY Magnitude of overscroll allowed. This should be the maximum
+   *              desired distance from finalY. Absolute value - must be positive.
+   */
   void notifyVerticalEdgeReached(int startY, int finalY, int overY) {
     mScrollerY.notifyEdgeReached(startY, finalY, overY);
   }
 
   /**
-     * Returns whether the current Scroller is currently returning to a valid position.
-     * Valid bounds were provided by the
-     * {@link #fling(int, int, int, int, int, int, int, int, int, int)} method.
-     *
-     * One should check this value before calling
-     * {@link #startScroll(int, int, int, int)} as the interpolation currently in progress
-     * to restore a valid position will then be stopped. The caller has to take into account
-     * the fact that the started scroll will start from an overscrolled position.
-     *
-     * @return true when the current position is overscrolled and in the process of
-     *         interpolating back to a valid value.
-     */
+   * Returns whether the current Scroller is currently returning to a valid position.
+   * Valid bounds were provided by the
+   * {@link #fling(int, int, int, int, int, int, int, int, int, int)} method.
+   *
+   * One should check this value before calling
+   * {@link #startScroll(int, int, int, int)} as the interpolation currently in progress
+   * to restore a valid position will then be stopped. The caller has to take into account
+   * the fact that the started scroll will start from an overscrolled position.
+   *
+   * @return true when the current position is overscrolled and in the process of
+   *         interpolating back to a valid value.
+   */
   bool isOverScrolled() {
     return ((!mScrollerX.mFinished &&
              mScrollerX.mState != SplineOverScroller::SPLINE) ||
@@ -846,24 +848,24 @@ public:
   }
 
   /**
-     * Stops the animation. Contrary to {@link #forceFinished(boolean)},
-     * aborting the animating causes the scroller to move to the final x and y
-     * positions.
-     *
-     * @see #forceFinished(boolean)
-     */
+   * Stops the animation. Contrary to {@link #forceFinished(boolean)},
+   * aborting the animating causes the scroller to move to the final x and y
+   * positions.
+   *
+   * @see #forceFinished(boolean)
+   */
   void abortAnimation() {
     mScrollerX.finish();
     mScrollerY.finish();
   }
 
   /**
-     * Returns the time elapsed since the beginning of the scrolling.
-     *
-     * @return The elapsed time in milliseconds.
-     *
-     * @hide
-     */
+   * Returns the time elapsed since the beginning of the scrolling.
+   *
+   * @return The elapsed time in milliseconds.
+   *
+   * @hide
+   */
   int timePassed() {
     const long time = AnimationUtils::currentAnimationTimeMillis();
     const long startTime = std::min(mScrollerX.mStartTime, mScrollerY.mStartTime);
@@ -871,8 +873,8 @@ public:
   }
 
   /**
-     * @hide
-     */
+   * @hide
+   */
   bool isScrollingInDirection(float xvel, float yvel) {
     const int dx = mScrollerX.mFinal - mScrollerX.mStart;
     const int dy = mScrollerY.mFinal - mScrollerY.mStart;
@@ -880,3 +882,5 @@ public:
            signum(yvel) == signum(dy);
   }
 };
+
+} // namespace mcview

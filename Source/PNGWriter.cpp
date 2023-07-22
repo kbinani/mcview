@@ -633,6 +633,8 @@ bool PNGImageFormat::writeImageToStream (const Image& image, OutputStream& out)
 
 using namespace juce;
 
+namespace mcview {
+
 PNGWriter::PNGWriter(int width, int height, OutputStream &stream)
     : fStream(stream), fWidth(width), fHeight(height), fWriteStruct(nullptr), fInfoStruct(nullptr), fRowData(width * 4) {
   using namespace pnglibNamespace;
@@ -704,3 +706,5 @@ void PNGWriter::writeRow(PixelARGB *row) {
   png_structp pngWriteStruct = (png_structp)fWriteStruct;
   png_write_rows(pngWriteStruct, &rowPtr, 1);
 }
+
+} // namespace mcview

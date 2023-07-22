@@ -1,5 +1,7 @@
 #pragma once
 
+namespace mcview {
+
 enum class Dimension : int {
   Overworld = 0,
   TheNether = -1,
@@ -12,3 +14,5 @@ static inline juce::File DimensionDirectory(juce::File directory, Dimension dim)
   }
   return directory.getChildFile(juce::String::formatted("DIM%d", (int)dim)).getChildFile("region");
 }
+
+} // namespace mcview
