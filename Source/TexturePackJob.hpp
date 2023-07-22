@@ -18,7 +18,7 @@ public:
   class Delegate {
   public:
     virtual ~Delegate() = default;
-    virtual void regionToTextureDidFinishJob(std::shared_ptr<Result> result) = 0;
+    virtual void texturePackJobDidFinish(std::shared_ptr<Result> result) = 0;
   };
 
   TexturePackJob(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
@@ -30,7 +30,7 @@ public:
 
     auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
     defer {
-      fDelegate->regionToTextureDidFinishJob(result);
+      fDelegate->texturePackJobDidFinish(result);
     };
     try {
       int64 const modified = fRegionFile.getLastModificationTime().toMilliseconds();

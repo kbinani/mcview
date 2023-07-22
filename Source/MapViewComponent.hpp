@@ -387,7 +387,7 @@ public:
     }
   }
 
-  void regionToTextureDidFinishJob(std::shared_ptr<TexturePackJob::Result> result) override {
+  void texturePackJobDidFinish(std::shared_ptr<TexturePackJob::Result> result) override {
     {
       std::lock_guard<std::mutex> lock(fMut);
       fGLJobResults.push_back(result);
