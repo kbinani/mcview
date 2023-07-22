@@ -71,7 +71,7 @@ set(mcview_files
   Source/LocalizationHelper.cpp
   Source/LocalizationHelper.hpp
   Source/LookAndFeel.hpp
-  Source/Main.cpp
+  Source/Application.cpp
   Source/MainComponent.hpp
   Source/MapViewComponent.cpp
   Source/MapViewComponent.hpp
