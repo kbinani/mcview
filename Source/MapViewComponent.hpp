@@ -137,7 +137,7 @@ public:
 
     fGLContext.detach();
     fPool->removeAllJobs(true, -1);
-    for (auto &pool : fPoolTomb) {
+    for (auto &pool : fPoolTrashBin) {
       pool->removeAllJobs(true, -1);
     }
     fRegionUpdateChecker->signalThreadShouldExit();
@@ -295,22 +295,6 @@ public:
     return render(width, height, lookAt, false);
   }
 
-  juce::Rectangle<int> savePNGProgressWindowRegionBoundingBox() override {
-    int minX, maxX, minZ, maxZ;
-    minX = maxX = fTextures.begin()->first.first;
-    minZ = maxZ = fTextures.begin()->first.second;
-    for (auto const &it : fTextures) {
-      auto region = it.first;
-      int const x = region.first;
-      int const z = region.second;
-      minX = std::min(minX, x);
-      maxX = std::max(maxX, x);
-      minZ = std::min(minZ, z);
-      maxZ = std::max(maxZ, z);
-    }
-    return juce::Rectangle<int>(minX, minZ, maxX - minX, maxZ - minZ);
-  }
-
   void mouseMagnify(juce::MouseEvent const &event, float scaleFactor) override {
     magnify(event.position, scaleFactor);
   }
@@ -413,7 +397,7 @@ public:
   }
 
   void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) override {
-    queueTextureLoading(files, dimension, false);
+    enqueueTextureLoading(files, dimension, false);
   }
 
   void setWorldDirectory(juce::File directory, Dimension dim) {
@@ -436,16 +420,12 @@ public:
 
     if (fPool) {
       fPool->removeAllJobs(true, 0);
-      fPoolTomb.push_back(std::move(fPool));
+      fPoolTrashBin.push_back(std::move(fPool));
     }
     fPool.reset(CreateThreadPool());
 
-    auto garbageTextures = std::make_shared<std::map<Region, std::shared_ptr<RegionTextureCache>>>();
+    auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
     garbageTextures->swap(fTextures);
-    fGLContext.executeOnGLThread([this, garbageTextures](OpenGLContext &) {
-      garbageTextures->clear();
-    },
-                                 true);
 
     {
       std::lock_guard<std::mutex> lk(fMut);
@@ -456,6 +436,9 @@ public:
       fWorldDirectory = directory;
       fDimension = dim;
       fWorldData = data;
+      for (auto &it : *garbageTextures) {
+        fTextureTrashBin.push_back(std::move(it.second));
+      }
       resetPinComponents();
 
       int minX = 0;
@@ -492,24 +475,13 @@ public:
         return distanceA < distanceB;
       });
 
-      queueTextureLoading(files, dim, true);
+      unsafeEnqueueTextureLoading(files, dim, true);
     }
   }
 
-  void queueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache) {
-    if (files.empty()) {
-      return;
-    }
-
-    if (juce::OpenGLContext::getCurrentContext() == &fGLContext) {
-      queueTextureLoadingImpl(fGLContext, files, fWorldDirectory, dim, useCache);
-    } else {
-      juce::File worldDirectory = fWorldDirectory;
-      fGLContext.executeOnGLThread([this, files, worldDirectory, dim, useCache](juce::OpenGLContext &ctx) {
-        queueTextureLoadingImpl(ctx, files, worldDirectory, dim, useCache);
-      },
-                                   false);
-    }
+  void enqueueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache) {
+    std::lock_guard<std::mutex> lock(fMut);
+    unsafeEnqueueTextureLoading(files, dim, useCache);
   }
 
   void setBrowserOpened(bool opened) {
@@ -551,8 +523,8 @@ public:
     fGLShader->use();
     auto const &textures = fTextures;
 
-    for (auto it : textures) {
-      auto cache = it.second;
+    for (auto &it : textures) {
+      auto &cache = it.second;
       if (fGLUniforms->blocksPerPixel.get() != nullptr) {
         fGLUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
       }
@@ -729,11 +701,11 @@ public:
       if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
         fCaptureButton->setEnabled(fLoadingFinished.get());
       } else if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
-        for (int i = (int)fPoolTomb.size() - 1; i >= 0; i--) {
-          auto &pool = fPoolTomb[i];
+        for (int i = (int)fPoolTrashBin.size() - 1; i >= 0; i--) {
+          auto &pool = fPoolTrashBin[i];
           if (pool->getNumJobs() == 0) {
             pool.reset();
-            fPoolTomb.erase(fPoolTomb.begin() + i);
+            fPoolTrashBin.erase(fPoolTrashBin.begin() + i);
           }
         }
       }
@@ -985,7 +957,22 @@ private:
       if (file == File()) {
         return;
       }
-      SavePNGProgressWindow wnd(this, fGLContext, file);
+
+      int minX, maxX, minZ, maxZ;
+      minX = maxX = fTextures.begin()->first.first;
+      minZ = maxZ = fTextures.begin()->first.second;
+      for (auto const &it : fTextures) {
+        auto region = it.first;
+        int const x = region.first;
+        int const z = region.second;
+        minX = std::min(minX, x);
+        maxX = std::max(maxX, x);
+        minZ = std::min(minZ, z);
+        maxZ = std::max(maxZ, z);
+      }
+      juce::Rectangle<int> bounds(minX, minZ, maxX - minX, maxZ - minZ);
+
+      SavePNGProgressWindow wnd(this, fGLContext, file, bounds);
       wnd.run();
     });
   }
@@ -1017,9 +1004,12 @@ private:
     updateAllPinComponentPosition();
   }
 
-  void queueTextureLoadingImpl(juce::OpenGLContext &ctx, std::vector<juce::File> files, juce::File worldDirectory, Dimension dim, bool useCache) {
+  void unsafeEnqueueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache) {
     using namespace juce;
-    std::lock_guard<std::mutex> lock(fMut);
+    if (files.empty()) {
+      return;
+    }
+
     fLoadingFinished = false;
 
     juce::Rectangle<int> visibleRegions = fVisibleRegions.load();
@@ -1031,7 +1021,7 @@ private:
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
-      auto *job = new TexturePackJob(worldDirectory, f, region, dim, useCache, this);
+      auto *job = new TexturePackJob(fWorldDirectory, f, region, dim, useCache, this);
       fPool->addJob(job, true);
       fLoadingRegions.insert(region);
       minX = std::min(minX, r->fX);
@@ -1056,6 +1046,7 @@ private:
       std::lock_guard<std::mutex> lock(fMut);
       worldDirectory = fWorldDirectory;
       dimension = fDimension;
+      fTextureTrashBin.clear();
 
       for (size_t i = 0; i < fGLJobResults.size(); i++) {
         auto const &result = fGLJobResults[i];
@@ -1082,12 +1073,12 @@ private:
 
       auto before = fTextures.find(j->fRegion);
       if (j->fPixels) {
-        auto cache = std::make_shared<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
+        auto cache = std::make_unique<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
         cache->load(j->fPixels.get());
         if (before != fTextures.end()) {
           cache->fLoadTime = before->second->fLoadTime;
         }
-        fTextures[j->fRegion] = cache;
+        fTextures[j->fRegion] = std::move(cache);
       } else {
         if (before != fTextures.end()) {
           fTextures.erase(before);
@@ -1341,7 +1332,8 @@ private:
   bool fShowPin;
 
   Dimension fDimension;
-  std::map<Region, std::shared_ptr<RegionTextureCache>> fTextures;
+  std::map<Region, std::unique_ptr<RegionTextureCache>> fTextures;
+  std::deque<std::unique_ptr<RegionTextureCache>> fTextureTrashBin;
   std::unique_ptr<juce::OpenGLShaderProgram> fGLShader;
   std::unique_ptr<GLUniforms> fGLUniforms;
   std::unique_ptr<GLAttributes> fGLAttributes;
@@ -1356,7 +1348,7 @@ private:
   juce::Point<float> fMouse;
 
   std::unique_ptr<juce::ThreadPool> fPool;
-  std::deque<std::unique_ptr<juce::ThreadPool>> fPoolTomb;
+  std::deque<std::unique_ptr<juce::ThreadPool>> fPoolTrashBin;
   std::deque<std::shared_ptr<TexturePackJob::Result>> fGLJobResults;
 
   std::set<Region> fLoadingRegions;

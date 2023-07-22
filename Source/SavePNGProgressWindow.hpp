@@ -8,20 +8,14 @@ public:
   public:
     virtual ~Delegate() = default;
     virtual void savePNGProgressWindowRender(int const width, int const height, LookAt const lookAt) = 0;
-    virtual juce::Rectangle<int> savePNGProgressWindowRegionBoundingBox() = 0;
   };
 
-  SavePNGProgressWindow(Delegate *delegate, juce::OpenGLContext &openGLContext, juce::File file) : juce::ThreadWithProgressWindow(TRANS("Writing image file"), true, false), fDelegate(delegate), fGLContext(openGLContext), fFile(file) {
+  SavePNGProgressWindow(Delegate *delegate, juce::OpenGLContext &openGLContext, juce::File file, juce::Rectangle<int> regionBoundingBox) : juce::ThreadWithProgressWindow(TRANS("Writing image file"), true, false), fDelegate(delegate), fGLContext(openGLContext), fFile(file), fRegionBoundingBox(regionBoundingBox) {
   }
 
   void run() {
     using namespace juce;
-    juce::Rectangle<int> bounds;
-    fGLContext.executeOnGLThread([this, &bounds](OpenGLContext &) {
-      bounds = fDelegate->savePNGProgressWindowRegionBoundingBox();
-    },
-                                 true);
-
+    auto bounds = fRegionBoundingBox;
     if (bounds.getWidth() == 0 || bounds.getHeight() == 0) {
       return;
     }
@@ -86,6 +80,7 @@ private:
   Delegate *const fDelegate;
   juce::OpenGLContext &fGLContext;
   juce::File fFile;
+  juce::Rectangle<int> fRegionBoundingBox;
 };
 
 } // namespace mcview
