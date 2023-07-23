@@ -831,7 +831,7 @@ private:
     using namespace juce;
 
     int count = (int)(to - from + 1);
-    if (count > 1) {
+    if (count > 16) {
       int mid = (int)(from + count / 2);
       ostringstream ss;
       ss << "if (blockId < " << mid << ") {" << endl;
@@ -841,16 +841,21 @@ private:
       ss << "}";
       return String(ss.str());
     } else {
-      auto it = RegionToTexture::kBlockToColor.find(from);
-      if (it == RegionToTexture::kBlockToColor.end()) {
-        return "return vec4(0, 0, 0, 0);";
-      } else {
-        Colour c = it->second;
-        GLfloat r = c.getRed() / 255.0f;
-        GLfloat g = c.getGreen() / 255.0f;
-        GLfloat b = c.getBlue() / 255.0f;
-        return "return vec4(float(" + String(r) + "), float(" + String(g) + "), float(" + String(b) + "), 1.0);";
+      ostringstream ss;
+      for (auto id = from; id <= to; id++) {
+        auto it = RegionToTexture::kBlockToColor.find(id);
+        ss << "if (blockId == " << id << ") return ";
+        if (it == RegionToTexture::kBlockToColor.end()) {
+          ss << "vec4(0, 0, 0, 0);" << endl;
+        } else {
+          Colour c = it->second;
+          GLfloat r = c.getRed() / 255.0f;
+          GLfloat g = c.getGreen() / 255.0f;
+          GLfloat b = c.getBlue() / 255.0f;
+          ss << "vec4(" + String(r) + ", " + String(g) + ", " + String(b) + ", 1);" << endl;
+        }
       }
+      return String(ss.str());
     }
   }
 
