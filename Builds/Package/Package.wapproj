@@ -97,7 +97,7 @@
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>1CDB20627F365AB55BCA23A80DC93FAF2CD623C0</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>F96FB9F0A56F5810555146F5D22B8B1777004ABF</PackageCertificateThumbprint>
     <AppInstallerUpdateFrequency>0</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
@@ -173,6 +173,7 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <None Include="F96FB9F0A56F5810555146F5D22B8B1777004ABF.pfx" />
     <Content Include="Images\SplashScreen.scale-200.png" />
     <Content Include="Images\LockScreenLogo.scale-200.png" />
     <Content Include="Images\Square150x150Logo.scale-200.png" />
@@ -180,7 +181,6 @@
     <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Images\StoreLogo.png" />
     <Content Include="Images\Wide310x150Logo.scale-200.png" />
-    <None Include="Package_TemporaryKey.pfx" />
     <None Include="Package.StoreAssociation.xml" />
   </ItemGroup>
   <ItemGroup>
