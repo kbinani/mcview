@@ -522,8 +522,8 @@ public:
       std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
       std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
       for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-        if (auto found = RegionToTexture::kBlockToColor.find(id); found != RegionToTexture::kBlockToColor.end()) {
-          data[id - 1] = found->second.getPixelARGB();
+        if (auto color = Palette::ColorFromId(id); color) {
+          data[id - 1] = color->getPixelARGB();
         }
       }
       fGLPalette.reset(new juce::OpenGLTexture);

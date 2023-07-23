@@ -35,6 +35,7 @@
 #include "TextInputDialog.hpp"
 #include "PinComponent.hpp"
 #include "SavePNGProgressWindow.hpp"
+#include "Palette.hpp"
 #include "RegionToTexture.hpp"
 #include "TexturePackJob.hpp"
 #include "RegionUpdateChecker.hpp"

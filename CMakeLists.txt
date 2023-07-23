@@ -100,6 +100,8 @@ set(mcview_files
   Resource/Shader/tile.vert
   Resource/Shader/color.frag
   Source/PinEdit.hpp
+  Source/Palette.hpp
+  Source/Palette.cpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
