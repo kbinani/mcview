@@ -17,8 +17,6 @@ public:
   };
 
   NotoSansTypeface(juce::String fontFamily, float scale, bool bold, std::map<FontLanguage, Asset> const &assets, std::vector<juce::String> const &preferredLanguages) : fScale(scale), fAssets(assets) {
-    fOrder.push_back(Neutral);
-
     std::vector<FontLanguage> remaining = {Japanese, SimplifiedChinese, TraditionalChinese};
 
     for (size_t i = 0; i < preferredLanguages.size(); i++) {
@@ -44,6 +42,7 @@ public:
       fOrder.push_back(remaining[0]);
       remaining.erase(remaining.begin());
     }
+    fOrder.push_back(Neutral);
     setCharacteristics(fontFamily, 0.801104963f, bold, false, L' ');
   }
 
