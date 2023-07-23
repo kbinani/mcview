@@ -95,6 +95,8 @@ set(mcview_files
   Source/GLBuffer.hpp
   Source/DirectoryBrowserModel.hpp
   Source/NotoSansTypeface.hpp
+  Resource/Shader/tile.vert
+  Resource/Shader/color.frag
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
