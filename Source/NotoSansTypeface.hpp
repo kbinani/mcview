@@ -21,7 +21,7 @@ public:
 
     std::vector<FontLanguage> remaining = {Japanese, SimplifiedChinese, TraditionalChinese};
 
-    for (int i = 0; i < preferredLanguages.size(); i++) {
+    for (size_t i = 0; i < preferredLanguages.size(); i++) {
       juce::String lang = preferredLanguages[i];
       if (lang == "ja-JP") {
         if (auto found = std::find(remaining.begin(), remaining.end(), Japanese); found != remaining.end()) {
@@ -112,8 +112,8 @@ private:
     using namespace juce;
     if (fLoadedTypefaces.count(language) == 0) {
       fLoadedTypefaces[language] = nullptr;
-      if (auto found = fAssets.find(language); found != fAssets.end()) {
-        if (auto ptr = Typeface::createSystemTypefaceFor(found->second.fData, found->second.fSize); ptr) {
+      if (auto found = fAssets.find(language); found != fAssets.end() && found->second.fSize > 0) {
+        if (auto ptr = Typeface::createSystemTypefaceFor(found->second.fData, (size_t)found->second.fSize); ptr) {
           fLoadedTypefaces[language] = ptr;
         }
       }

@@ -55,7 +55,7 @@ public:
     fDirectories.clear();
     for (int i = 0; i < dirs.size(); i++) {
 #if JUCE_MAC
-      File f = FromBookmark(dirs[i]);
+      juce::File f = FromBookmark(dirs[i]);
 #else
       juce::File f(dirs[i]);
 #endif

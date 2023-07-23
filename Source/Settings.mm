@@ -1,7 +1,12 @@
 #import <Foundation/Foundation.h>
-#include "Settings.h"
+
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "Settings.hpp"
 
 using namespace juce;
+
+namespace mcview {
 
 String Settings::Bookmark(File f)
 {
@@ -37,4 +42,6 @@ File Settings::FromBookmark(String s)
         URL u(ss);
         return u.getLocalFile();
     }
+}
+
 }

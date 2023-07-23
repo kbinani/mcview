@@ -128,8 +128,8 @@ public:
   void addDirectory(juce::File directory) {
 #if JUCE_MAC
     // userHomeDirectory = $HOME/Library/Containers/com.github.kbinani.mcview/Data
-    File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
-    File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+    juce::File library = juce::File::getSpecialLocation(juce::File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
+    juce::File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
     bool const fixed = directory.getFullPathName() == saves.getFullPathName();
 #else
     bool const fixed = directory.getFullPathName() == DefaultMinecraftSaveDirectory().getFullPathName();
@@ -159,7 +159,7 @@ public:
     int flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories;
 #if JUCE_MAC
     message += "\n" + TRANS("This dialog opens the default location of the \"saves\" directory. If this directory is appropriate, press the \"Open\" button");
-    flags = flags | FileBrowserComponent::showsHiddenFiles;
+    flags = flags | juce::FileBrowserComponent::showsHiddenFiles;
 #endif
     fFileChooser.reset(new juce::FileChooser(message, DefaultMinecraftSaveDirectory()));
     fFileChooser->launchAsync(flags, [this](juce::FileChooser const &chooser) {
