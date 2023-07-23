@@ -1,8 +1,6 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <minecraft-file.hpp>
 
-#include <fstream>
-
 #include "Dimension.hpp"
 
 #include "RegionToTexture.hpp"
@@ -1198,7 +1196,7 @@ void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job,
   int const minX = region.minBlockX();
   int const minZ = region.minBlockZ();
 
-#if 1
+#if 0
   static std::atomic_bool init = true;
   if (init.exchange(false)) {
     std::set<mcfile::blocks::BlockId> ids;
@@ -1239,7 +1237,7 @@ void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job,
 
   bool error = false;
   bool didset = false;
-  region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
+  bool completed = region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
     int const sZ = chunk.minBlockZ();
     int const eZ = chunk.maxBlockZ();
     int const sX = chunk.minBlockX();
@@ -1253,6 +1251,16 @@ void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job,
       if (job->shouldExit()) {
         return false;
       }
+    }
+    int maxSectionY = -9999;
+    for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
+      if (chunk.fSections[i]) {
+        maxSectionY = chunk.fSections[i]->y();
+        break;
+      }
+    }
+    if (maxSectionY < -4) {
+      return !job->shouldExit();
     }
     for (int z = sZ; z <= eZ; z++) {
       for (int x = sX; x <= eX; x++) {
@@ -1284,6 +1292,7 @@ void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job,
           ymin = 0;
           yini = ymax;
         }
+        yini = std::min(yini, maxSectionY * 16) + 15;
         bool all_transparent = true;
         bool found_opaque_block = false;
         for (int y = yini; y >= ymin; y--) {
@@ -1335,10 +1344,10 @@ void RegionToTexture::Load(mcfile::je::Region const &region, ThreadPoolJob *job,
         }
       }
     }
-    return true;
+    return !job->shouldExit();
   });
 
-  if (!didset) {
+  if (!didset || !completed) {
     completion(nullptr);
     return;
   }
