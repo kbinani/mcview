@@ -33,6 +33,7 @@ endif()
 add_subdirectory(ext/libminecraft-file)
 add_subdirectory(ext/JUCE)
 
+math(EXPR mcview_bundle_version_major "${PROJECT_VERSION_MAJOR} + 1")
 juce_add_gui_app(mcview
   ICON_BIG "Resource/icon_512x512@2x.png"
   ICON_SMALL "Resource/icon_512x512.png"
@@ -41,6 +42,7 @@ juce_add_gui_app(mcview
   APP_SANDBOX_INHERIT FALSE
   APP_SANDBOX_OPTIONS "com.apple.security.files.user-selected.read-write;com.apple.security.files.bookmarks.app-scope"
   VERSION "${CMAKE_PROJECT_VERSION}"
+  BUILD_VERSION "${mcview_bundle_version_major}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
   BUNDLE_ID "com.github.kbinani.mcview"
   HARDENED_RUNTIME_ENABLED TRUE
   PLIST_TO_MERGE "
