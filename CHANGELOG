@@ -1,3 +1,8 @@
+Version 3.3.0
+・Minecraft 1.19 and 1.20 worlds can now be loaded
+・Improved world loading performance
+・Improved stability
+
 Version 3.2.0
 ・It is now possible to load worlds created in Minecraft 1.17 and 1.18
 
