@@ -91,13 +91,18 @@ public:
   }
 
   void updatePinPosition(juce::Point<float> pos) {
+    fPos = pos;
+    updateSize();
+  }
+
+  void updateSize() {
     int const h = stemLength + pinHeadRadius * 2;
     juce::Font font(pinNameFontSize);
-    juce::Rectangle<float> nameBounds = PinNameBounds(*fPin, font, pos);
-    int const left = pos.x - pinHeadRadius;
+    juce::Rectangle<float> nameBounds = PinNameBounds(*fPin, font, fPos);
+    int const left = fPos.x - pinHeadRadius;
     int const width = nameBounds.getRight() - left;
     int const height = juce::jmax(h, h - (int)nameBounds.getY());
-    setBounds(pos.x - pinHeadRadius, pos.y - height, width, height);
+    setBounds(fPos.x - pinHeadRadius, fPos.y - height, width, height);
   }
 
   bool isPresenting(std::shared_ptr<Pin> const &p) const {
@@ -129,6 +134,7 @@ public:
 private:
   std::shared_ptr<Pin> fPin;
   juce::Point<int> fMouseDownToPinOffset;
+  juce::Point<float> fPos;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PinComponent)
 };

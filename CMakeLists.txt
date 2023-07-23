@@ -97,6 +97,7 @@ set(mcview_files
   Source/NotoSansTypeface.hpp
   Resource/Shader/tile.vert
   Resource/Shader/color.frag
+  Source/PinEdit.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

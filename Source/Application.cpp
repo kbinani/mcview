@@ -42,6 +42,7 @@
 #include "GLVertex.hpp"
 #include "GLAttributes.hpp"
 #include "GLBuffer.hpp"
+#include "PinEdit.hpp"
 #include "MapViewComponent.hpp"
 #include "MainComponent.hpp"
 #include "MainWindow.hpp"

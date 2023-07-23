@@ -10,7 +10,8 @@ class MapViewComponent
       public juce::ChangeListener,
       public TexturePackJob::Delegate,
       public SavePNGProgressWindow ::Delegate,
-      public RegionUpdateChecker::Delegate {
+      public RegionUpdateChecker::Delegate,
+      public TextInputDialog<PinEdit>::Delegate {
   struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
 
@@ -735,26 +736,41 @@ public:
   }
 
   void setWaterOpticalDensity(float v) {
+    if (v == fWaterOpticalDensity.get()) {
+      return;
+    }
     fWaterOpticalDensity = v;
     triggerRepaint();
   }
 
   void setWaterTranslucent(bool translucent) {
+    if (translucent == fWaterTranslucent.get()) {
+      return;
+    }
     fWaterTranslucent = translucent;
     triggerRepaint();
   }
 
   void setBiomeEnable(bool enable) {
+    if (enable == fEnableBiome.get()) {
+      return;
+    }
     fEnableBiome = enable;
     triggerRepaint();
   }
 
   void setBiomeBlend(int blend) {
+    if (blend == fBiomeBlend.get()) {
+      return;
+    }
     fBiomeBlend = blend;
     triggerRepaint();
   }
 
   void setShowPin(bool show) {
+    if (show == fShowPin) {
+      return;
+    }
     fShowPin = show;
     resetPinComponents();
     triggerRepaint();
@@ -1142,22 +1158,31 @@ private:
       if (menuId != 1) {
         return;
       }
-      auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), "");
-      if (result.first != 1) {
-        return;
-      }
-      String message = result.second;
       Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
-      std::shared_ptr<Pin> p = std::make_shared<Pin>();
-      p->fX = floor(pinPos.x);
-      p->fZ = floor(pinPos.y) + 1;
-      p->fDim = dim;
-      p->fMessage = message;
-      addPinComponent(p);
-      fWorldData.fPins.push_back(p);
+      PinEdit edit;
+      edit.fNew = true;
+      auto pin = std::make_shared<Pin>();
+      pin->fX = floor(pinPos.x);
+      pin->fZ = floor(pinPos.y) + 1;
+      pin->fDim = dim;
+      edit.fPin = pin;
+      TextInputDialog<PinEdit>::showAsync(this, TRANS("Please enter a pin name"), "", edit, this);
+    });
+  }
+
+  void textInputDialogDidClickOkButton(juce::String input, PinEdit edit) override {
+    using namespace juce;
+    edit.fPin->fMessage = input;
+    if (edit.fNew) {
+      addPinComponent(edit.fPin);
+      fWorldData.fPins.push_back(edit.fPin);
       saveWorldData();
       triggerRepaint();
-    });
+    } else {
+      updatePinComponent(edit.fPin);
+      saveWorldData();
+      triggerRepaint();
+    }
   }
 
   void saveWorldData() {
@@ -1183,6 +1208,15 @@ private:
     };
     addAndMakeVisible(pinComponent);
     fPinComponents.emplace_back(pinComponent);
+  }
+
+  void updatePinComponent(std::shared_ptr<Pin> const &pin) {
+    for (auto const &component : fPinComponents) {
+      if (component->isPresenting(pin)) {
+        component->updateSize();
+        break;
+      }
+    }
   }
 
   void updateAllPinComponentPosition() {
@@ -1232,28 +1266,20 @@ private:
         saveWorldData();
         triggerRepaint();
       } else if (menuId == 2) {
-        auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
-        if (result.first != 1) {
-          return;
-        }
-        String message = result.second;
-        pin->fMessage = message;
-        saveWorldData();
-        triggerRepaint();
+        PinEdit edit;
+        edit.fNew = false;
+        edit.fPin = pin;
+        TextInputDialog<PinEdit>::showAsync(this, TRANS("Please enter a pin name"), pin->fMessage, edit, this);
       }
     });
   }
 
   void handlePinDoubleClicked(std::shared_ptr<Pin> const &pin, juce::Point<int> screenPos) {
     using namespace juce;
-    auto result = TextInputDialog::show(this, TRANS("Please enter a pin name"), pin->fMessage);
-    if (result.first != 1) {
-      return;
-    }
-    String message = result.second;
-    pin->fMessage = message;
-    saveWorldData();
-    triggerRepaint();
+    PinEdit edit;
+    edit.fNew = false;
+    edit.fPin = pin;
+    TextInputDialog<PinEdit>::showAsync(this, TRANS("Please enter a pin name"), pin->fMessage, edit, this);
   }
 
   void handlePinDrag(std::shared_ptr<Pin> const &pin, juce::Point<int> screenPos) {

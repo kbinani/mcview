@@ -2,19 +2,31 @@
 
 namespace mcview {
 
+template <class T>
 class TextInputDialog : public juce::Component {
+  enum {
+    kOk = 1,
+    kCancel = -1,
+  };
+
 public:
-  TextInputDialog() {
+  struct Delegate {
+    virtual ~Delegate() = default;
+    virtual void textInputDialogDidClickOkButton(juce::String input, T data) = 0;
+  };
+
+  TextInputDialog(juce::String init, T data, Delegate *delegate) : fData(data), fDelegate(delegate) {
     using namespace juce;
     fInputLabel.reset(new Label());
     fInputLabel->setEditable(true);
+    fInputLabel->setText(init, dontSendNotification);
     String name
 #if JUCE_WINDOWS
         = "Yu Gothic UI";
 #else
         = "Hiragino Kaku Gothic Pro";
 #endif
-    Font font(name, 14, 0);
+    Font font(name, 16, 0);
     fInputLabel->setFont(font);
     fInputLabel->setColour(Label::ColourIds::backgroundColourId, Colours::white);
     fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
@@ -24,13 +36,13 @@ public:
     fOkButton.reset(new TextButton());
     fOkButton->setButtonText("OK");
     fOkButton->onClick = [this]() {
-      close(1);
+      close(kOk);
     };
     addAndMakeVisible(*fOkButton);
     fCancelButton.reset(new TextButton());
     fCancelButton->setButtonText(TRANS("Cancel"));
     fCancelButton->onClick = [this]() {
-      close(-1);
+      close(kCancel);
     };
     addAndMakeVisible(*fCancelButton);
     setSize(300, 160);
@@ -55,45 +67,42 @@ public:
     }
   }
 
-  static std::pair<int, juce::String> show(juce::Component *target, juce::String title, juce::String init) {
+  template <class D>
+  static void showAsync(juce::Component *target, juce::String title, juce::String init, D data, Delegate *delegate) {
     using namespace juce;
-    static std::unique_ptr<TextInputDialog> sComponent(new TextInputDialog());
-    sComponent->fInputLabel->setText(init, dontSendNotification);
-    juce::DialogWindow::showDialog(title, sComponent.get(), target, target->getLookAndFeel().findColour(TextButton::buttonColourId), true);
-    return std::make_pair(sComponent->fResultMenuId, sComponent->fInputLabel->getText());
-    // TODO:
-    TextInputDialog *dialog = new TextInputDialog();
+    TextInputDialog *dialog = new TextInputDialog(init, data, delegate);
     DialogWindow::LaunchOptions o;
     o.dialogTitle = title;
     o.content.setOwned(dialog);
     o.componentToCentreAround = target;
-    o.dialogBackgroundColour = target->getLookAndFeel().findColour(TextButton::buttonColourId);
+    o.dialogBackgroundColour = target->getLookAndFeel().findColour(ResizableWindow::ColourIds::backgroundColourId);
     o.escapeKeyTriggersCloseButton = true;
-    o.useNativeTitleBar = false;
+    o.useNativeTitleBar = true;
     o.resizable = false;
     o.useBottomRightCornerResizer = false;
-
     o.launchAsync();
   }
 
 private:
   void close(int result) {
-    fResultMenuId = result;
+    if (result == kOk) {
+      fDelegate->textInputDialogDidClickOkButton(fInputLabel->getText(), fData);
+    }
+
     juce::Component *pivot = this;
     while (pivot) {
       auto *dlg = dynamic_cast<juce::DialogWindow *>(pivot);
       if (dlg) {
         dlg->closeButtonPressed();
-        return;
+        break;
       }
       pivot = pivot->getParentComponent();
     }
   }
 
 private:
-  juce::String fMessage;
-  juce::String fResult;
-  int fResultMenuId = -1;
+  T fData;
+  Delegate *const fDelegate;
 
   std::unique_ptr<juce::Label> fInputLabel;
   std::unique_ptr<juce::TextButton> fOkButton;
