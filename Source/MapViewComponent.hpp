@@ -287,6 +287,7 @@ public:
 
   void openGLContextClosing() override {
     fTextures.clear();
+    fGLPalette.reset();
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
   }
@@ -510,8 +511,22 @@ public:
 
     Time const now = Time::getCurrentTime();
 
-    if (fGLShader.get() == nullptr) {
+    if (!fGLShader) {
       updateShader();
+    }
+    if (!fGLPalette) {
+      int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
+      int k = (int)ceil(log2(count) / 2);
+      int size = 2 << k;
+      std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
+      std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
+      for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+        if (auto found = RegionToTexture::kBlockToColor.find(id); found != RegionToTexture::kBlockToColor.end()) {
+          data[id - 1] = found->second.getPixelARGB();
+        }
+      }
+      fGLPalette.reset(new juce::OpenGLTexture);
+      fGLPalette->loadARGB(data.get(), size, size);
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -592,92 +607,95 @@ public:
       int const x = it.first.first;
       int const z = it.first.second;
 
-      auto const &north = textures.find(MakeRegion(x, z - 1));
-      if (north != textures.end()) {
+      if (auto const &north = textures.find(MakeRegion(x, z - 1)); north != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
         north->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->north.get() != nullptr) {
+        if (fGLUniforms->north) {
           fGLUniforms->north->set(1);
         }
       }
 
-      auto const &northEast = textures.find(MakeRegion(x + 1, z - 1));
-      if (northEast != textures.end()) {
+      if (auto const &northEast = textures.find(MakeRegion(x + 1, z - 1)); northEast != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
         northEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->northEast.get() != nullptr) {
+        if (fGLUniforms->northEast) {
           fGLUniforms->northEast->set(2);
         }
       }
 
-      auto const &east = textures.find(MakeRegion(x + 1, z));
-      if (east != textures.end()) {
+      if (auto const &east = textures.find(MakeRegion(x + 1, z)); east != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
         east->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->east.get() != nullptr) {
+        if (fGLUniforms->east) {
           fGLUniforms->east->set(3);
         }
       }
 
-      auto const &southEast = textures.find(MakeRegion(x + 1, z + 1));
-      if (southEast != textures.end()) {
+      if (auto const &southEast = textures.find(MakeRegion(x + 1, z + 1)); southEast != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
         southEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->southEast.get() != nullptr) {
+        if (fGLUniforms->southEast) {
           fGLUniforms->southEast->set(4);
         }
       }
 
-      auto const &south = textures.find(MakeRegion(x, z + 1));
-      if (south != textures.end()) {
+      if (auto const &south = textures.find(MakeRegion(x, z + 1)); south != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
         south->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->south.get() != nullptr) {
+        if (fGLUniforms->south) {
           fGLUniforms->south->set(5);
         }
       }
 
-      auto const &southWest = textures.find(MakeRegion(x - 1, z + 1));
-      if (southWest != textures.end()) {
+      if (auto const &southWest = textures.find(MakeRegion(x - 1, z + 1)); southWest != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
         southWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->southWest.get() != nullptr) {
+        if (fGLUniforms->southWest) {
           fGLUniforms->southWest->set(6);
         }
       }
 
-      auto const &west = textures.find(MakeRegion(x - 1, z));
-      if (west != textures.end()) {
+      if (auto const &west = textures.find(MakeRegion(x - 1, z)); west != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
         west->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->west.get() != nullptr) {
+        if (fGLUniforms->west) {
           fGLUniforms->west->set(7);
         }
       }
 
-      auto const &northWest = textures.find(MakeRegion(x - 1, z - 1));
-      if (northWest != textures.end()) {
+      if (auto const &northWest = textures.find(MakeRegion(x - 1, z - 1)); northWest != textures.end()) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
         northWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        if (fGLUniforms->northWest.get() != nullptr) {
+        if (fGLUniforms->northWest) {
           fGLUniforms->northWest->set(8);
         }
+      }
+
+      fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 9);
+      fGLPalette->bind();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      if (fGLUniforms->palette) {
+        fGLUniforms->palette->set(9);
+      }
+      if (fGLUniforms->paletteSize) {
+        fGLUniforms->paletteSize->set((GLint)fGLPalette->getWidth());
       }
 
       fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
@@ -759,13 +777,6 @@ private:
     fragment << String::fromUTF8(ShaderData::color_frag, ShaderData::color_fragSize);
     fragment << altitude.getSource() << std::endl;
 
-    fragment << "vec4 colorFromBlockId(int blockId) {" << std::endl;
-    fragment << "    if (blockId == #{airBlockId}) {" << std::endl;
-    fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
-    fragment << "    }" << std::endl;
-    fragment << Bisect(1, mcfile::blocks::minecraft::minecraft_max_block_id - 1);
-    fragment << "}" << std::endl;
-
     fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
     for (auto it : RegionToTexture::kOceanToColor) {
       auto id = it.first;
@@ -824,39 +835,6 @@ private:
     fGLAttributes.reset(new GLAttributes(fGLContext, *newShader));
 
     fGLShader.reset(newShader.release());
-  }
-
-  static juce::String Bisect(mcfile::blocks::BlockId from, mcfile::blocks::BlockId to) {
-    using namespace std;
-    using namespace juce;
-
-    int count = (int)(to - from + 1);
-    if (count > 16) {
-      int mid = (int)(from + count / 2);
-      ostringstream ss;
-      ss << "if (blockId < " << mid << ") {" << endl;
-      ss << Bisect(from, mid - 1).toStdString() << endl;
-      ss << "} else {" << endl;
-      ss << Bisect(mid, to).toStdString() << endl;
-      ss << "}";
-      return String(ss.str());
-    } else {
-      ostringstream ss;
-      for (auto id = from; id <= to; id++) {
-        auto it = RegionToTexture::kBlockToColor.find(id);
-        ss << "if (blockId == " << id << ") return ";
-        if (it == RegionToTexture::kBlockToColor.end()) {
-          ss << "vec4(0, 0, 0, 0);" << endl;
-        } else {
-          Colour c = it->second;
-          GLfloat r = c.getRed() / 255.0f;
-          GLfloat g = c.getGreen() / 255.0f;
-          GLfloat b = c.getBlue() / 255.0f;
-          ss << "vec4(" + String(r) + ", " + String(g) + ", " + String(b) + ", 1);" << endl;
-        }
-      }
-      return String(ss.str());
-    }
   }
 
   juce::Point<float> getMapCoordinateFromView(juce::Point<float> p) const {
@@ -1365,6 +1343,7 @@ private:
   std::unique_ptr<GLUniforms> fGLUniforms;
   std::unique_ptr<GLAttributes> fGLAttributes;
   std::unique_ptr<GLBuffer> fGLBuffer;
+  std::unique_ptr<juce::OpenGLTexture> fGLPalette;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<juce::Rectangle<int>> fVisibleRegions;

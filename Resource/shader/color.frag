@@ -23,6 +23,9 @@ uniform sampler2D southWest;
 uniform sampler2D west;
 uniform sampler2D northWest;
 
+uniform sampler2D palette;
+uniform int paletteSize;
+
 struct BlockInfo {
     float height;
     float waterDepth;
@@ -153,9 +156,20 @@ vec4 voidColor() {
 
 vec4 colormap(float x);
 
-vec4 colorFromBlockId(int blockId);
 vec4 waterColorFromBiome(int biome);
 vec4 foliageColorFromBiome(int biome);
+
+vec4 colorFromBlockId(int blockId) {
+    if (blockId == #{airBlockId}) {
+        return vec4(0, 0, 0, 0);
+    }
+    int index = blockId - 1;
+    int iy = index / paletteSize;
+    int ix = index - iy * paletteSize;
+    float fy = (iy + 0.5) / float(paletteSize);
+    float fx = (ix + 0.5) / float(paletteSize);
+    return texture2D(palette, vec2(fx, fy));
+}
 
 vec4 waterColor() {
     vec2 center = textureCoordOut;
