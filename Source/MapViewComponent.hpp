@@ -132,7 +132,7 @@ public:
     setSize(600, 400);
   }
 
-  ~MapViewComponent() {
+  ~MapViewComponent() override {
     juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
 
     fGLContext.detach();
@@ -744,10 +744,14 @@ public:
 
 private:
   void updateShader() {
+    using namespace std;
     using namespace juce;
     std::unique_ptr<juce::OpenGLShaderProgram> newShader(new juce::OpenGLShaderProgram(fGLContext));
 
-    newShader->addVertexShader(String::fromUTF8(ShaderData::tile_vert, ShaderData::tile_vertSize));
+    if (!newShader->addVertexShader(String::fromUTF8(ShaderData::tile_vert, ShaderData::tile_vertSize))) {
+      juce::Logger::outputDebugString("addVertexShader failed");
+      juce::Logger::outputDebugString(newShader->getLastError());
+    }
 
     colormap::kbinani::Altitude altitude;
 
@@ -759,24 +763,7 @@ private:
     fragment << "    if (blockId == #{airBlockId}) {" << std::endl;
     fragment << "        return vec4(0.0, 0.0, 0.0, 0.0);" << std::endl;
     fragment << "    }" << std::endl;
-    fragment << "    const vec4 mapping[" << (mcfile::blocks::minecraft::minecraft_max_block_id - 1) << "] = vec4[](" << std::endl;
-    for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-      auto it = RegionToTexture::kBlockToColor.find(id);
-      if (it != RegionToTexture::kBlockToColor.end()) {
-        Colour c = it->second;
-        GLfloat r = c.getRed() / 255.0f;
-        GLfloat g = c.getGreen() / 255.0f;
-        GLfloat b = c.getBlue() / 255.0f;
-        fragment << "        vec4(float(" << r << "), float(" << g << "), float(" << b << "), 1.0)";
-      } else {
-        fragment << "        vec4(0.0, 0.0, 0.0, 0.0)";
-      }
-      if (id < mcfile::blocks::minecraft::minecraft_max_block_id - 1) {
-        fragment << "," << std::endl;
-      }
-    }
-    fragment << "    );" << std::endl;
-    fragment << "    return mapping[blockId - 1];" << std::endl;
+    fragment << Bisect(1, mcfile::blocks::minecraft::minecraft_max_block_id - 1);
     fragment << "}" << std::endl;
 
     fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;
@@ -815,21 +802,56 @@ private:
 
     String fragmentShaderTemplate = fragment.str();
     String fragmentShader = fragmentShaderTemplate.replace("#{airBlockId}", String(mcfile::blocks::minecraft::air));
+
 #if 0
     int lineNumber = 0;
-    for (auto const& line : mcfile::String::Split(fragmentShader.toStdString(), '\n')) {
-        std::cout << "#" << (lineNumber++) << line << std::endl;
+    for (auto const &line : mcfile::String::Split(fragmentShader.toStdString(), '\n')) {
+      std::cout << "#" << (lineNumber++) << line << std::endl;
     }
 #endif
-    newShader->addFragmentShader(fragmentShader);
+    if (!newShader->addFragmentShader(fragmentShader)) {
+      juce::Logger::outputDebugString("addFragmentShader failed");
+      juce::Logger::outputDebugString(newShader->getLastError());
+    }
 
-    newShader->link();
+    if (!newShader->link()) {
+      juce::Logger::outputDebugString("link failed");
+      juce::Logger::outputDebugString(newShader->getLastError());
+    }
     newShader->use();
 
     fGLUniforms.reset(new GLUniforms(fGLContext, *newShader));
     fGLAttributes.reset(new GLAttributes(fGLContext, *newShader));
 
     fGLShader.reset(newShader.release());
+  }
+
+  static juce::String Bisect(mcfile::blocks::BlockId from, mcfile::blocks::BlockId to) {
+    using namespace std;
+    using namespace juce;
+
+    int count = (int)(to - from + 1);
+    if (count > 1) {
+      int mid = (int)(from + count / 2);
+      ostringstream ss;
+      ss << "if (blockId < " << mid << ") {" << endl;
+      ss << Bisect(from, mid - 1).toStdString() << endl;
+      ss << "} else {" << endl;
+      ss << Bisect(mid, to).toStdString() << endl;
+      ss << "}";
+      return String(ss.str());
+    } else {
+      auto it = RegionToTexture::kBlockToColor.find(from);
+      if (it == RegionToTexture::kBlockToColor.end()) {
+        return "return vec4(0, 0, 0, 0);";
+      } else {
+        Colour c = it->second;
+        GLfloat r = c.getRed() / 255.0f;
+        GLfloat g = c.getGreen() / 255.0f;
+        GLfloat b = c.getBlue() / 255.0f;
+        return "return vec4(float(" + String(r) + "), float(" + String(g) + "), float(" + String(b) + "), 1.0);";
+      }
+    }
   }
 
   juce::Point<float> getMapCoordinateFromView(juce::Point<float> p) const {
