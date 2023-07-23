@@ -143,7 +143,7 @@ public:
             if (block == mcfile::blocks::unknown) {
               continue;
             }
-            if (IsWater(block)) {
+            if (Palette::IsWater(block)) {
               waterDepth++;
               all_transparent = false;
               continue;
@@ -289,11 +289,6 @@ private:
     default:
       return Biome::Other;
     }
-  }
-
-  static bool IsWater(mcfile::blocks::BlockId id) {
-    using namespace mcfile::blocks::minecraft;
-    return id == water || id == bubble_column || id == kelp || id == kelp_plant || id == seagrass || id == tall_seagrass;
   }
 
 public:

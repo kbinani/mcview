@@ -2,6 +2,7 @@
 #include <minecraft-file.hpp>
 
 #include "Dimension.hpp"
+#include "Palette.hpp"
 
 #include "RegionToTexture.hpp"
 
