@@ -173,8 +173,8 @@ class SettingsComponent : public juce::Component {
 
       fLighting.reset(new ComboBox);
       fLightingItems = {
-          {LightingType::topLeft, TRANS("Top-left lighting")},
-          {LightingType::top, TRANS("Top lighting")},
+          {LightingType::topLeft, TRANS("Top-left lighting (mcview original)")},
+          {LightingType::top, TRANS("Top lighting (same as in-game map)")},
       };
       for (auto const &it : fLightingItems) {
         fLighting->addItem(it.second, static_cast<int>(it.first) + 1);

@@ -21,5 +21,5 @@ language: Japanese
 "This dialog opens the default location of the \"saves\" directory. If this directory is appropriate, press the \"Open\" button" = "このダイアログはデフォルトの \"saves\" ディレクトリの場所を開きます。このディレクトリが適切であれば \"開く\" ボタンを押してください"
 "Block color palette" = "ブロック色"
 "Lighting type" = "光源の方向"
-"Top-left lighting" = "北西から"
-"Top lighting" = "北から"
+"Top-left lighting (mcview original)" = "北西から(mcviewオリジナル)"
+"Top lighting (same as in-game map)" = "北から(ゲーム内の地図と同じ)"
