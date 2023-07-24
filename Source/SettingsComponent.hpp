@@ -3,6 +3,13 @@
 namespace mcview {
 
 class SettingsComponent : public juce::Component {
+  enum {
+    kMargin = 10,
+    kLabelHeight = 20,
+    kRowHeight = 40,
+    kRowMargin = 15,
+  };
+
   class GroupWater : public juce::GroupComponent {
   public:
     std::function<void(float)> onWaterOpticalDensityChanged;
@@ -42,21 +49,13 @@ class SettingsComponent : public juce::Component {
     }
 
     void resized() override {
-      int const margin = 10;
-      int const width = getWidth();
-      int const rowHeight = 40;
-      int const labelHeight = 20;
-      int const rowMargin = 15;
+      auto bounds = getLocalBounds();
+      bounds.reduce(kMargin, kMargin);
 
-      int y = margin;
-      fTranslucentWater->setBounds(margin, y, width - 2 * margin, rowHeight);
-      y += rowHeight;
-      y += rowMargin;
-
-      fWaterOpticalDensityLabel->setBounds(margin, y, width - 2 * margin, labelHeight);
-      y += labelHeight;
-      fWaterOpticalDensity->setBounds(margin, y, width - 2 * margin, rowHeight);
-      y += rowHeight;
+      fTranslucentWater->setBounds(bounds.removeFromTop(kRowHeight));
+      bounds.removeFromTop(kRowMargin);
+      fWaterOpticalDensityLabel->setBounds(bounds.removeFromTop(kLabelHeight));
+      fWaterOpticalDensity->setBounds(bounds.removeFromTop(kRowHeight));
     }
 
   private:
@@ -119,20 +118,14 @@ class SettingsComponent : public juce::Component {
     }
 
     void resized() override {
-      int const margin = 10;
-      int const width = getWidth();
-      int const rowHeight = 40;
+      auto bounds = getLocalBounds();
+      bounds.reduce(kMargin, kMargin);
 
-      int y = margin;
-      fEnableBiome->setBounds(margin, margin, width - 2 * margin, rowHeight);
-      y += rowHeight;
-      y += margin;
-      fBlendTitle->setBounds(margin, y, width - 2 * margin, 20);
-      y += 20;
-      fBlend->setBounds(margin, y, width - 2 * margin, rowHeight);
-      y += rowHeight;
-      fBlendLabel->setBounds(margin, y, width - 2 * margin, 20);
-      y += 20;
+      fEnableBiome->setBounds(bounds.removeFromTop(kRowHeight));
+      bounds.removeFromTop(kMargin);
+      fBlendTitle->setBounds(bounds.removeFromTop(kLabelHeight));
+      fBlend->setBounds(bounds.removeFromTop(kRowHeight));
+      fBlendLabel->setBounds(bounds.removeFromTop(kLabelHeight));
     }
 
   private:
@@ -203,28 +196,21 @@ class SettingsComponent : public juce::Component {
         }
       };
       addAndMakeVisible(*fShowPin);
-      setSize(400, 250);
+      setSize(400, 220);
     }
 
     void resized() override {
-      int const margin = 10;
-      int const width = getWidth();
-      int const labelHeight = 20;
-      int const rowHeight = 40;
-      int const rowMargin = 15;
       auto bounds = getLocalBounds();
-      bounds.reduce(margin, margin);
+      bounds.reduce(kMargin, kMargin);
 
-      bounds.removeFromTop(margin);
-      fPaletteLabel->setBounds(bounds.removeFromTop(labelHeight));
-      bounds.removeFromTop(5);
-      fPalette->setBounds(bounds.removeFromTop(rowHeight));
-      bounds.removeFromTop(rowMargin);
-      fLightingLabel->setBounds(bounds.removeFromTop(rowHeight));
-      bounds.removeFromTop(5);
-      fLighting->setBounds(bounds.removeFromTop(rowHeight));
-      bounds.removeFromTop(rowMargin);
-      fShowPin->setBounds(bounds.removeFromTop(rowHeight));
+      bounds.removeFromTop(kMargin);
+      fPaletteLabel->setBounds(bounds.removeFromTop(kLabelHeight));
+      fPalette->setBounds(bounds.removeFromTop(kRowHeight));
+      bounds.removeFromTop(kRowMargin);
+      fLightingLabel->setBounds(bounds.removeFromTop(kLabelHeight));
+      fLighting->setBounds(bounds.removeFromTop(kRowHeight));
+      bounds.removeFromTop(kRowMargin);
+      fShowPin->setBounds(bounds.removeFromTop(kRowHeight));
     }
 
   private:
