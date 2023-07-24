@@ -78,8 +78,12 @@ public:
       fSettings->fShowPin = show;
     };
     fSettingsComponent->onPaletteChanged = [this](PaletteType palette) {
-      fMapViewComponent->setPalette(palette);
-      fSettings->fPalette = palette;
+      fMapViewComponent->setPaletteType(palette);
+      fSettings->fPaletteType = palette;
+    };
+    fSettingsComponent->onLightingChanged = [this](LightingType type) {
+      fMapViewComponent->setLightingType(type);
+      fSettings->fLightingType = type;
     };
     addAndMakeVisible(fSettingsComponent.get());
 

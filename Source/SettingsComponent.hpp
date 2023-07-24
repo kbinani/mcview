@@ -145,32 +145,57 @@ class SettingsComponent : public juce::Component {
   class GroupOther : public juce::GroupComponent {
   public:
     std::function<void(PaletteType type)> onPaletteChanged;
+    std::function<void(LightingType type)> onLightingChanged;
     std::function<void(bool)> onShowPinChanged;
 
     explicit GroupOther(Settings const &settings) {
       using namespace juce;
       setText(TRANS("Other"));
+
       fPaletteLabel.reset(new Label());
       fPaletteLabel->setText(TRANS("Block color palette"), dontSendNotification);
       addAndMakeVisible(*fPaletteLabel);
-      fPalette.reset(new juce::ComboBox);
+
+      fPalette.reset(new ComboBox);
       fPaletteItems = {
-          {(int)PaletteType::mcview, "mcview"},
-          {(int)PaletteType::java, "Java"},
-          {(int)PaletteType::bedrock, "Bedrock"},
+          {PaletteType::mcview, "mcview"},
+          {PaletteType::java, "Java"},
+          {PaletteType::bedrock, "Bedrock"},
       };
       for (auto const &it : fPaletteItems) {
-        fPalette->addItem(it.second, it.first + 1);
+        fPalette->addItem(it.second, static_cast<int>(it.first) + 1);
       }
-      fPalette->setSelectedItemIndex(0, dontSendNotification);
+      fPalette->setSelectedId(static_cast<int>(settings.fPaletteType) + 1, dontSendNotification);
       fPalette->onChange = [this]() {
         int id = fPalette->getSelectedId();
-        if (auto found = fPaletteItems.find(id - 1); found != fPaletteItems.end()) {
-          onPaletteChanged(static_cast<PaletteType>(found->first));
+        if (auto found = fPaletteItems.find(static_cast<PaletteType>(id - 1)); found != fPaletteItems.end()) {
+          onPaletteChanged(found->first);
         }
       };
       addAndMakeVisible(*fPalette);
-      fShowPin.reset(new juce::ToggleButton(TRANS("Enable marker pin")));
+
+      fLightingLabel.reset(new Label);
+      fLightingLabel->setText(TRANS("Lighting type"), dontSendNotification);
+      addAndMakeVisible(*fLightingLabel);
+
+      fLighting.reset(new ComboBox);
+      fLightingItems = {
+          {LightingType::topLeft, TRANS("Top-left lighting")},
+          {LightingType::top, TRANS("Top lighting")},
+      };
+      for (auto const &it : fLightingItems) {
+        fLighting->addItem(it.second, static_cast<int>(it.first) + 1);
+      }
+      fLighting->setSelectedId(static_cast<int>(settings.fLightingType) + 1, dontSendNotification);
+      fLighting->onChange = [this]() {
+        int id = fLighting->getSelectedId();
+        if (auto found = fLightingItems.find(static_cast<LightingType>(id - 1)); found != fLightingItems.end()) {
+          onLightingChanged(found->first);
+        }
+      };
+      addAndMakeVisible(*fLighting);
+
+      fShowPin.reset(new ToggleButton(TRANS("Enable marker pin")));
       fShowPin->setToggleState(settings.fShowPin, juce::dontSendNotification);
       fShowPin->onStateChange = [this]() {
         if (onShowPinChanged) {
@@ -178,7 +203,7 @@ class SettingsComponent : public juce::Component {
         }
       };
       addAndMakeVisible(*fShowPin);
-      setSize(400, 150);
+      setSize(400, 250);
     }
 
     void resized() override {
@@ -195,13 +220,20 @@ class SettingsComponent : public juce::Component {
       bounds.removeFromTop(5);
       fPalette->setBounds(bounds.removeFromTop(rowHeight));
       bounds.removeFromTop(rowMargin);
+      fLightingLabel->setBounds(bounds.removeFromTop(rowHeight));
+      bounds.removeFromTop(5);
+      fLighting->setBounds(bounds.removeFromTop(rowHeight));
+      bounds.removeFromTop(rowMargin);
       fShowPin->setBounds(bounds.removeFromTop(rowHeight));
     }
 
   private:
     std::unique_ptr<juce::Label> fPaletteLabel;
     std::unique_ptr<juce::ComboBox> fPalette;
-    std::map<int, juce::String> fPaletteItems;
+    std::map<PaletteType, juce::String> fPaletteItems;
+    std::unique_ptr<juce::Label> fLightingLabel;
+    std::unique_ptr<juce::ComboBox> fLighting;
+    std::map<LightingType, juce::String> fLightingItems;
     std::unique_ptr<juce::ToggleButton> fShowPin;
   };
 
@@ -212,6 +244,7 @@ public:
   std::function<void(int)> onBiomeBlendChanged;
   std::function<void(bool)> onShowPinChanged;
   std::function<void(PaletteType)> onPaletteChanged;
+  std::function<void(LightingType type)> onLightingChanged;
 
 public:
   explicit SettingsComponent(Settings const &settings) {
@@ -249,6 +282,11 @@ public:
     other->onPaletteChanged = [this](PaletteType type) {
       if (onPaletteChanged) {
         onPaletteChanged(type);
+      }
+    };
+    other->onLightingChanged = [this](LightingType type) {
+      if (onLightingChanged) {
+        onLightingChanged(type);
       }
     };
     fGroupOther.reset(other.release());

@@ -25,6 +25,7 @@ uniform sampler2D northWest;
 
 uniform sampler2D palette;
 uniform int paletteSize;
+uniform int lightingType; // 1: top-left, 2: top
 
 struct BlockInfo {
     float height;
@@ -274,43 +275,62 @@ void main() {
     }
 
     if (!isVoid && (waterDepth == 0.0 || (waterDepth > 0.0 && waterTranslucent))) {
-        float heightScore = 0.0; // +: bright, -: dark
-        float d = 1.0 / 512.0;
-        float tx = textureCoordOut.x;
-        float ty = textureCoordOut.y;
-        vec4 northC;
-        if (ty - d < 0.0) {
-            northC = texture2D(north, vec2(tx, ty - d + 1.0));
+        if (lightingType == 2) {
+            float d = 1.0 / 512.0;
+            float tx = textureCoordOut.x;
+            float ty = textureCoordOut.y;
+            vec4 northC;
+            if (ty - d < 0.0) {
+                northC = texture2D(north, vec2(tx, ty - d + 1.0));
+            } else {
+                northC = texture2D(texture, vec2(tx, ty - d));
+            }
+            float northH = altitudeFromColor(northC);
+            float coeff = 220.0 / 255.0;
+            if (northH > 0.0) {
+                if (northH > height) coeff = 180.0 / 255.0;
+                if (northH < height) coeff = 1;
+            }
+            c = vec4(c.rgb * coeff, c.a);
         } else {
-            northC = texture2D(texture, vec2(tx, ty - d));
-        }
-        vec4 westC;
-        if (tx - d < 0.0) {
-            westC = texture2D(west, vec2(tx - d + 1.0, ty));
-        } else {
-            westC = texture2D(texture, vec2(tx - d, ty));
-        }
-        float northH = altitudeFromColor(northC);
-        float westH = altitudeFromColor(westC);
-        if (northH > 0.0) {
-            if (northH > height) heightScore--;
-            if (northH < height) heightScore++;
-        }
-        if (westH > 0.0) {
-            if (westH > height) heightScore--;
-            if (westH < height) heightScore++;
-        }
+            float heightScore = 0.0; // +: bright, -: dark
+            float d = 1.0 / 512.0;
+            float tx = textureCoordOut.x;
+            float ty = textureCoordOut.y;
+            vec4 northC;
+            if (ty - d < 0.0) {
+                northC = texture2D(north, vec2(tx, ty - d + 1.0));
+            } else {
+                northC = texture2D(texture, vec2(tx, ty - d));
+            }
+            vec4 westC;
+            if (tx - d < 0.0) {
+                westC = texture2D(west, vec2(tx - d + 1.0, ty));
+            } else {
+                westC = texture2D(texture, vec2(tx - d, ty));
+            }
+            float northH = altitudeFromColor(northC);
+            float westH = altitudeFromColor(westC);
+            if (northH > 0.0) {
+                if (northH > height) heightScore--;
+                if (northH < height) heightScore++;
+            }
+            if (westH > 0.0) {
+                if (westH > height) heightScore--;
+                if (westH < height) heightScore++;
+            }
 
-        if (heightScore > 0.0) {
-            float coeff = 1.2;
-            vec3 hsv = rgb2hsv(c.rgb);
-            hsv.b = hsv.b * coeff;
-            c = vec4(hsv2rgb(hsv).rgb, c.a);
-        } else if (heightScore < 0.0) {
-            float coeff = 0.8;
-            vec3 hsv = rgb2hsv(c.rgb);
-            hsv.b = hsv.b * coeff;
-            c = vec4(hsv2rgb(hsv).rgb, c.a);
+            if (heightScore > 0.0) {
+                float coeff = 1.2;
+                vec3 hsv = rgb2hsv(c.rgb);
+                hsv.b = hsv.b * coeff;
+                c = vec4(hsv2rgb(hsv).rgb, c.a);
+            } else if (heightScore < 0.0) {
+                float coeff = 0.8;
+                vec3 hsv = rgb2hsv(c.rgb);
+                hsv.b = hsv.b * coeff;
+                c = vec4(hsv2rgb(hsv).rgb, c.a);
+            }
         }
     }
 

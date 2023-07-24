@@ -103,6 +103,7 @@ set(mcview_files
   Source/Palette.hpp
   Source/Palette.cpp
   Source/PaletteType.hpp
+  Source/LightingType.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

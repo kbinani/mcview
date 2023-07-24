@@ -9,6 +9,7 @@ static const juce::Identifier kBiomeEnabled("biome_enabled");
 static const juce::Identifier kBiomeBlend("biome_blend");
 static const juce::Identifier kShowPin("show_pin");
 static const juce::Identifier kPalette("palette");
+static const juce::Identifier kLightingType("lighting_type");
 
 class Settings {
 public:
@@ -22,7 +23,13 @@ public:
 
 public:
   Settings()
-      : fWaterOpticalDensity(kDefaultWaterOpticalDensity), fWaterTranslucent(true), fBiomeEnabled(true), fBiomeBlend(kDefaultBiomeBlend), fShowPin(true), fPalette(PaletteType::mcview) {
+      : fWaterOpticalDensity(kDefaultWaterOpticalDensity),
+        fWaterTranslucent(true),
+        fBiomeEnabled(true),
+        fBiomeBlend(kDefaultBiomeBlend),
+        fShowPin(true),
+        fPaletteType(PaletteType::mcview),
+        fLightingType(LightingType::topLeft) {
   }
 
   juce::Array<juce::File> directories() const {
@@ -85,14 +92,27 @@ public:
     GetBool(v, kShowPin, &fShowPin);
 
     // palette
-    juce::String s;
-    GetString(v, kPalette, s);
-    if (s == "java") {
-      fPalette = PaletteType::java;
-    } else if (s == "bedrock") {
-      fPalette = PaletteType::bedrock;
-    } else {
-      fPalette = PaletteType::mcview;
+    {
+      juce::String s;
+      GetString(v, kPalette, s);
+      if (s == "java") {
+        fPaletteType = PaletteType::java;
+      } else if (s == "bedrock") {
+        fPaletteType = PaletteType::bedrock;
+      } else {
+        fPaletteType = PaletteType::mcview;
+      }
+    }
+
+    // lighting_type
+    {
+      juce::String s;
+      GetString(v, kLightingType, s);
+      if (s == "top") {
+        fLightingType = LightingType::top;
+      } else {
+        fLightingType = LightingType::topLeft;
+      }
     }
   }
 
@@ -141,20 +161,37 @@ public:
     obj->setProperty(kShowPin, juce::var(fShowPin));
 
     // palette
-    juce::String s;
-    switch (fPalette) {
-    case PaletteType::java:
-      s = "java";
-      break;
-    case PaletteType::bedrock:
-      s = "bedrock";
-      break;
-    case PaletteType::mcview:
-    default:
-      s = "mcview";
-      break;
+    {
+      juce::String s = "mcview";
+      switch (fPaletteType) {
+      case PaletteType::java:
+        s = "java";
+        break;
+      case PaletteType::bedrock:
+        s = "bedrock";
+        break;
+      case PaletteType::mcview:
+      default:
+        s = "mcview";
+        break;
+      }
+      obj->setProperty(kPalette, juce::var(s));
     }
-    obj->setProperty(kPalette, juce::var(s));
+
+    // lighting_type
+    {
+      juce::String s = "top-left";
+      switch (fLightingType) {
+      case LightingType::top:
+        s = "top";
+        break;
+      case LightingType::topLeft:
+      default:
+        s = "top-left";
+        break;
+      }
+      obj->setProperty(kLightingType, juce::var(s));
+    }
 
     obj->writeAsJSON(stream, 4, false, 16);
   }
@@ -173,7 +210,8 @@ public:
   bool fBiomeEnabled = true;
   int fBiomeBlend;
   bool fShowPin = true;
-  PaletteType fPalette = PaletteType::mcview;
+  PaletteType fPaletteType = PaletteType::mcview;
+  LightingType fLightingType = LightingType::topLeft;
 
 private:
   static juce::File ConfigFile() {

@@ -32,7 +32,16 @@ public:
 
 public:
   MapViewComponent()
-      : fLookAt({0, 0, 5}), fVisibleRegions({0, 0, 0, 0}), fPool(CreateThreadPool()), fLoadingFinished(true), fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity), fWaterTranslucent(true), fEnableBiome(true), fBiomeBlend(2) {
+      : fLookAt({0, 0, 5}),
+        fVisibleRegions({0, 0, 0, 0}),
+        fPool(CreateThreadPool()),
+        fLoadingFinished(true),
+        fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
+        fWaterTranslucent(true),
+        fEnableBiome(true),
+        fBiomeBlend(2),
+        fPaletteType(PaletteType::mcview),
+        fLightingType(LightingType::topLeft) {
     using namespace juce;
 
     if (auto *peer = getPeer()) {
@@ -513,7 +522,8 @@ public:
     }
 
     Time const now = Time::getCurrentTime();
-    PaletteType palette = fPalette.get();
+    PaletteType palette = fPaletteType.get();
+    LightingType lighting = fLightingType.get();
 
     if (!fGLShader) {
       updateShader();
@@ -704,6 +714,9 @@ public:
       if (fGLUniforms->paletteSize) {
         fGLUniforms->paletteSize->set((GLint)paletteTexture->getWidth());
       }
+      if (fGLUniforms->lightingType) {
+        fGLUniforms->lightingType->set(static_cast<GLint>(lighting));
+      }
 
       fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
       fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fGLBuffer->iBuffer);
@@ -782,11 +795,19 @@ public:
     triggerRepaint();
   }
 
-  void setPalette(PaletteType palette) {
-    if (palette == fPalette.get()) {
+  void setPaletteType(PaletteType palette) {
+    if (palette == fPaletteType.get()) {
       return;
     }
-    fPalette = palette;
+    fPaletteType = palette;
+    triggerRepaint();
+  }
+
+  void setLightingType(LightingType type) {
+    if (type == fLightingType.get()) {
+      return;
+    }
+    fLightingType = type;
     triggerRepaint();
   }
 
@@ -1448,10 +1469,10 @@ private:
 
   juce::Atomic<float> fWaterOpticalDensity;
   juce::Atomic<bool> fWaterTranslucent;
-
   juce::Atomic<bool> fEnableBiome;
   juce::Atomic<int> fBiomeBlend;
-  juce::Atomic<PaletteType> fPalette;
+  juce::Atomic<PaletteType> fPaletteType;
+  juce::Atomic<LightingType> fLightingType;
 
   std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
 

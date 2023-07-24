@@ -16,6 +16,7 @@
 #include "NotoSansTypeface.hpp"
 #include "LookAndFeel.hpp"
 #include "PaletteType.hpp"
+#include "LightingType.hpp"
 #include "Settings.hpp"
 #include "File.hpp"
 #include "LookAt.hpp"
