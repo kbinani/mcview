@@ -24,6 +24,8 @@ public:
     fMapViewComponent->setWaterOpticalDensity(fSettings->fWaterOpticalDensity);
     fMapViewComponent->setBiomeEnable(fSettings->fBiomeEnabled);
     fMapViewComponent->setBiomeBlend(fSettings->fBiomeBlend);
+    fMapViewComponent->setPaletteType(fSettings->fPaletteType);
+    fMapViewComponent->setLightingType(fSettings->fLightingType);
     fMapViewComponent->setShowPin(fSettings->fShowPin);
 
     addAndMakeVisible(fMapViewComponent.get());
