@@ -89,6 +89,8 @@ public:
     GetString(v, kPalette, s);
     if (s == "java") {
       fPalette = PaletteType::java;
+    } else if (s == "bedrock") {
+      fPalette = PaletteType::bedrock;
     } else {
       fPalette = PaletteType::mcview;
     }
@@ -143,6 +145,9 @@ public:
     switch (fPalette) {
     case PaletteType::java:
       s = "java";
+      break;
+    case PaletteType::bedrock:
+      s = "bedrock";
       break;
     case PaletteType::mcview:
     default:

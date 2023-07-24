@@ -155,17 +155,18 @@ class SettingsComponent : public juce::Component {
       addAndMakeVisible(*fPaletteLabel);
       fPalette.reset(new juce::ComboBox);
       fPaletteItems = {
-          {(int)PaletteType::mcview + 1, "mcview"},
-          {(int)PaletteType::java + 1, "Java"},
+          {(int)PaletteType::mcview, "mcview"},
+          {(int)PaletteType::java, "Java"},
+          {(int)PaletteType::bedrock, "Bedrock"},
       };
       for (auto const &it : fPaletteItems) {
-        fPalette->addItem(it.second, it.first);
+        fPalette->addItem(it.second, it.first + 1);
       }
       fPalette->setSelectedItemIndex(0, dontSendNotification);
       fPalette->onChange = [this]() {
         int id = fPalette->getSelectedId();
-        if (auto found = fPaletteItems.find(id); found != fPaletteItems.end()) {
-          onPaletteChanged(static_cast<PaletteType>(found->first - 1));
+        if (auto found = fPaletteItems.find(id - 1); found != fPaletteItems.end()) {
+          onPaletteChanged(static_cast<PaletteType>(found->first));
         }
       };
       addAndMakeVisible(*fPalette);

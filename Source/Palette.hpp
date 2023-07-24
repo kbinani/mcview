@@ -8,6 +8,7 @@ class Palette {
 public:
   static std::optional<juce::Colour> ColorFromId(mcfile::blocks::BlockId id);
   static std::optional<juce::Colour> JavaColorFromId(mcfile::blocks::BlockId id);
+  static std::optional<juce::Colour> BedrockColorFromId(mcfile::blocks::BlockId id);
 
   static bool IsWater(mcfile::blocks::BlockId id) {
     using namespace mcfile::blocks::minecraft;

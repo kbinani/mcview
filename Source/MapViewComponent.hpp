@@ -290,6 +290,7 @@ public:
     fTextures.clear();
     fGLPalette.reset();
     fGLPaletteJava.reset();
+    fGLPaletteBedrock.reset();
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
   }
@@ -520,34 +521,17 @@ public:
     OpenGLTexture *paletteTexture = nullptr;
     if (palette == PaletteType::java) {
       if (!fGLPaletteJava) {
-        int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
-        int k = (int)ceil(log2(count) / 2);
-        int size = 2 << k;
-        std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
-        std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
-        for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-          if (auto color = Palette::JavaColorFromId(id); color) {
-            data[id - 1] = color->getPixelARGB();
-          }
-        }
-        fGLPaletteJava.reset(new juce::OpenGLTexture);
-        fGLPaletteJava->loadARGB(data.get(), size, size);
+        LoadPalette(fGLPaletteJava, Palette::JavaColorFromId);
       }
       paletteTexture = fGLPaletteJava.get();
+    } else if (palette == PaletteType::bedrock) {
+      if (!fGLPaletteBedrock) {
+        LoadPalette(fGLPaletteBedrock, Palette::BedrockColorFromId);
+      }
+      paletteTexture = fGLPaletteBedrock.get();
     } else {
       if (!fGLPalette) {
-        int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
-        int k = (int)ceil(log2(count) / 2);
-        int size = 2 << k;
-        std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
-        std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
-        for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-          if (auto color = Palette::ColorFromId(id); color) {
-            data[id - 1] = color->getPixelARGB();
-          }
-        }
-        fGLPalette.reset(new juce::OpenGLTexture);
-        fGLPalette->loadARGB(data.get(), size, size);
+        LoadPalette(fGLPalette, Palette::ColorFromId);
       }
       paletteTexture = fGLPalette.get();
     }
@@ -807,6 +791,22 @@ public:
   }
 
 private:
+  static void LoadPalette(std::unique_ptr<juce::OpenGLTexture> &texture, std::function<std::optional<juce::Colour>(mcfile::blocks::BlockId)> converter) {
+    using namespace juce;
+    int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
+    int k = (int)ceil(log2(count) / 2);
+    int size = 2 << k;
+    std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
+    std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
+    for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+      if (auto color = converter(id); color) {
+        data[id - 1] = color->getPixelARGB();
+      }
+    }
+    texture.reset(new juce::OpenGLTexture);
+    texture->loadARGB(data.get(), size, size);
+  }
+
   void updateShader() {
     using namespace std;
     using namespace juce;
@@ -1401,6 +1401,7 @@ private:
   std::unique_ptr<GLBuffer> fGLBuffer;
   std::unique_ptr<juce::OpenGLTexture> fGLPalette;
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteJava;
+  std::unique_ptr<juce::OpenGLTexture> fGLPaletteBedrock;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<juce::Rectangle<int>> fVisibleRegions;
