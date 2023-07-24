@@ -10,19 +10,19 @@ public:
     float scale = 1.15f;
 
     std::map<NotoSansTypeface::FontLanguage, NotoSansTypeface::Asset> regularAssets = {
-        {NotoSansTypeface::FontLanguage::Neutral, {.fData = BinaryData::NotoSansRegular_ttf, .fSize = BinaryData::NotoSansRegular_ttfSize}},                //
-        {NotoSansTypeface::FontLanguage::Japanese, {.fData = BinaryData::NotoSansJPRegular_ttf, .fSize = BinaryData::NotoSansJPRegular_ttfSize}},           //
-        {NotoSansTypeface::FontLanguage::SimplifiedChinese, {.fData = BinaryData::NotoSansSCRegular_otf, .fSize = BinaryData::NotoSansSCRegular_otfSize}},  //
-        {NotoSansTypeface::FontLanguage::TraditionalChinese, {.fData = BinaryData::NotoSansTCRegular_otf, .fSize = BinaryData::NotoSansTCRegular_otfSize}}, //
+        {NotoSansTypeface::FontLanguage::Neutral, {.fData = FontData::NotoSansRegular_ttf, .fSize = FontData::NotoSansRegular_ttfSize}},                //
+        {NotoSansTypeface::FontLanguage::Japanese, {.fData = FontData::NotoSansJPRegular_ttf, .fSize = FontData::NotoSansJPRegular_ttfSize}},           //
+        {NotoSansTypeface::FontLanguage::SimplifiedChinese, {.fData = FontData::NotoSansSCRegular_otf, .fSize = FontData::NotoSansSCRegular_otfSize}},  //
+        {NotoSansTypeface::FontLanguage::TraditionalChinese, {.fData = FontData::NotoSansTCRegular_otf, .fSize = FontData::NotoSansTCRegular_otfSize}}, //
     };
     auto regular = new NotoSansTypeface(fontFamily, scale, false, regularAssets, preferredLanguages);
     fNotoSansRegular = juce::ReferenceCountedObjectPtr<juce::Typeface>(regular);
 
     std::map<NotoSansTypeface::FontLanguage, NotoSansTypeface::Asset> boldAssets = {
-        {NotoSansTypeface::FontLanguage::Neutral, {.fData = BinaryData::NotoSansBold_ttf, .fSize = BinaryData::NotoSansBold_ttfSize}},                //
-        {NotoSansTypeface::FontLanguage::Japanese, {.fData = BinaryData::NotoSansJPBold_ttf, .fSize = BinaryData::NotoSansJPBold_ttfSize}},           //
-        {NotoSansTypeface::FontLanguage::SimplifiedChinese, {.fData = BinaryData::NotoSansSCBold_otf, .fSize = BinaryData::NotoSansSCBold_otfSize}},  //
-        {NotoSansTypeface::FontLanguage::TraditionalChinese, {.fData = BinaryData::NotoSansTCBold_otf, .fSize = BinaryData::NotoSansTCBold_otfSize}}, //
+        {NotoSansTypeface::FontLanguage::Neutral, {.fData = FontData::NotoSansBold_ttf, .fSize = FontData::NotoSansBold_ttfSize}},                //
+        {NotoSansTypeface::FontLanguage::Japanese, {.fData = FontData::NotoSansJPBold_ttf, .fSize = FontData::NotoSansJPBold_ttfSize}},           //
+        {NotoSansTypeface::FontLanguage::SimplifiedChinese, {.fData = FontData::NotoSansSCBold_otf, .fSize = FontData::NotoSansSCBold_otfSize}},  //
+        {NotoSansTypeface::FontLanguage::TraditionalChinese, {.fData = FontData::NotoSansTCBold_otf, .fSize = FontData::NotoSansTCBold_otfSize}}, //
     };
     auto bold = new NotoSansTypeface(fontFamily, scale, true, boldAssets, preferredLanguages);
     fNotoSansBold = juce::ReferenceCountedObjectPtr<juce::Typeface>(bold);

@@ -812,7 +812,7 @@ private:
     using namespace juce;
     std::unique_ptr<juce::OpenGLShaderProgram> newShader(new juce::OpenGLShaderProgram(fGLContext));
 
-    if (!newShader->addVertexShader(String::fromUTF8(ShaderData::tile_vert, ShaderData::tile_vertSize))) {
+    if (!newShader->addVertexShader(String::fromUTF8(BinaryData::tile_vert, BinaryData::tile_vertSize))) {
       juce::Logger::outputDebugString("addVertexShader failed");
       juce::Logger::outputDebugString(newShader->getLastError());
     }
@@ -820,7 +820,7 @@ private:
     colormap::kbinani::Altitude altitude;
 
     std::ostringstream fragment;
-    fragment << String::fromUTF8(ShaderData::color_frag, ShaderData::color_fragSize);
+    fragment << String::fromUTF8(BinaryData::color_frag, BinaryData::color_fragSize);
     fragment << altitude.getSource() << std::endl;
 
     fragment << "vec4 waterColorFromBiome(int biome) {" << std::endl;

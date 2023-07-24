@@ -2,7 +2,7 @@
 
 namespace mcview {
 
-    enum class PaletteType {
+enum class PaletteType {
   mcview = 0,
   java = 1,
 };

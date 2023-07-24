@@ -149,6 +149,12 @@ juce_add_binary_data(binary-data
     Resource/icon_small.png
     Resource/icon_large.png
     Resource/japanese.lang
+    Resource/shader/tile.vert
+    Resource/shader/color.frag)
+juce_add_binary_data(font-data
+  NAMESPACE mcview::FontData
+  HEADER_NAME FontData.hpp
+  SOURCES
     Resource/NotoSans-Regular.ttf
     Resource/NotoSans-Bold.ttf
     Resource/NotoSansJP-Regular.ttf
@@ -157,17 +163,11 @@ juce_add_binary_data(binary-data
     Resource/NotoSansSC-Bold.otf
     Resource/NotoSansTC-Regular.otf
     Resource/NotoSansTC-Bold.otf)
-juce_add_binary_data(shader-data
-  NAMESPACE mcview::ShaderData
-  HEADER_NAME ShaderData.hpp
-  SOURCES
-    Resource/shader/tile.vert
-    Resource/shader/color.frag)
 
 target_link_libraries(mcview
   PRIVATE
     binary-data
-    shader-data
+    font-data
     mcfile
     juce::juce_gui_extra
     juce::juce_opengl
