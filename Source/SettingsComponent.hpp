@@ -142,13 +142,34 @@ class SettingsComponent : public juce::Component {
     std::unique_ptr<juce::Label> fBlendLabel;
   };
 
-  class GroupPin : public juce::GroupComponent {
+  class GroupOther : public juce::GroupComponent {
   public:
+    std::function<void(PaletteType type)> onPaletteChanged;
     std::function<void(bool)> onShowPinChanged;
 
-    explicit GroupPin(Settings const &settings) {
-      setText(TRANS("Pin"));
-      fShowPin.reset(new juce::ToggleButton(TRANS("Show")));
+    explicit GroupOther(Settings const &settings) {
+      using namespace juce;
+      setText(TRANS("Other"));
+      fPaletteLabel.reset(new Label());
+      fPaletteLabel->setText(TRANS("Block color palette"), dontSendNotification);
+      addAndMakeVisible(*fPaletteLabel);
+      fPalette.reset(new juce::ComboBox);
+      fPaletteItems = {
+          {(int)PaletteType::mcview + 1, "mcview"},
+          {(int)PaletteType::java + 1, "Java"},
+      };
+      for (auto const &it : fPaletteItems) {
+        fPalette->addItem(it.second, it.first);
+      }
+      fPalette->setSelectedItemIndex(0, dontSendNotification);
+      fPalette->onChange = [this]() {
+        int id = fPalette->getSelectedId();
+        if (auto found = fPaletteItems.find(id); found != fPaletteItems.end()) {
+          onPaletteChanged(static_cast<PaletteType>(found->first - 1));
+        }
+      };
+      addAndMakeVisible(*fPalette);
+      fShowPin.reset(new juce::ToggleButton(TRANS("Enable marker pin")));
       fShowPin->setToggleState(settings.fShowPin, juce::dontSendNotification);
       fShowPin->onStateChange = [this]() {
         if (onShowPinChanged) {
@@ -156,20 +177,30 @@ class SettingsComponent : public juce::Component {
         }
       };
       addAndMakeVisible(*fShowPin);
-      setSize(400, 55);
+      setSize(400, 150);
     }
 
     void resized() override {
       int const margin = 10;
       int const width = getWidth();
+      int const labelHeight = 20;
       int const rowHeight = 40;
+      int const rowMargin = 15;
+      auto bounds = getLocalBounds();
+      bounds.reduce(margin, margin);
 
-      int y = margin;
-      fShowPin->setBounds(margin, margin, width - 2 * margin, rowHeight);
-      y += rowHeight;
+      bounds.removeFromTop(margin);
+      fPaletteLabel->setBounds(bounds.removeFromTop(labelHeight));
+      bounds.removeFromTop(5);
+      fPalette->setBounds(bounds.removeFromTop(rowHeight));
+      bounds.removeFromTop(rowMargin);
+      fShowPin->setBounds(bounds.removeFromTop(rowHeight));
     }
 
   private:
+    std::unique_ptr<juce::Label> fPaletteLabel;
+    std::unique_ptr<juce::ComboBox> fPalette;
+    std::map<int, juce::String> fPaletteItems;
     std::unique_ptr<juce::ToggleButton> fShowPin;
   };
 
@@ -179,6 +210,7 @@ public:
   std::function<void(bool)> onBiomeEnableChanged;
   std::function<void(int)> onBiomeBlendChanged;
   std::function<void(bool)> onShowPinChanged;
+  std::function<void(PaletteType)> onPaletteChanged;
 
 public:
   explicit SettingsComponent(Settings const &settings) {
@@ -207,14 +239,19 @@ public:
     fGroupBiome.reset(biome.release());
     addAndMakeVisible(*fGroupBiome);
 
-    std::unique_ptr<GroupPin> pin(new GroupPin(settings));
-    pin->onShowPinChanged = [this](bool show) {
+    std::unique_ptr<GroupOther> other(new GroupOther(settings));
+    other->onShowPinChanged = [this](bool show) {
       if (onShowPinChanged) {
         onShowPinChanged(show);
       }
     };
-    fGroupPin.reset(pin.release());
-    addAndMakeVisible(*fGroupPin);
+    other->onPaletteChanged = [this](PaletteType type) {
+      if (onPaletteChanged) {
+        onPaletteChanged(type);
+      }
+    };
+    fGroupOther.reset(other.release());
+    addAndMakeVisible(*fGroupOther);
 
     fAboutButton.reset(new HyperlinkButton("About", URL()));
     fAboutButton->setJustificationType(Justification::centredRight);
@@ -251,8 +288,8 @@ public:
       fGroupBiome->setBounds(margin, y, width - 2 * margin, fGroupBiome->getHeight());
       y += fGroupBiome->getHeight();
       y += rowMargin;
-      fGroupPin->setBounds(margin, y, width - 2 * margin, fGroupPin->getHeight());
-      y += fGroupPin->getHeight();
+      fGroupOther->setBounds(margin, y, width - 2 * margin, fGroupOther->getHeight());
+      y += fGroupOther->getHeight();
       y += rowMargin;
     }
     {
@@ -264,7 +301,7 @@ public:
 private:
   std::unique_ptr<juce::GroupComponent> fGroupWater;
   std::unique_ptr<juce::GroupComponent> fGroupBiome;
-  std::unique_ptr<juce::GroupComponent> fGroupPin;
+  std::unique_ptr<juce::GroupComponent> fGroupOther;
   std::unique_ptr<juce::HyperlinkButton> fAboutButton;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SettingsComponent)

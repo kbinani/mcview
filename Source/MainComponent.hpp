@@ -77,6 +77,10 @@ public:
       fMapViewComponent->setShowPin(show);
       fSettings->fShowPin = show;
     };
+    fSettingsComponent->onPaletteChanged = [this](PaletteType palette) {
+      fMapViewComponent->setPalette(palette);
+      fSettings->fPalette = palette;
+    };
     addAndMakeVisible(fSettingsComponent.get());
 
     setSize(1280, 720);

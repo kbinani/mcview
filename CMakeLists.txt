@@ -102,6 +102,7 @@ set(mcview_files
   Source/PinEdit.hpp
   Source/Palette.hpp
   Source/Palette.cpp
+  Source/PaletteType.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

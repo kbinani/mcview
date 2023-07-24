@@ -289,6 +289,7 @@ public:
   void openGLContextClosing() override {
     fTextures.clear();
     fGLPalette.reset();
+    fGLPaletteJava.reset();
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
     fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
   }
@@ -511,23 +512,44 @@ public:
     }
 
     Time const now = Time::getCurrentTime();
+    PaletteType palette = fPalette.get();
 
     if (!fGLShader) {
       updateShader();
     }
-    if (!fGLPalette) {
-      int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
-      int k = (int)ceil(log2(count) / 2);
-      int size = 2 << k;
-      std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
-      std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
-      for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
-        if (auto color = Palette::ColorFromId(id); color) {
-          data[id - 1] = color->getPixelARGB();
+    OpenGLTexture *paletteTexture = nullptr;
+    if (palette == PaletteType::java) {
+      if (!fGLPaletteJava) {
+        int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
+        int k = (int)ceil(log2(count) / 2);
+        int size = 2 << k;
+        std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
+        std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
+        for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+          if (auto color = Palette::JavaColorFromId(id); color) {
+            data[id - 1] = color->getPixelARGB();
+          }
         }
+        fGLPaletteJava.reset(new juce::OpenGLTexture);
+        fGLPaletteJava->loadARGB(data.get(), size, size);
       }
-      fGLPalette.reset(new juce::OpenGLTexture);
-      fGLPalette->loadARGB(data.get(), size, size);
+      paletteTexture = fGLPaletteJava.get();
+    } else {
+      if (!fGLPalette) {
+        int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
+        int k = (int)ceil(log2(count) / 2);
+        int size = 2 << k;
+        std::unique_ptr<PixelARGB[]> data(new PixelARGB[size * size]);
+        std::fill_n(data.get(), size * size, PixelARGB(0, 0, 0, 0));
+        for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+          if (auto color = Palette::ColorFromId(id); color) {
+            data[id - 1] = color->getPixelARGB();
+          }
+        }
+        fGLPalette.reset(new juce::OpenGLTexture);
+        fGLPalette->loadARGB(data.get(), size, size);
+      }
+      paletteTexture = fGLPalette.get();
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -689,14 +711,14 @@ public:
       }
 
       fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 9);
-      fGLPalette->bind();
+      paletteTexture->bind();
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       if (fGLUniforms->palette) {
         fGLUniforms->palette->set(9);
       }
       if (fGLUniforms->paletteSize) {
-        fGLUniforms->paletteSize->set((GLint)fGLPalette->getWidth());
+        fGLUniforms->paletteSize->set((GLint)paletteTexture->getWidth());
       }
 
       fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
@@ -773,6 +795,14 @@ public:
     }
     fShowPin = show;
     resetPinComponents();
+    triggerRepaint();
+  }
+
+  void setPalette(PaletteType palette) {
+    if (palette == fPalette.get()) {
+      return;
+    }
+    fPalette = palette;
     triggerRepaint();
   }
 
@@ -1370,6 +1400,7 @@ private:
   std::unique_ptr<GLAttributes> fGLAttributes;
   std::unique_ptr<GLBuffer> fGLBuffer;
   std::unique_ptr<juce::OpenGLTexture> fGLPalette;
+  std::unique_ptr<juce::OpenGLTexture> fGLPaletteJava;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<juce::Rectangle<int>> fVisibleRegions;
@@ -1419,6 +1450,7 @@ private:
 
   juce::Atomic<bool> fEnableBiome;
   juce::Atomic<int> fBiomeBlend;
+  juce::Atomic<PaletteType> fPalette;
 
   std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
 

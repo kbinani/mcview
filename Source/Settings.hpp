@@ -8,6 +8,7 @@ static const juce::Identifier kWaterOpticalDensity("water_optical_density");
 static const juce::Identifier kBiomeEnabled("biome_enabled");
 static const juce::Identifier kBiomeBlend("biome_blend");
 static const juce::Identifier kShowPin("show_pin");
+static const juce::Identifier kPalette("palette");
 
 class Settings {
 public:
@@ -21,7 +22,7 @@ public:
 
 public:
   Settings()
-      : fWaterOpticalDensity(kDefaultWaterOpticalDensity), fWaterTranslucent(true), fBiomeEnabled(true), fBiomeBlend(kDefaultBiomeBlend), fShowPin(true) {
+      : fWaterOpticalDensity(kDefaultWaterOpticalDensity), fWaterTranslucent(true), fBiomeEnabled(true), fBiomeBlend(kDefaultBiomeBlend), fShowPin(true), fPalette(PaletteType::mcview) {
   }
 
   juce::Array<juce::File> directories() const {
@@ -82,6 +83,15 @@ public:
 
     // show_pin
     GetBool(v, kShowPin, &fShowPin);
+
+    // palette
+    juce::String s;
+    GetString(v, kPalette, s);
+    if (s == "java") {
+      fPalette = PaletteType::java;
+    } else {
+      fPalette = PaletteType::mcview;
+    }
   }
 
   void save() {
@@ -128,6 +138,19 @@ public:
     // show_pin
     obj->setProperty(kShowPin, juce::var(fShowPin));
 
+    // palette
+    juce::String s;
+    switch (fPalette) {
+    case PaletteType::java:
+      s = "java";
+      break;
+    case PaletteType::mcview:
+    default:
+      s = "mcview";
+      break;
+    }
+    obj->setProperty(kPalette, juce::var(s));
+
     obj->writeAsJSON(stream, 4, false, 16);
   }
 
@@ -145,6 +168,7 @@ public:
   bool fBiomeEnabled = true;
   int fBiomeBlend;
   bool fShowPin = true;
+  PaletteType fPalette = PaletteType::mcview;
 
 private:
   static juce::File ConfigFile() {
@@ -208,6 +232,17 @@ private:
       r.add(f);
     }
     return true;
+  }
+
+  static bool GetString(juce::var &v, juce::Identifier key, juce::String &r) {
+    if (!v.hasProperty(key)) {
+      return false;
+    }
+    juce::var vv = v.getProperty(key, juce::var());
+    if (!vv.isString()) {
+      return false;
+    }
+    r = vv.toString();
   }
 
 #if JUCE_MAC
