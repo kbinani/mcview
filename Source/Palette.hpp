@@ -15,6 +15,8 @@ public:
     return id == water || id == bubble_column || id == kelp || id == kelp_plant || id == seagrass || id == tall_seagrass;
   }
 
+  static uint32_t const kDefaultOceanColor = 0xff3359a2;
+
   // static void ResearchJava(std::filesystem::path);
 };
 

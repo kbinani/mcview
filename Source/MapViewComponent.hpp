@@ -587,6 +587,9 @@ public:
       if (fGLUniforms->netherrackBlockId) {
         fGLUniforms->netherrackBlockId->set((GLint)mcfile::blocks::minecraft::netherrack);
       }
+      if (fGLUniforms->waterBlockId) {
+        fGLUniforms->waterBlockId->set((GLint)mcfile::blocks::minecraft::water);
+      }
       if (fGLUniforms->waterOpticalDensity) {
         fGLUniforms->waterOpticalDensity->set((GLfloat)fWaterOpticalDensity.get());
       }
@@ -716,6 +719,22 @@ public:
       }
       if (fGLUniforms->lightingType) {
         fGLUniforms->lightingType->set(static_cast<GLint>(lighting));
+      }
+      if (fGLUniforms->paletteType) {
+        GLint pt = 0;
+        switch (palette) {
+        case PaletteType::java:
+          pt = 1;
+          break;
+        case PaletteType::bedrock:
+          pt = 2;
+          break;
+        case PaletteType::mcview:
+        default:
+          pt = 0;
+          break;
+        }
+        fGLUniforms->paletteType->set(pt);
       }
 
       fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, fGLBuffer->vBuffer);
@@ -856,8 +875,10 @@ private:
       fragment << "    } else" << std::endl;
     }
     fragment << "    { " << std::endl;
-    auto ocean = RegionToTexture::kDefaultOceanColor;
-    fragment << "        return rgb(" << (int)ocean.getRed() << ", " << (int)ocean.getGreen() << ", " << (int)ocean.getBlue() << ", 255);" << std::endl;
+    {
+      Colour c(Palette::kDefaultOceanColor);
+      fragment << "        return rgb(" << (int)c.getRed() << ", " << (int)c.getGreen() << ", " << (int)c.getBlue() << ", 255);" << std::endl;
+    }
     fragment << "    }" << std::endl;
     fragment << "}";
 
@@ -884,7 +905,7 @@ private:
 #if 0
     int lineNumber = 0;
     for (auto const &line : mcfile::String::Split(fragmentShader.toStdString(), '\n')) {
-      std::cout << "#" << (lineNumber++) << line << std::endl;
+      juce::Logger::outputDebugString("#" + String(lineNumber++) + line);
     }
 #endif
     if (!newShader->addFragmentShader(fragmentShader)) {

@@ -133,10 +133,8 @@ std::set<mcfile::blocks::BlockId> const RegionToTexture::kTransparentBlocks = {
     mangrove_propagule,
 };
 
-Colour const RegionToTexture::kDefaultOceanColor(51, 89, 162);
-
 std::map<Biome, Colour> const RegionToTexture::kOceanToColor = {
-    {Biome::Ocean, RegionToTexture::kDefaultOceanColor},
+    {Biome::Ocean, Colour(Palette::kDefaultOceanColor)},
     {Biome::LukewarmOcean, Colour(43, 122, 170)},
     {Biome::WarmOcean, Colour(56, 150, 177)},
     {Biome::ColdOcean, Colour(50, 66, 158)},

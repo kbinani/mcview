@@ -17,6 +17,7 @@ struct GLUniforms {
     grassBlockId.reset(createUniform(openGLContext, shader, "grassBlockId"));
     foliageBlockId.reset(createUniform(openGLContext, shader, "foliageBlockId"));
     netherrackBlockId.reset(createUniform(openGLContext, shader, "netherrackBlockId"));
+    waterBlockId.reset(createUniform(openGLContext, shader, "waterBlockId"));
     north.reset(createUniform(openGLContext, shader, "north"));
     northEast.reset(createUniform(openGLContext, shader, "norhtEast"));
     east.reset(createUniform(openGLContext, shader, "east"));
@@ -32,13 +33,14 @@ struct GLUniforms {
     dimension.reset(createUniform(openGLContext, shader, "dimension"));
     palette.reset(createUniform(openGLContext, shader, "palette"));
     paletteSize.reset(createUniform(openGLContext, shader, "paletteSize"));
+    paletteType.reset(createUniform(openGLContext, shader, "paletteType"));
     lightingType.reset(createUniform(openGLContext, shader, "lightingType"));
   }
 
-  std::unique_ptr<juce::OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, dimension;
+  std::unique_ptr<juce::OpenGLShaderProgram::Uniform> texture, fade, heightmap, blocksPerPixel, width, height, Xr, Zr, Cx, Cz, grassBlockId, foliageBlockId, netherrackBlockId, waterBlockId, dimension;
   std::unique_ptr<juce::OpenGLShaderProgram::Uniform> north, northEast, east, southEast, south, southWest, west, northWest;
   std::unique_ptr<juce::OpenGLShaderProgram::Uniform> waterOpticalDensity, waterTranslucent, biomeBlend, enableBiome;
-  std::unique_ptr<juce::OpenGLShaderProgram::Uniform> palette, paletteSize, lightingType;
+  std::unique_ptr<juce::OpenGLShaderProgram::Uniform> palette, paletteSize, paletteType, lightingType;
 
 private:
   static juce::OpenGLShaderProgram::Uniform *createUniform(juce::OpenGLContext &openGLContext,

@@ -292,7 +292,6 @@ private:
   }
 
 public:
-  static juce::Colour const kDefaultOceanColor;
   static std::map<Biome, juce::Colour> const kOceanToColor;
 
   static juce::Colour const kDefaultFoliageColor;

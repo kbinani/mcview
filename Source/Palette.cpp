@@ -72,6 +72,8 @@ static Colour const kColorGravel = kColorStone;
 std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   auto ret = new std::unordered_map<mcfile::blocks::BlockId, Colour>();
 
+  (*ret)[water] = Colour(Palette::kDefaultOceanColor);
+
 #define C(id, r, g, b) (*ret)[(id)] = Colour((r), (g), (b));
 #define K(id, n) (*ret)[(id)] = (n);
 
@@ -1055,6 +1057,8 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   colors[61] = uint32_t(8365974);
   auto ret = new std::unordered_map<mcfile::blocks::BlockId, juce::Colour>();
 #define C(blockId, code) (*ret)[blockId] = juce::Colour((uint32_t)0xff000000 | colors[code]);
+  C(water, 12)
+
   C(acacia_button, 0)
   C(acacia_door, 15)
   C(acacia_fence, 15)

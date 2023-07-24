@@ -6,6 +6,7 @@ uniform float fade;
 uniform int grassBlockId;
 uniform int foliageBlockId;
 uniform int netherrackBlockId;
+uniform int waterBlockId;
 uniform float waterOpticalDensity;
 uniform bool waterTranslucent;
 uniform int biomeBlend;
@@ -25,6 +26,7 @@ uniform sampler2D northWest;
 
 uniform sampler2D palette;
 uniform int paletteSize;
+uniform int paletteType; // 0: mcview, 1: java, 2: bedrock
 uniform int lightingType; // 1: top-left, 2: top
 
 struct BlockInfo {
@@ -236,7 +238,7 @@ void main() {
                 wc = waterColor();
             }
         } else {
-            wc = waterColorFromBiome(-1);
+            wc = colorFromBlockId(waterBlockId);
         }
         if (waterTranslucent) {
             float intensity = pow(10.0, -waterOpticalDensity * waterDepth);
@@ -247,10 +249,10 @@ void main() {
     } else if (blockId == foliageBlockId) {
         vec4 lc = foliageColorFromBiome(enableBiome ? biomeId : -1);
         c = vec4(lc.rgb, alpha);
-    } else if (blockId == grassBlockId) {
+    } else if (blockId == grassBlockId && paletteType == 0) {
         float v = (height - 63.0) / 384.0;
         vec4 g = colormap(v);
-        c = vec4(g.r, g.g, g.b, alpha);
+        c = vec4(g.rgb, alpha);
     } else if (blockId == netherrackBlockId) {
         float v = (height - 31.0) / (127.0 - 31.0);
         vec4 cc = netherrack_colormap(v);
