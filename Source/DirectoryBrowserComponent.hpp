@@ -4,8 +4,8 @@ namespace mcview {
 
 class DirectoryBrowserComponent : public juce::ListBox, public DirectoryBrowserModel::Delegate {
 public:
-  DirectoryBrowserComponent(juce::File directory)
-      : fDirectory(directory) {
+  DirectoryBrowserComponent(juce::File directory, Edition edition)
+      : fDirectory(directory), fEdition(edition) {
     fModel.reset(new DirectoryBrowserModel(this, directory, getLookAndFeel()));
     setModel(fModel.get());
   }
@@ -15,13 +15,17 @@ public:
   }
 
   void directoryBrowserModelDidSelectDirectory(juce::File directory) override {
-    onSelect(directory);
+    Directory d;
+    d.fDirectory = directory;
+    d.fEdition = fEdition;
+    onSelect(d);
   }
 
-  std::function<void(juce::File)> onSelect;
+  std::function<void(Directory)> onSelect;
 
 public:
   juce::File const fDirectory;
+  Edition const fEdition;
 
 private:
   std::unique_ptr<DirectoryBrowserModel> fModel;

@@ -2,6 +2,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
 #include <minecraft-file.hpp>
+#include <nlohmann/json.hpp>
 
 #include <filesystem>
 #include <iostream>
@@ -17,6 +18,8 @@
 #include "LookAndFeel.hpp"
 #include "PaletteType.hpp"
 #include "LightingType.hpp"
+#include "Edition.hpp"
+#include "Directory.hpp"
 #include "Settings.hpp"
 #include "File.hpp"
 #include "LookAt.hpp"

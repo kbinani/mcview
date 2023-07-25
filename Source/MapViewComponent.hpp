@@ -66,7 +66,7 @@ public:
     fOverworld.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fOverworld->setImages(fOverworldImage.get());
     fOverworld->onClick = [this]() {
-      setWorldDirectory(fWorldDirectory, Dimension::Overworld);
+      setWorldDirectory(fWorldDirectory, Dimension::Overworld, fEdition);
     };
     fOverworld->setEnabled(false);
     fOverworld->setTooltip(TRANS("Overworld"));
@@ -76,7 +76,7 @@ public:
     fNether.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fNether->setImages(fNetherImage.get());
     fNether->onClick = [this]() {
-      setWorldDirectory(fWorldDirectory, Dimension::TheNether);
+      setWorldDirectory(fWorldDirectory, Dimension::TheNether, fEdition);
     };
     fNether->setEnabled(false);
     fNether->setTooltip(TRANS("The Nether"));
@@ -86,7 +86,7 @@ public:
     fEnd.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fEnd->setImages(fEndImage.get());
     fEnd->onClick = [this]() {
-      setWorldDirectory(fWorldDirectory, Dimension::TheEnd);
+      setWorldDirectory(fWorldDirectory, Dimension::TheEnd, fEdition);
     };
     fEnd->setEnabled(false);
     fEnd->setTooltip(TRANS("The End"));
@@ -410,10 +410,10 @@ public:
   }
 
   void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) override {
-    enqueueTextureLoading(files, dimension, false);
+    enqueueTextureLoadingJava(files, dimension, false);
   }
 
-  void setWorldDirectory(juce::File directory, Dimension dim) {
+  void setWorldDirectory(juce::File directory, Dimension dim, Edition edition) {
     using namespace juce;
     if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
       return;
@@ -449,6 +449,7 @@ public:
       fWorldDirectory = directory;
       fDimension = dim;
       fWorldData = data;
+      fEdition = edition;
       for (auto &it : *garbageTextures) {
         fTextureTrashBin.push_back(std::move(it.second));
       }
@@ -488,13 +489,17 @@ public:
         return distanceA < distanceB;
       });
 
-      unsafeEnqueueTextureLoading(files, dim, true);
+      if (edition == Edition::Bedrock) {
+        // TODO:
+      } else {
+        unsafeEnqueueTextureLoadingJava(files, dim, true);
+      }
     }
   }
 
-  void enqueueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache) {
+  void enqueueTextureLoadingJava(std::vector<juce::File> files, Dimension dim, bool useCache) {
     std::lock_guard<std::mutex> lock(fMut);
-    unsafeEnqueueTextureLoading(files, dim, useCache);
+    unsafeEnqueueTextureLoadingJava(files, dim, useCache);
   }
 
   void setBrowserOpened(bool opened) {
@@ -1097,7 +1102,7 @@ private:
     updateAllPinComponentPosition();
   }
 
-  void unsafeEnqueueTextureLoading(std::vector<juce::File> files, Dimension dim, bool useCache) {
+  void unsafeEnqueueTextureLoadingJava(std::vector<juce::File> files, Dimension dim, bool useCache) {
     using namespace juce;
     if (files.empty()) {
       return;
@@ -1430,11 +1435,12 @@ private:
   juce::OpenGLContext fGLContext;
   juce::File fWorldDirectory;
   WorldData fWorldData;
+  Dimension fDimension;
+  Edition fEdition;
 
   std::vector<std::unique_ptr<PinComponent>> fPinComponents;
   bool fShowPin;
 
-  Dimension fDimension;
   std::map<Region, std::unique_ptr<RegionTextureCache>> fTextures;
   std::deque<std::unique_ptr<RegionTextureCache>> fTextureTrashBin;
   std::unique_ptr<juce::OpenGLShaderProgram> fGLShader;

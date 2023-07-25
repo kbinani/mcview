@@ -10,13 +10,22 @@ inline std::filesystem::path PathFromFile(juce::File const &file) {
 #endif
 }
 
-static juce::File DefaultMinecraftSaveDirectory() {
+static juce::File DefaultJavaSaveDirectory() {
   using namespace juce;
 #if JUCE_WINDOWS
   return File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(".minecraft").getChildFile("saves");
 #else
   File library = File::getSpecialLocation(File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
   return library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
+#endif
+}
+
+static juce::File DefaultBedrockSaveDirectory() {
+  using namespace juce;
+#if JUCE_WINDOWS
+  return File::getSpecialLocation(File::windowsLocalAppData).getChildFile("Packages").getChildFile("Microsoft.MinecraftUWP_8wekyb3d8bbwe").getChildFile("LocalState").getChildFile("games").getChildFile("com.mojang").getChildFile("minecraftWorlds");
+#else
+  return File();
 #endif
 }
 

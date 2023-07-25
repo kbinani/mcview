@@ -2,15 +2,6 @@
 
 namespace mcview {
 
-static const juce::Identifier kDirectories("directories");
-static const juce::Identifier kWaterTranslucent("water_translucent");
-static const juce::Identifier kWaterOpticalDensity("water_optical_density");
-static const juce::Identifier kBiomeEnabled("biome_enabled");
-static const juce::Identifier kBiomeBlend("biome_blend");
-static const juce::Identifier kShowPin("show_pin");
-static const juce::Identifier kPalette("palette");
-static const juce::Identifier kLightingType("lighting_type");
-
 class Settings {
 public:
   static float constexpr kDefaultWaterOpticalDensity = 0.02f;
@@ -32,69 +23,92 @@ public:
         fLightingType(LightingType::topLeft) {
   }
 
-  juce::Array<juce::File> directories() const {
+  juce::Array<Directory> directories() const {
     return fDirectories;
   }
 
-  void addDirectory(juce::File f) {
-    if (fDirectories.indexOf(f) < 0) {
-      fDirectories.add(f);
+  void addDirectory(Directory d) {
+    for (int i = 0; i < fDirectories.size(); i++) {
+      if (fDirectories[i].fDirectory == d.fDirectory) {
+        return;
+      }
     }
+    fDirectories.add(d);
   }
 
   void removeDirectory(juce::File f) {
-    int const idx = fDirectories.indexOf(f);
-    if (idx >= 0) {
-      fDirectories.remove(idx);
+    for (int i = 0; i < fDirectories.size(); i++) {
+      if (fDirectories[i].fDirectory == f) {
+        fDirectories.remove(i);
+        return;
+      }
     }
   }
 
   void load() {
+    using namespace nlohmann;
     juce::File configFile = ConfigFile();
     juce::FileInputStream stream(configFile);
     if (!stream.openedOk()) {
       return;
     }
-    juce::var v = juce::JSON::parse(stream);
-
-    // directories
-    juce::Array<juce::String> dirs;
-    GetStringArray(v, kDirectories, dirs);
-    fDirectories.clear();
-    for (int i = 0; i < dirs.size(); i++) {
+    juce::String data = stream.readString();
+    std::string str(data.toRawUTF8());
+    json obj = json::parse(str, nullptr, false);
+    if (obj.is_null()) {
+      return;
+    }
+    if (auto dirs = obj.find("directories"); dirs != obj.end() && dirs->is_array()) {
+      for (auto const &dir : *dirs) {
+        juce::String path;
+        Edition edition = Edition::Java;
+        if (dir.is_string()) {
+          auto s = dir.get<std::string>();
+          path = juce::String::fromUTF8(s.c_str(), s.size());
+        } else if (dir.is_object()) {
+          if (auto p = dir.find("path"); p != dir.end() && p->is_string()) {
+            auto s = p->get<std::string>();
+            path = juce::String::fromUTF8(s.c_str(), s.size());
+            if (auto e = dir.find("edition"); e != dir.end() && e->is_string()) {
+              auto es = e->get<std::string>();
+              if (es == "bedrock") {
+                edition = Edition::Bedrock;
+              }
+            }
+          } else {
+            continue;
+          }
+        }
 #if JUCE_MAC
-      juce::File f = FromBookmark(dirs[i]);
+        juce::File f = FromBookmark(path);
 #else
-      juce::File f(dirs[i]);
+        juce::File f(path);
 #endif
-      if (f.exists() && f.isDirectory()) {
-        fDirectories.add(f);
+        if (f.exists() && f.isDirectory()) {
+          Directory d;
+          d.fDirectory = f;
+          d.fEdition = edition;
+          fDirectories.add(d);
+        }
       }
     }
-
-    // water_optical_density
-    GetFloat(v, kWaterOpticalDensity, &fWaterOpticalDensity,
-             kMinWaterOpticalDensity,
-             kMaxWaterOpticalDensity);
-
-    // water_translucent
-    GetBool(v, kWaterTranslucent, &fWaterTranslucent);
-
-    // biome_enabled
-    GetBool(v, kBiomeEnabled, &fBiomeEnabled);
-
-    // biome_blend
-    GetInt(v, kBiomeBlend, &fBiomeBlend,
-           kMinBiomeBlend,
-           kMaxBiomeBlend);
-
-    // show_pin
-    GetBool(v, kShowPin, &fShowPin);
-
-    // palette
-    {
-      juce::String s;
-      GetString(v, kPalette, s);
+    if (auto v = obj.find("water_optical_density"); v != obj.end() && v->is_number()) {
+      fWaterOpticalDensity = std::clamp(v->get<float>(), kMinWaterOpticalDensity, kMaxWaterOpticalDensity);
+    }
+    if (auto v = obj.find("water_translucent"); v != obj.end() && v->is_boolean()) {
+      fWaterTranslucent = v->get<bool>();
+    }
+    if (auto v = obj.find("biome_enabled"); v != obj.end() && v->is_boolean()) {
+      fBiomeEnabled = v->get<bool>();
+    }
+    if (auto v = obj.find("biome_blend"); v != obj.end() && v->is_number_integer()) {
+      fBiomeBlend = std::clamp(v->get<int>(), kMinBiomeBlend, kMaxBiomeBlend);
+    }
+    if (auto v = obj.find("show_pin"); v != obj.end() && v->is_boolean()) {
+      fShowPin = v->get<bool>();
+    }
+    if (auto v = obj.find("palette"); v != obj.end() && v->is_string()) {
+      auto s = v->get<std::string>();
       if (s == "java") {
         fPaletteType = PaletteType::java;
       } else if (s == "bedrock") {
@@ -103,11 +117,8 @@ public:
         fPaletteType = PaletteType::mcview;
       }
     }
-
-    // lighting_type
-    {
-      juce::String s;
-      GetString(v, kLightingType, s);
+    if (auto v = obj.find("lighting_type"); v != obj.end() && v->is_string()) {
+      auto s = v->get<std::string>();
       if (s == "top") {
         fLightingType = LightingType::top;
       } else {
@@ -116,53 +127,69 @@ public:
     }
   }
 
+  /*
+  {
+    "directories": [
+      // "C:\\Users\\kbinani\\AppData\\Roaming\\.minecraft\\saves\\test",
+      {
+        "path": "C:\\Users\\kbinani\\AppData\\Roaming\\.minecraft\\saves\\test",
+        "edition": "java"
+      }
+    ],
+    "water_optical_density": 0.03440860286355019,
+    "water_translucent": true,
+    "biome_enabled": true,
+    "biome_blend": 7,
+    "show_pin": true,
+    "palette": "java",
+    "lighting_type": "top"
+  }
+   */
+
+  static std::string UTF8StringFromJuceString(juce::String const &s) {
+    return std::string(s.toRawUTF8());
+  }
+
   void save() {
+    using namespace nlohmann;
     juce::File dir = ConfigDirectory();
     if (!dir.exists()) {
       dir.createDirectory();
     }
     juce::File configFile = ConfigFile();
-    configFile.deleteFile();
-    juce::FileOutputStream stream(configFile);
-    stream.truncate();
-    stream.setPosition(0);
-
-    std::unique_ptr<juce::DynamicObject> obj(new juce::DynamicObject());
-
-    // directories
-    juce::Array<juce::var> dirs;
+    json obj;
+    json dirs = json::array();
     for (int i = 0; i < fDirectories.size(); i++) {
-      juce::File f = fDirectories[i];
+      json item;
+      Directory dir = fDirectories[i];
 #if JUCE_MAC
       juce::String b = Bookmark(f);
       if (b.isEmpty()) {
         continue;
       }
-      dirs.add(juce::var(b));
+      item["path"] = UTF8StringFromJuceString(b);
 #else
-      dirs.add(juce::var(f.getFullPathName()));
+      std::string path;
+      item["path"] = UTF8StringFromJuceString(dir.fDirectory.getFullPathName());
 #endif
+      switch (dir.fEdition) {
+      case Edition::Bedrock:
+        item["edition"] = "bedrock";
+        break;
+      case Edition::Java:
+        item["edition"] = "java";
+        break;
+      }
+      dirs.push_back(item);
     }
-    obj->setProperty(kDirectories, juce::var(dirs));
-
-    // water_optical_density
-    obj->setProperty(kWaterOpticalDensity, juce::var(fWaterOpticalDensity));
-
-    // water_translucent
-    obj->setProperty(kWaterTranslucent, juce::var(fWaterTranslucent));
-
-    // biome_enabled
-    obj->setProperty(kBiomeEnabled, juce::var(fBiomeEnabled));
-
-    // biome_blend
-    obj->setProperty(kBiomeBlend, juce::var(fBiomeBlend));
-
-    // show_pin
-    obj->setProperty(kShowPin, juce::var(fShowPin));
-
-    // palette
+    obj["directories"] = dirs;
+    obj["water_optical_density"] = fWaterOpticalDensity;
+    obj["water_translucent"] = fWaterTranslucent;
+    obj["biome_enabled"] = fBiomeEnabled;
+    obj["biome_blend"] = fBiomeBlend;
+    obj["show_pin"] = fShowPin;
     {
-      juce::String s = "mcview";
+      std::string s = "mcview";
       switch (fPaletteType) {
       case PaletteType::java:
         s = "java";
@@ -175,12 +202,10 @@ public:
         s = "mcview";
         break;
       }
-      obj->setProperty(kPalette, juce::var(s));
+      obj["palette"] = s;
     }
-
-    // lighting_type
     {
-      juce::String s = "top-left";
+      std::string s = "top-left";
       switch (fLightingType) {
       case LightingType::top:
         s = "top";
@@ -190,10 +215,14 @@ public:
         s = "top-left";
         break;
       }
-      obj->setProperty(kLightingType, juce::var(s));
+      obj["lighting_type"] = s;
     }
-
-    obj->writeAsJSON(stream, 4, false, 16);
+    configFile.deleteFile();
+    juce::FileOutputStream stream(configFile);
+    stream.truncate();
+    stream.setPosition(0);
+    std::string data = obj.dump(2);
+    stream.write(data.c_str(), data.size());
   }
 
   static juce::File ConfigDirectory() {
@@ -229,72 +258,13 @@ private:
     return true;
   }
 
-  static bool GetBool(juce::var &v, juce::Identifier key, bool *r) {
-    if (!v.hasProperty(key)) {
-      return false;
-    }
-    juce::var vv = v.getProperty(key, juce::var());
-    if (!vv.isBool()) {
-      return false;
-    }
-    *r = (bool)vv;
-    return true;
-  }
-
-  static bool GetFloat(juce::var &v, juce::Identifier key, float *r, float min, float max) {
-    if (!v.hasProperty(key)) {
-      return false;
-    }
-    juce::var vv = v.getProperty(key, juce::var());
-    if (!vv.isDouble()) {
-      return false;
-    }
-    *r = std::min(std::max((float)(double)vv, min), max);
-    return true;
-  }
-
-  static bool GetStringArray(juce::var &v, juce::Identifier key, juce::Array<juce::String> &r) {
-    r.clear();
-
-    if (!v.hasProperty(key)) {
-      return false;
-    }
-    juce::var dirs = v.getProperty(kDirectories, juce::var());
-    if (!dirs.isArray()) {
-      return false;
-    }
-    juce::Array<juce::var> *d = dirs.getArray();
-    if (!d) {
-      return false;
-    }
-    for (int i = 0; i < d->size(); i++) {
-      juce::var f = (*d)[i];
-      if (!f.isString()) {
-        continue;
-      }
-      r.add(f);
-    }
-    return true;
-  }
-
-  static bool GetString(juce::var &v, juce::Identifier key, juce::String &r) {
-    if (!v.hasProperty(key)) {
-      return false;
-    }
-    juce::var vv = v.getProperty(key, juce::var());
-    if (!vv.isString()) {
-      return false;
-    }
-    r = vv.toString();
-  }
-
 #if JUCE_MAC
   static juce::String Bookmark(juce::File f);
   static juce::File FromBookmark(juce::String s);
 #endif
 
 private:
-  juce::Array<juce::File> fDirectories;
+  juce::Array<Directory> fDirectories;
 };
 
 } // namespace mcview

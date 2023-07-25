@@ -79,6 +79,11 @@ class BrowserComponent : public juce::Component, private juce::Timer {
     juce::File fFile;
   };
 
+  enum {
+    MenuIdJava = 1,
+    MenuIdBedrock = 2,
+  };
+
 public:
   BrowserComponent() {
     fConstrainer.reset(new juce::ComponentBoundsConstrainer());
@@ -125,19 +130,24 @@ public:
     }
   }
 
-  void addDirectory(juce::File directory) {
-#if JUCE_MAC
-    // userHomeDirectory = $HOME/Library/Containers/com.github.kbinani.mcview/Data
-    juce::File library = juce::File::getSpecialLocation(juce::File::userHomeDirectory).getParentDirectory().getParentDirectory().getParentDirectory();
-    juce::File saves = library.getChildFile("Application Support").getChildFile("minecraft").getChildFile("saves");
-    bool const fixed = directory.getFullPathName() == saves.getFullPathName();
-#else
-    bool const fixed = directory.getFullPathName() == DefaultMinecraftSaveDirectory().getFullPathName();
-#endif
-    Header *header = new Header(fPanel.get(), directory, fixed ? "Default" : directory.getFileName(), !fixed);
-    DirectoryBrowserComponent *browser = new DirectoryBrowserComponent(directory);
-    browser->onSelect = [this](juce::File f) {
-      onSelect(f);
+  void addDirectory(Directory directory) {
+    bool const java = directory.fDirectory.getFullPathName() == DefaultJavaSaveDirectory().getFullPathName();
+    bool const bedrock = directory.fDirectory.getFullPathName() == DefaultBedrockSaveDirectory().getFullPathName();
+
+    juce::String title;
+    bool removable = false;
+    if (java) {
+      title = "Default Java";
+    } else if (bedrock) {
+      title = "Default Bedrock";
+    } else {
+      title = directory.fDirectory.getFileName();
+      removable = true;
+    }
+    Header *header = new Header(fPanel.get(), directory.fDirectory, title, removable);
+    DirectoryBrowserComponent *browser = new DirectoryBrowserComponent(directory.fDirectory, directory.fEdition);
+    browser->onSelect = [this](Directory d) {
+      onSelect(d);
     };
     header->onRemoveButtonClicked = [this](juce::File f) {
       removeDirectory(f);
@@ -155,13 +165,36 @@ public:
   }
 
   void browse() {
-    juce::String message = TRANS("Select Minecraft \"saves\" directory");
+    juce::PopupMenu menu;
+    menu.addItem(MenuIdJava, TRANS("Add Java edition save directory"));
+    menu.addItem(MenuIdBedrock, TRANS("Add Bedrock edition save directory"));
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(*fAddButton), [this](int id) {
+      switch (id) {
+      case MenuIdJava:
+        browseJava();
+        break;
+      case MenuIdBedrock:
+        browseBedrock();
+        break;
+      }
+    });
+  }
+
+  std::function<void(Directory)> onSelect;
+  std::function<void(Directory)> onAdd;
+  std::function<void(juce::File)> onRemove;
+
+  static int constexpr kDefaultWidth = 214;
+
+private:
+  void browseJava() {
+    juce::String message = TRANS("Select \"saves\" directory of Minecraft Java Edition");
     int flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories;
 #if JUCE_MAC
     message += "\n" + TRANS("This dialog opens the default location of the \"saves\" directory. If this directory is appropriate, press the \"Open\" button");
     flags = flags | juce::FileBrowserComponent::showsHiddenFiles;
 #endif
-    fFileChooser.reset(new juce::FileChooser(message, DefaultMinecraftSaveDirectory()));
+    fFileChooser.reset(new juce::FileChooser(message, DefaultJavaSaveDirectory()));
     fFileChooser->launchAsync(flags, [this](juce::FileChooser const &chooser) {
       juce::File directory = chooser.getResult();
       if (directory == juce::File()) {
@@ -173,17 +206,35 @@ public:
           return;
         }
       }
-      addDirectory(directory);
+      Directory d;
+      d.fDirectory = directory;
+      d.fEdition = Edition::Java;
+      addDirectory(d);
     });
   }
 
-  std::function<void(juce::File)> onSelect;
-  std::function<void(juce::File)> onAdd;
-  std::function<void(juce::File)> onRemove;
+  void browseBedrock() {
+    juce::String message = TRANS("Select \"minecraftWorlds\" directory of Minecraft Bedrock Edition");
+    int flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories;
+    fFileChooser.reset(new juce::FileChooser(message, DefaultBedrockSaveDirectory()));
+    fFileChooser->launchAsync(flags, [this](juce::FileChooser const &chooser) {
+      juce::File directory = chooser.getResult();
+      if (directory == juce::File()) {
+        return;
+      }
+      for (int i = 0; i < fBrowsers.size(); i++) {
+        auto b = fBrowsers[i];
+        if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+          return;
+        }
+      }
+      Directory d;
+      d.fDirectory = directory;
+      d.fEdition = Edition::Bedrock;
+      addDirectory(d);
+    });
+  }
 
-  static int constexpr kDefaultWidth = 214;
-
-private:
   void removeDirectory(juce::File dir) {
     for (int i = 1; i < fPanel->getNumPanels(); i++) {
       Component *comp = fPanel->getPanel(i);

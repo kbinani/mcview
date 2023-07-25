@@ -32,9 +32,17 @@ public:
 
     fBrowser.reset(new BrowserComponent());
 #if !JUCE_MAC
-    fBrowser->addDirectory(DefaultMinecraftSaveDirectory());
+    Directory java;
+    java.fDirectory = DefaultJavaSaveDirectory();
+    java.fEdition = Edition::Java;
+    fBrowser->addDirectory(java);
+
+    Directory bedrock;
+    bedrock.fDirectory = DefaultBedrockSaveDirectory();
+    bedrock.fEdition = Edition::Bedrock;
+    fBrowser->addDirectory(bedrock);
 #endif
-    Array<File> directories = fSettings->directories();
+    Array<Directory> directories = fSettings->directories();
     for (int i = 0; i < directories.size(); i++) {
       fBrowser->addDirectory(directories[i]);
     }
@@ -43,13 +51,13 @@ public:
       triggerAsyncUpdate();
     }
 #endif
-    fBrowser->onSelect = [this](File dir) {
-      fMapViewComponent->setWorldDirectory(dir, Dimension::Overworld);
-      getTopLevelComponent()->setName(dir.getFileName());
+    fBrowser->onSelect = [this](Directory d) {
+      fMapViewComponent->setWorldDirectory(d.fDirectory, Dimension::Overworld, d.fEdition);
+      getTopLevelComponent()->setName(d.fDirectory.getFileName());
       setBrowserOpened(false);
     };
-    fBrowser->onAdd = [this](File dir) {
-      fSettings->addDirectory(dir);
+    fBrowser->onAdd = [this](Directory d) {
+      fSettings->addDirectory(d);
       fSettings->save();
     };
     fBrowser->onRemove = [this](File dir) {
