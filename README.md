@@ -1,6 +1,6 @@
 # mcview
 
-Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.16.*
+Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.20
 
 ![overworld](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss1.png)
 ![nether](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss2.png)
@@ -20,5 +20,7 @@ Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.
 - JUCE: https://github.com/juce-framework/JUCE
 - Google Material Design Icon: https://material.io/tools/icons
 - colormap-shaders: https://github.com/kbinani/colormap-shaders
+- je2be-core: https://github.com/kbinani/je2be-core
 - libminecraft-file: https://github.com/kbinani/libminecraft-file
 - Android SDK Sources: https://github.com/AndroidSDKSources/android-sdk-sources-for-api-level-28
+- Google Noto Font: https://fonts.google.com/noto/fonts
