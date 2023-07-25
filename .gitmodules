@@ -7,3 +7,6 @@
 [submodule "ext/JUCE"]
 	path = ext/JUCE
 	url = https://github.com/kbinani/JUCE.git
+[submodule "ext/je2be-core"]
+	path = ext/je2be-core
+	url = https://github.com/kbinani/je2be-core.git

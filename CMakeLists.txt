@@ -30,7 +30,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
-add_subdirectory(ext/libminecraft-file)
+add_subdirectory(ext/je2be-core)
 add_subdirectory(ext/JUCE)
 
 # Developer accidentally upload an app binary to the appstoreconnect with wrong version number.
@@ -171,7 +171,7 @@ target_link_libraries(mcview
   PRIVATE
     binary-data
     font-data
-    mcfile
+    je2be
     juce::juce_gui_extra
     juce::juce_opengl
   PUBLIC
