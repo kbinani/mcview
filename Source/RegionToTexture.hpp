@@ -25,16 +25,117 @@ class RegionToTexture {
   };
 
 public:
-  static void Load(mcfile::je::Region const &region, juce::ThreadPoolJob *job, Dimension dim, std::function<void(juce::PixelARGB *)> completion) {
+  static std::optional<PixelInfo> PillarPixelInfo(Dimension dim, int x, int z, int maxBlockY, std::function<mcfile::blocks::BlockId(int, int, int)> blockIdAt) {
+    uint8_t waterDepth = 0;
+    int ymax = 319;
+    int ymin = -64;
+
+    int yini = ymax;
+    if (dim == Dimension::TheNether) {
+      ymax = 127;
+      ymin = 0;
+      yini = ymax;
+      for (int y = ymax; y >= ymin; y--) {
+        auto block = blockIdAt(x, y, z);
+        if (!block) {
+          continue;
+        }
+        if (block == mcfile::blocks::minecraft::air) {
+          yini = y;
+          break;
+        }
+      }
+    } else if (dim == Dimension::TheEnd) {
+      ymax = 255;
+      ymin = 0;
+      yini = ymax;
+    }
+    yini = std::min(yini, maxBlockY);
+    bool all_transparent = true;
+    bool found_opaque_block = false;
+    for (int y = yini; y >= ymin; y--) {
+      auto block = blockIdAt(x, y, z);
+      if (block == mcfile::blocks::unknown) {
+        continue;
+      }
+      if (Palette::IsWater(block)) {
+        waterDepth++;
+        all_transparent = false;
+        continue;
+      }
+      if (kTransparentBlocks.find(block) != kTransparentBlocks.end()) {
+        continue;
+      }
+      if (kPlantBlocks.find(block) != kPlantBlocks.end()) {
+        continue;
+      }
+      all_transparent = false;
+      int const h = std::min(std::max(y + 64, 0), 511);
+      PixelInfo info;
+      info.height = h;
+      info.waterDepth = waterDepth;
+      info.blockId = block;
+      return info;
+    }
+    if (waterDepth > 0) {
+      PixelInfo info;
+      info.height = 0;
+      info.waterDepth = waterDepth;
+      info.blockId = mcfile::blocks::minecraft::water;
+      return info;
+    } else if (all_transparent) {
+      RegionToTexture::PixelInfo info;
+      info.height = 0;
+      info.waterDepth = 0;
+      info.blockId = mcfile::blocks::minecraft::air;
+      return info;
+    }
+    return std::nullopt;
+  }
+
+  static juce::PixelARGB *Pack(std::vector<PixelInfo> const &pixelInfo, std::vector<Biome> const &biomes, int width, int height) {
+    using namespace juce;
+    std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
+    std::fill_n(pixels.get(), width * height, PixelARGB(0, 0, 0, 0));
+    for (int z = 0; z < height; z++) {
+      for (int x = 0; x < width; x++) {
+        int idx = z * width + x;
+        PixelInfo info = pixelInfo[idx];
+        if (info.height < 0) {
+          continue;
+        }
+        Biome biome = biomes[idx];
+        int biomeRadius;
+        if (7 <= x && x < width - 7 && 7 <= z && z < height - 7) {
+          biomeRadius = 7;
+          for (int iz = -7; iz <= 7; iz++) {
+            for (int ix = -7; ix <= 7; ix++) {
+              int i = (z + iz) * width + x + ix;
+              Biome b = biomes[i];
+              if (b != biome) {
+                biomeRadius = std::min(std::min(biomeRadius, abs(ix)), abs(iz));
+              }
+            }
+          }
+        } else {
+          biomeRadius = 0;
+        }
+        pixels[idx] = PackPixelInfoToARGB(info.height, info.waterDepth, (uint8_t)biome, (uint32_t)info.blockId, biomeRadius);
+      }
+    }
+
+    return pixels.release();
+  }
+
+  static juce::PixelARGB *LoadJava(mcfile::je::Region const &region, juce::ThreadPoolJob *job, Dimension dim) {
     using namespace juce;
     using namespace mcfile::blocks::minecraft;
 
     int const width = 512;
     int const height = 512;
 
-    std::vector<PixelInfo> pixelInfo(width * height);
-    std::fill(pixelInfo.begin(), pixelInfo.end(), PixelInfo{-1, 0, 0});
-    std::vector<Biome> biomes(width * height);
+    std::vector<PixelInfo> pixelInfo(width * height, PixelInfo{-1, 0, 0});
+    std::vector<Biome> biomes(width * height, Biome::Other);
 
     int const minX = region.minBlockX();
     int const minZ = region.minBlockZ();
@@ -81,6 +182,16 @@ public:
     bool error = false;
     bool didset = false;
     bool completed = region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
+      int maxSectionY = -9999;
+      for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
+        if (chunk.fSections[i]) {
+          maxSectionY = chunk.fSections[i]->y();
+          break;
+        }
+      }
+      if (maxSectionY < -4) {
+        return !job->shouldExit();
+      }
       int const sZ = chunk.minBlockZ();
       int const eZ = chunk.maxBlockZ();
       int const sX = chunk.minBlockX();
@@ -95,16 +206,6 @@ public:
           return false;
         }
       }
-      int maxSectionY = -9999;
-      for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
-        if (chunk.fSections[i]) {
-          maxSectionY = chunk.fSections[i]->y();
-          break;
-        }
-      }
-      if (maxSectionY < -4) {
-        return !job->shouldExit();
-      }
       for (int z = sZ; z <= eZ; z++) {
         for (int x = sX; x <= eX; x++) {
           int const idx = (z - minZ) * width + (x - minX);
@@ -112,72 +213,9 @@ public:
           if (job->shouldExit()) {
             return false;
           }
-          uint8_t waterDepth = 0;
-          int ymax = 319;
-          int ymin = -64;
-
-          int yini = ymax;
-          if (dim == Dimension::TheNether) {
-            ymax = 127;
-            ymin = 0;
-            yini = ymax;
-            for (int y = ymax; y >= ymin; y--) {
-              auto block = chunk.blockIdAt(x, y, z);
-              if (!block)
-                continue;
-              if (block == air) {
-                yini = y;
-                break;
-              }
-            }
-          } else if (dim == Dimension::TheEnd) {
-            ymax = 255;
-            ymin = 0;
-            yini = ymax;
-          }
-          yini = std::min(yini, maxSectionY * 16) + 15;
-          bool all_transparent = true;
-          bool found_opaque_block = false;
-          for (int y = yini; y >= ymin; y--) {
-            auto block = chunk.blockIdAt(x, y, z);
-            if (block == mcfile::blocks::unknown) {
-              continue;
-            }
-            if (Palette::IsWater(block)) {
-              waterDepth++;
-              all_transparent = false;
-              continue;
-            }
-            if (kTransparentBlocks.find(block) != kTransparentBlocks.end()) {
-              continue;
-            }
-            if (kPlantBlocks.find(block) != kPlantBlocks.end()) {
-              continue;
-            }
-            all_transparent = false;
-            int const h = std::min(std::max(y + 64, 0), 511);
-            PixelInfo info;
-            info.height = h;
-            info.waterDepth = waterDepth;
-            info.blockId = block;
-            pixelInfo[idx] = info;
-            didset = true;
-            found_opaque_block = true;
-            break;
-          }
-          if (!found_opaque_block && waterDepth > 0) {
-            PixelInfo info;
-            info.height = 0;
-            info.waterDepth = waterDepth;
-            info.blockId = water;
-            pixelInfo[idx] = info;
-            didset = true;
-          } else if (all_transparent) {
-            PixelInfo info;
-            info.height = 0;
-            info.waterDepth = 0;
-            info.blockId = air;
-            pixelInfo[idx] = info;
+          auto info = PillarPixelInfo(dim, x, z, maxSectionY * 16 + 15, [&chunk](int x, int y, int z) { return chunk.blockIdAt(x, y, z); });
+          if (info) {
+            pixelInfo[idx] = *info;
             didset = true;
           }
         }
@@ -186,41 +224,13 @@ public:
     });
 
     if (!didset || !completed) {
-      completion(nullptr);
-      return;
+      return nullptr;
     }
 
-    std::unique_ptr<PixelARGB[]> pixels(new PixelARGB[width * height]);
-    std::fill_n(pixels.get(), width * height, PixelARGB(0, 0, 0, 0));
-    for (int z = 0; z < height; z++) {
-      for (int x = 0; x < width; x++) {
-        int idx = z * width + x;
-        PixelInfo info = pixelInfo[idx];
-        if (info.height < 0) {
-          continue;
-        }
-        Biome biome = biomes[idx];
-        int biomeRadius;
-        if (7 <= x && x < width - 7 && 7 <= z && z < height - 7) {
-          biomeRadius = 7;
-          for (int iz = -7; iz <= 7; iz++) {
-            for (int ix = -7; ix <= 7; ix++) {
-              int i = (z + iz) * width + x + ix;
-              Biome b = biomes[i];
-              if (b != biome) {
-                biomeRadius = std::min(std::min(biomeRadius, abs(ix)), abs(iz));
-              }
-            }
-          }
-        } else {
-          biomeRadius = 0;
-        }
-        pixels[idx] = ToPixelInfo(info.height, info.waterDepth, (uint8_t)biome, (uint32_t)info.blockId, biomeRadius);
-      }
-    }
-
-    completion(pixels.release());
+    return Pack(pixelInfo, biomes, width, height);
   }
+
+  static juce::PixelARGB *LoadBedrock(mcfile::be::DbInterface &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim);
 
   static juce::File CacheFile(juce::File const &file) {
     using namespace juce;
@@ -241,7 +251,7 @@ public:
   }
 
 private:
-  static juce::PixelARGB ToPixelInfo(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
+  static juce::PixelARGB PackPixelInfoToARGB(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
     using namespace juce;
     // [v3 pixel info]
     // h:            9bit

@@ -8,6 +8,18 @@ enum class Dimension : int {
   TheEnd = 1,
 };
 
+static inline mcfile::Dimension DimensionFromDimension(Dimension d) {
+  switch (d) {
+  case Dimension::TheEnd:
+    return mcfile::Dimension::End;
+  case Dimension::TheNether:
+    return mcfile::Dimension::Nether;
+  case Dimension::Overworld:
+  default:
+    return mcfile::Dimension::Overworld;
+  }
+}
+
 static inline juce::File DimensionDirectory(juce::File directory, Dimension dim) {
   if (dim == Dimension::Overworld) {
     return directory.getChildFile("region");

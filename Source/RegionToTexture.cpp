@@ -1,8 +1,11 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <minecraft-file.hpp>
 
+#include "toje/_block-data.hpp"
+
 #include "Dimension.hpp"
 #include "Palette.hpp"
+#include "defer.hpp"
 
 #include "RegionToTexture.hpp"
 
@@ -148,5 +151,68 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Swamp, Colour(6975545)},
     {Biome::Badlands, Colour(10387789)},
 };
+
+PixelARGB *RegionToTexture::LoadBedrock(mcfile::be::DbInterface &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim) {
+  using namespace juce;
+  using namespace std;
+
+  int const width = 512;
+  int const height = 512;
+  int const x0 = rx * 512;
+  int const z0 = rz * 512;
+
+  std::vector<PixelInfo> pixelInfo(width * height, PixelInfo{-1, 0, 0});
+  std::vector<Biome> biomes(width * height, Biome::Other);
+
+  for (int cz = rz * 32; cz < rz * 32 + 15; cz++) {
+    for (int cx = rx * 32; cx < rx * 32 + 15; cx++) {
+      if (job->shouldExit()) {
+        return nullptr;
+      }
+      auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), db, mcfile::Endian::Little, {});
+      if (!chunk) {
+        continue;
+      }
+      int const sZ = chunk->minBlockZ();
+      int const eZ = chunk->maxBlockZ();
+      int const sX = chunk->minBlockX();
+      int const eX = chunk->maxBlockX();
+      for (int z = sZ; z <= eZ; z++) {
+        for (int x = sX; x <= eX; x++) {
+          if (auto biomeB = chunk->biomeAt(x, 0, z); biomeB) {
+            Biome biome = ToBiome(*biomeB);
+            int i = (z - z0) * width + (x - x0);
+            biomes[i] = biome;
+          }
+        }
+        if (job->shouldExit()) {
+          return nullptr;
+        }
+      }
+      for (int z = sZ; z <= eZ; z++) {
+        for (int x = sX; x <= eX; x++) {
+          int const idx = (z - z0) * width + (x - x0);
+          assert(0 <= idx && idx < width * height);
+          if (job->shouldExit()) {
+            return nullptr;
+          }
+          auto info = PillarPixelInfo(dim, x, z, chunk->maxBlockY(), [&chunk](int x, int y, int z) -> mcfile::blocks::BlockId {
+            if (auto blockB = chunk->blockAt(x, y, z); blockB) {
+              if (auto blockJ = je2be::toje::BlockData::From(*blockB); blockJ) {
+                return blockJ->fId;
+              }
+            }
+            return mcfile::blocks::minecraft::air;
+          });
+          if (info) {
+            pixelInfo[idx] = *info;
+          }
+        }
+      }
+    }
+  }
+
+  return Pack(pixelInfo, biomes, width, height);
+}
 
 } // namespace mcview

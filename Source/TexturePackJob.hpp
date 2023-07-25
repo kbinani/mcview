@@ -56,9 +56,7 @@ public:
       if (!region) {
         return ThreadPoolJob::jobHasFinished;
       }
-      RegionToTexture::Load(*region, this, fDimension, [this, &result](PixelARGB *pixels) {
-        result->fPixels.reset(pixels);
-      });
+      result->fPixels.reset(RegionToTexture::LoadJava(*region, this, fDimension));
       if (shouldExit()) {
         return ThreadPoolJob::jobHasFinished;
       }
