@@ -23,6 +23,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     $<$<CONFIG:Release>:/MT>
     $<$<CONFIG:RelWithDebInfo>:/MT>
     $<$<CONFIG:MinSizeRel>:/MT>
+    /MP
   )
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "${mcview_macos_deployment_target}")
