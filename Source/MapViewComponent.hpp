@@ -1114,7 +1114,7 @@ private:
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
-      auto *job = new TexturePackJob(fWorldDirectory, f, region, dim, useCache, this);
+      auto *job = new TexturePackJobJava(fWorldDirectory, f, region, dim, useCache, this);
       fPool->addJob(job, true);
       fLoadingRegions.insert(region);
       minX = std::min(minX, r->fX);
@@ -1166,7 +1166,7 @@ private:
 
       auto before = fTextures.find(j->fRegion);
       if (j->fPixels) {
-        auto cache = std::make_unique<RegionTextureCache>(j->fRegion, j->fRegionFile.getFullPathName());
+        auto cache = std::make_unique<RegionTextureCache>(j->fWorldDirectory.getFullPathName(), j->fDimension, j->fRegion);
         cache->load(j->fPixels.get());
         if (before != fTextures.end()) {
           cache->fLoadTime = before->second->fLoadTime;

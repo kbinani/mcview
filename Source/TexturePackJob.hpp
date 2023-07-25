@@ -6,13 +6,12 @@ class TexturePackJob : public juce::ThreadPoolJob {
 public:
   class Result {
   public:
-    Result(Region region, juce::File regionFile, juce::File worldDirectory, Dimension dimension) : fRegion(region), fRegionFile(regionFile), fWorldDirectory(worldDirectory), fDimension(dimension) {}
+    Result(juce::File worldDirectory, Dimension dimension, Region region) : fWorldDirectory(worldDirectory), fDimension(dimension), fRegion(region) {}
 
-    Region const fRegion;
-    juce::File const fRegionFile;
-    std::unique_ptr<juce::PixelARGB[]> fPixels;
     juce::File const fWorldDirectory;
     Dimension const fDimension;
+    Region const fRegion;
+    std::unique_ptr<juce::PixelARGB[]> fPixels;
   };
 
   class Delegate {
@@ -21,14 +20,23 @@ public:
     virtual void texturePackJobDidFinish(std::shared_ptr<Result> result) = 0;
   };
 
-  TexturePackJob(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
-      : juce::ThreadPoolJob(mcaFile.getFileName()), fRegionFile(mcaFile), fRegion(region), fWorldDirectory(worldDirectory), fDimension(dim), fUseCache(useCache), fDelegate(delegate) {
+  TexturePackJob(juce::String name, Delegate *delegate) : juce::ThreadPoolJob(name), fDelegate(delegate) {}
+  ~TexturePackJob() override = default;
+
+protected:
+  Delegate *const fDelegate;
+};
+
+class TexturePackJobJava : public TexturePackJob {
+public:
+  TexturePackJobJava(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
+      : TexturePackJob(mcaFile.getFileName(), delegate), fWorldDirectory(worldDirectory), fDimension(dim), fRegion(region), fRegionFile(mcaFile), fUseCache(useCache) {
   }
 
   juce::ThreadPoolJob::JobStatus runJob() override {
     using namespace juce;
 
-    auto result = std::make_shared<Result>(fRegion, fRegionFile, fWorldDirectory, fDimension);
+    auto result = std::make_shared<Result>(fWorldDirectory, fDimension, fRegion);
     defer {
       fDelegate->texturePackJobDidFinish(result);
     };
@@ -81,14 +89,13 @@ public:
   }
 
 private:
-  juce::File const fRegionFile;
-  Region const fRegion;
   juce::File const fWorldDirectory;
   Dimension const fDimension;
+  Region const fRegion;
+  juce::File const fRegionFile;
   bool const fUseCache;
-  Delegate *const fDelegate;
 
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TexturePackJob)
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TexturePackJobJava)
 };
 
 } // namespace mcview
