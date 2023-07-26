@@ -108,13 +108,13 @@ set(mcview_files
   Source/LightingType.hpp
   Source/Edition.hpp
   Source/Directory.hpp
-  Source/TexturePackJob.hpp
-  Source/TexturePackThreadPool.hpp
-  Source/TexturePackJobJava.hpp
-  Source/TexturePackThreadPoolJava.hpp
-  Source/TexturePackJobBedrock.hpp
-  Source/TexturePackThreadPoolBedrock.hpp
   Source/ThreadPool.hpp
+  Source/TexturePackThreadPool.hpp
+  Source/TexturePackJob.hpp
+  Source/JavaTexturePackJob.hpp
+  Source/JavaTexturePackThreadPool.hpp
+  Source/BedrockTexturePackJob.hpp
+  Source/BedrockTexturePackThreadPool.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

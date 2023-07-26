@@ -2,9 +2,9 @@
 
 namespace mcview {
 
-class TexturePackJobJava : public TexturePackJob {
+class JavaTexturePackJob : public TexturePackJob {
 public:
-  TexturePackJobJava(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
+  JavaTexturePackJob(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
       : TexturePackJob(mcaFile.getFileName(), region, delegate), fWorldDirectory(worldDirectory), fDimension(dim), fRegionFile(mcaFile), fUseCache(useCache) {
   }
 
@@ -55,7 +55,7 @@ private:
   juce::File const fRegionFile;
   bool const fUseCache;
 
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TexturePackJobJava)
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(JavaTexturePackJob)
 };
 
 } // namespace mcview

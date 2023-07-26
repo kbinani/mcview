@@ -433,9 +433,9 @@ public:
       fPoolTrashBin.push_back(std::move(fPool));
     }
     if (edition == Edition::Bedrock) {
-      fPool.reset(new TexturePackThreadPoolBedrock(directory));
+      fPool.reset(new BedrockTexturePackThreadPool(directory));
     } else {
-      fPool.reset(new TexturePackThreadPoolJava(directory));
+      fPool.reset(new JavaTexturePackThreadPool(directory));
     }
 
     auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
