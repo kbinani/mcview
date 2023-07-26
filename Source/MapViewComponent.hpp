@@ -12,10 +12,9 @@ class MapViewComponent
       public SavePNGProgressWindow ::Delegate,
       public RegionUpdateChecker::Delegate,
       public TextInputDialog<PinEdit>::Delegate {
-  struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
 
-  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueUpdateCaptureButtonStatus, AsyncUpdateQueueReleaseGarbageThreadPool>;
+  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -34,8 +33,6 @@ public:
   MapViewComponent()
       : fLookAt({0, 0, 5}),
         fVisibleRegions({0, 0, 0, 0}),
-        fPool(CreateThreadPool()),
-        fLoadingFinished(true),
         fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
         fWaterTranslucent(true),
         fEnableBiome(true),
@@ -100,7 +97,6 @@ public:
       captureToImage();
     };
     addAndMakeVisible(*fCaptureButton);
-    fCaptureButton->setEnabled(false);
 
     fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
                                                          BinaryData::baseline_settings_white_18dp_pngSize);
@@ -146,7 +142,9 @@ public:
     juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
 
     fGLContext.detach();
-    fPool->removeAllJobs(true, -1);
+    if (fPool) {
+      fPool->removeAllJobs(true, -1);
+    }
     for (auto &pool : fPoolTrashBin) {
       pool->removeAllJobs(true, -1);
     }
@@ -425,7 +423,6 @@ public:
     fNether->setEnabled(dim != Dimension::TheNether);
     fEnd->setEnabled(dim != Dimension::TheEnd);
 
-    fLoadingFinished = false;
     fCaptureButton->setEnabled(false);
 
     File worldDataFile = WorldData::WorldDataPath(directory);
@@ -435,7 +432,11 @@ public:
       fPool->removeAllJobs(true, 0);
       fPoolTrashBin.push_back(std::move(fPool));
     }
-    fPool.reset(CreateThreadPool());
+    if (edition == Edition::Bedrock) {
+      fPool.reset(new TexturePackThreadPoolBedrock(directory));
+    } else {
+      fPool.reset(new TexturePackThreadPoolJava(directory));
+    }
 
     auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
     garbageTextures->swap(fTextures);
@@ -455,43 +456,42 @@ public:
       }
       resetPinComponents();
 
-      int minX = 0;
-      int maxX = 0;
-      int minZ = 0;
-      int maxZ = 0;
-
-      RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
-      std::vector<File> files;
-      for (DirectoryEntry entry : it) {
-        File f = entry.getFile();
-        auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-        if (!r) {
-          continue;
-        }
-        minX = std::min(minX, r->fX);
-        maxX = std::max(maxX, r->fX);
-        minZ = std::min(minZ, r->fZ);
-        maxZ = std::max(maxZ, r->fZ);
-        files.push_back(f);
-      }
-
-      LookAt next = lookAt;
-      next.fX = 0;
-      next.fZ = 0;
-      fVisibleRegions = juce::Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
-      setLookAt(next);
-
-      std::sort(files.begin(), files.end(), [next](File const &a, File const &b) {
-        auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
-        auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
-        auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
-        auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
-        return distanceA < distanceB;
-      });
-
       if (edition == Edition::Bedrock) {
         // TODO:
       } else {
+        int minX = 0;
+        int maxX = 0;
+        int minZ = 0;
+        int maxZ = 0;
+
+        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
+        std::vector<File> files;
+        for (DirectoryEntry entry : it) {
+          File f = entry.getFile();
+          auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
+          if (!r) {
+            continue;
+          }
+          minX = std::min(minX, r->fX);
+          maxX = std::max(maxX, r->fX);
+          minZ = std::min(minZ, r->fZ);
+          maxZ = std::max(maxZ, r->fZ);
+          files.push_back(f);
+        }
+
+        LookAt next = lookAt;
+        next.fX = 0;
+        next.fZ = 0;
+        fVisibleRegions = juce::Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+        setLookAt(next);
+
+        std::sort(files.begin(), files.end(), [next](File const &a, File const &b) {
+          auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
+          auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
+          auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
+          auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
+          return distanceA < distanceB;
+        });
         unsafeEnqueueTextureLoadingJava(files, dim, true);
       }
     }
@@ -562,6 +562,9 @@ public:
 
     for (auto &it : textures) {
       auto &cache = it.second;
+      if (!cache->fTexture) {
+        continue;
+      }
       if (fGLUniforms->blocksPerPixel.get() != nullptr) {
         fGLUniforms->blocksPerPixel->set(lookAt.fBlocksPerPixel);
       }
@@ -632,7 +635,7 @@ public:
       int const x = it.first.first;
       int const z = it.first.second;
 
-      if (auto const &north = textures.find(MakeRegion(x, z - 1)); north != textures.end()) {
+      if (auto const &north = textures.find(MakeRegion(x, z - 1)); north != textures.end() && north->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
         north->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -642,7 +645,7 @@ public:
         }
       }
 
-      if (auto const &northEast = textures.find(MakeRegion(x + 1, z - 1)); northEast != textures.end()) {
+      if (auto const &northEast = textures.find(MakeRegion(x + 1, z - 1)); northEast != textures.end() && northEast->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
         northEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -652,7 +655,7 @@ public:
         }
       }
 
-      if (auto const &east = textures.find(MakeRegion(x + 1, z)); east != textures.end()) {
+      if (auto const &east = textures.find(MakeRegion(x + 1, z)); east != textures.end() && east->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
         east->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -662,7 +665,7 @@ public:
         }
       }
 
-      if (auto const &southEast = textures.find(MakeRegion(x + 1, z + 1)); southEast != textures.end()) {
+      if (auto const &southEast = textures.find(MakeRegion(x + 1, z + 1)); southEast != textures.end() && southEast->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
         southEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -672,7 +675,7 @@ public:
         }
       }
 
-      if (auto const &south = textures.find(MakeRegion(x, z + 1)); south != textures.end()) {
+      if (auto const &south = textures.find(MakeRegion(x, z + 1)); south != textures.end() && south->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
         south->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -682,7 +685,7 @@ public:
         }
       }
 
-      if (auto const &southWest = textures.find(MakeRegion(x - 1, z + 1)); southWest != textures.end()) {
+      if (auto const &southWest = textures.find(MakeRegion(x - 1, z + 1)); southWest != textures.end() && southWest->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
         southWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -692,7 +695,7 @@ public:
         }
       }
 
-      if (auto const &west = textures.find(MakeRegion(x - 1, z)); west != textures.end()) {
+      if (auto const &west = textures.find(MakeRegion(x - 1, z)); west != textures.end() && west->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
         west->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -702,7 +705,7 @@ public:
         }
       }
 
-      if (auto const &northWest = textures.find(MakeRegion(x - 1, z - 1)); northWest != textures.end()) {
+      if (auto const &northWest = textures.find(MakeRegion(x - 1, z - 1)); northWest != textures.end() && northWest->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
         northWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -760,13 +763,9 @@ public:
       queue.swap(fAsyncUpdateQueue);
     }
     for (auto const &q : queue) {
-      if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
-        fCaptureButton->setEnabled(fLoadingFinished.get());
-      } else if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
+      if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
         for (int i = (int)fPoolTrashBin.size() - 1; i >= 0; i--) {
-          auto &pool = fPoolTrashBin[i];
-          if (pool->getNumJobs() == 0) {
-            pool.reset();
+          if (fPoolTrashBin[i]->getNumJobs() == 0) {
             fPoolTrashBin.erase(fPoolTrashBin.begin() + i);
           }
         }
@@ -949,6 +948,14 @@ private:
     return juce::Point<float>(bx, bz);
   }
 
+  static juce::Point<float> GetMapCoordinateFromView(juce::Point<float> p, juce::Point<int> size, LookAt lookAt) {
+    float const width = size.x;
+    float const height = size.y;
+    float const bx = lookAt.fX + (p.x - width / 2) * lookAt.fBlocksPerPixel;
+    float const bz = lookAt.fZ + (p.y - height / 2) * lookAt.fBlocksPerPixel;
+    return juce::Point<float>(bx, bz);
+  }
+
   juce::Point<float> getViewCoordinateFromMap(juce::Point<float> p, LookAt lookAt) const {
     juce::Point<int> size = fSize.load();
     float const width = size.x;
@@ -1108,8 +1115,6 @@ private:
       return;
     }
 
-    fLoadingFinished = false;
-
     juce::Rectangle<int> visibleRegions = fVisibleRegions.load();
     int minX = visibleRegions.getX();
     int maxX = visibleRegions.getRight();
@@ -1119,32 +1124,47 @@ private:
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
-      auto *job = new TexturePackJobJava(fWorldDirectory, f, region, dim, useCache, this);
-      fPool->addJob(job, true);
+      fPool->addTexturePackJob(region, dim, useCache, this);
       fLoadingRegions.insert(region);
       minX = std::min(minX, r->fX);
       maxX = std::max(maxX, r->fX + 1);
       minY = std::min(minY, r->fZ);
       maxY = std::max(maxY, r->fZ + 1);
+      if (auto found = fTextures.find(region); found == fTextures.end()) {
+        fTextures[region] = std::make_unique<RegionTextureCache>(fWorldDirectory, fDimension, region);
+      }
     }
 
     fVisibleRegions = juce::Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
+    startLoadingTimer();
+  }
+
+  void startLoadingTimer() {
     if (!isTimerRunning()) {
       startTimer(16); // 60fps
     }
   }
 
   void instantiateTextures(LookAt lookAt) {
+    fTextureTrashBin.clear();
+
     bool loadingFinished = false;
     juce::File worldDirectory;
     Dimension dimension;
     std::vector<std::shared_ptr<TexturePackJob::Result>> remove;
     std::vector<std::pair<std::shared_ptr<TexturePackJob::Result>, float>> distances;
+
+    auto size = fSize.load();
+    auto topLeft = GetMapCoordinateFromView(juce::Point<float>(0, 0), size, lookAt);
+    auto rightBottom = GetMapCoordinateFromView(juce::Point<float>(size.x, size.y), size, lookAt);
+    int minRx = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
+    int minRz = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
+    int maxRx = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.x)) + 2;
+    int maxRz = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.y)) + 2;
     {
       std::lock_guard<std::mutex> lock(fMut);
       worldDirectory = fWorldDirectory;
       dimension = fDimension;
-      fTextureTrashBin.clear();
 
       for (size_t i = 0; i < fGLJobResults.size(); i++) {
         auto const &result = fGLJobResults[i];
@@ -1153,6 +1173,11 @@ private:
           continue;
         }
         if (result->fDimension != dimension) {
+          remove.push_back(result);
+          continue;
+        }
+        if (result->fRegion.first < minRx || maxRx < result->fRegion.first || result->fRegion.second < minRz || maxRz < result->fRegion.second) {
+          fLoadingRegions.erase(result->fRegion);
           remove.push_back(result);
           continue;
         }
@@ -1171,7 +1196,7 @@ private:
 
       auto before = fTextures.find(j->fRegion);
       if (j->fPixels) {
-        auto cache = std::make_unique<RegionTextureCache>(j->fWorldDirectory.getFullPathName(), j->fDimension, j->fRegion);
+        auto cache = std::make_unique<RegionTextureCache>(j->fWorldDirectory, j->fDimension, j->fRegion);
         cache->load(j->fPixels.get());
         if (before != fTextures.end()) {
           cache->fLoadTime = before->second->fLoadTime;
@@ -1187,10 +1212,9 @@ private:
       auto it = fLoadingRegions.find(j->fRegion);
       if (it != fLoadingRegions.end()) {
         fLoadingRegions.erase(it);
-      }
-      if (fLoadingRegions.empty()) {
-        fLoadingFinished = true;
-        loadingFinished = true;
+        if (fLoadingRegions.empty()) {
+          loadingFinished = true;
+        }
       }
     }
     {
@@ -1204,16 +1228,44 @@ private:
         }
       }
     }
-
+    for (auto const &it : fTextures) {
+      auto [rx, rz] = it.first;
+      if (rx < minRx || maxRx < rx || rz < minRz || maxRz < rz) {
+        if (it.second->fTexture) {
+          it.second->fTexture.reset();
+        }
+      }
+    }
+    if (fPool) {
+      int queued = 0;
+      for (int rx = minRx; rx <= maxRx; rx++) {
+        for (int rz = minRz; rz <= maxRz; rz++) {
+          auto region = MakeRegion(rx, rz);
+          if (auto found = fTextures.find(region); found != fTextures.end() && !found->second->fTexture) {
+            {
+              std::lock_guard<std::mutex> lock(fMut);
+              if (fLoadingRegions.count(region) > 0) {
+                continue;
+              }
+              fLoadingRegions.insert(region);
+            }
+            fPool->addTexturePackJob(MakeRegion(rx, rz), dimension, true, this);
+            queued++;
+          }
+        }
+      }
+      if (queued > 0) {
+        loadingFinished = false;
+        startLoadingTimer();
+      }
+    }
     if (loadingFinished) {
       callAfterDelay(kFadeDurationMS, [this]() {
-        stopTimer();
-      });
-      {
         std::lock_guard<std::mutex> lock(fMut);
-        fAsyncUpdateQueue.push_back(AsyncUpdateQueueUpdateCaptureButtonStatus{});
-      }
-      triggerAsyncUpdate();
+        if (fLoadingRegions.empty()) {
+          stopTimer();
+        }
+      });
     }
   }
 
@@ -1395,11 +1447,6 @@ private:
     }
   }
 
-  static juce::ThreadPool *CreateThreadPool() {
-    auto const threads = (std::max)(1, (int)std::thread::hardware_concurrency() - 1);
-    return new juce::ThreadPool(threads);
-  }
-
   static float DistanceSqBetweenRegionAndLookAt(LookAt lookAt, Region region) {
     float const regionCenterX = region.first * 512 - 256;
     float const regionCenterZ = region.second * 512 - 256;
@@ -1459,8 +1506,8 @@ private:
 
   juce::Point<float> fMouse;
 
-  std::unique_ptr<juce::ThreadPool> fPool;
-  std::deque<std::unique_ptr<juce::ThreadPool>> fPoolTrashBin;
+  std::unique_ptr<TexturePackThreadPool> fPool;
+  std::deque<std::unique_ptr<TexturePackThreadPool>> fPoolTrashBin;
   std::deque<std::shared_ptr<TexturePackJob::Result>> fGLJobResults;
 
   std::set<Region> fLoadingRegions;
@@ -1486,8 +1533,6 @@ private:
   std::unique_ptr<juce::Drawable> fSettingsButtonImage;
 
   std::unique_ptr<juce::TooltipWindow> fTooltipWindow;
-
-  juce::Atomic<bool> fLoadingFinished;
 
   OverScroller fScroller;
   std::deque<juce::MouseEvent> fLastDragPosition;

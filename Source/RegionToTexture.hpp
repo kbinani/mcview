@@ -230,25 +230,7 @@ public:
     return Pack(pixelInfo, biomes, width, height);
   }
 
-  static juce::PixelARGB *LoadBedrock(mcfile::be::DbInterface &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim);
-
-  static juce::File CacheFile(juce::File const &file) {
-    using namespace juce;
-#if JUCE_WINDOWS
-    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("mcview").getChildFile("cache");
-#else
-    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
-#endif
-    if (!tmp.exists()) {
-      tmp.createDirectory();
-    }
-    String hash = String("v4.") + String(file.getParentDirectory().getFullPathName().hashCode64());
-    File dir = tmp.getChildFile(hash);
-    if (!dir.exists()) {
-      dir.createDirectory();
-    }
-    return dir.getChildFile(file.getFileNameWithoutExtension() + String(".gz"));
-  }
+  static juce::PixelARGB *LoadBedrock(leveldb::DB &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim);
 
 private:
   static juce::PixelARGB PackPixelInfoToARGB(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {

@@ -4,7 +4,7 @@ namespace mcview {
 
 class RegionTextureCache {
 public:
-  RegionTextureCache(juce::String worldDirectory, Dimension dim, Region region)
+  RegionTextureCache(juce::File worldDirectory, Dimension dim, Region region)
       : fWorldDirectory(worldDirectory), fDimension(dim), fRegion(region) {
   }
 
@@ -17,7 +17,7 @@ public:
   }
 
 public:
-  juce::String const fWorldDirectory;
+  juce::File const fWorldDirectory;
   Dimension const fDimension;
   Region const fRegion;
   std::unique_ptr<juce::OpenGLTexture> fTexture;

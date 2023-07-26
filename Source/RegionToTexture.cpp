@@ -152,7 +152,7 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-PixelARGB *RegionToTexture::LoadBedrock(mcfile::be::DbInterface &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim) {
+PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim) {
   using namespace juce;
   using namespace std;
 
@@ -169,7 +169,7 @@ PixelARGB *RegionToTexture::LoadBedrock(mcfile::be::DbInterface &db, int rx, int
       if (job->shouldExit()) {
         return nullptr;
       }
-      auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), db, mcfile::Endian::Little, {});
+      auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), &db, mcfile::Endian::Little, {});
       if (!chunk) {
         continue;
       }

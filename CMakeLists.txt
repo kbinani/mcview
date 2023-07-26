@@ -92,7 +92,6 @@ set(mcview_files
   Source/SavePNGProgressWindow.hpp
   Source/LookAt.hpp
   Source/TextInputDialog.hpp
-  Source/TexturePackJob.hpp
   Source/RegionUpdateChecker.hpp
   Source/GLUniforms.hpp
   Source/GLVertex.hpp
@@ -109,6 +108,12 @@ set(mcview_files
   Source/LightingType.hpp
   Source/Edition.hpp
   Source/Directory.hpp
+  Source/TexturePackJob.hpp
+  Source/TexturePackThreadPool.hpp
+  Source/TexturePackJobJava.hpp
+  Source/TexturePackThreadPoolJava.hpp
+  Source/TexturePackJobBedrock.hpp
+  Source/TexturePackThreadPoolBedrock.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files
