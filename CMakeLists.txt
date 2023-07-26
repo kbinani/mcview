@@ -34,7 +34,7 @@ endif()
 add_subdirectory(ext/je2be-core)
 add_subdirectory(ext/JUCE)
 
-# Developer accidentally upload an app binary to the appstoreconnect with wrong version number.
+# Developer accidentally uploaded an app binary to the appstoreconnect with wrong version number.
 # The appstoreconnect doesn't allow version numbers to go down, so we apply a higher value than CFBundleShortVersionString.
 math(EXPR mcview_bundle_version_major "${PROJECT_VERSION_MAJOR} + 1")
 juce_add_gui_app(mcview
