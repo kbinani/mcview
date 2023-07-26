@@ -1105,7 +1105,11 @@ private:
   }
 
   void setLookAt(LookAt next) {
-    fLookAt = clampLookAt(next);
+    auto c = clampLookAt(next);
+    fLookAt = c;
+    if (fPool) {
+      fPool->fLookAt = c;
+    }
     updateAllPinComponentPosition();
   }
 

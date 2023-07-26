@@ -20,7 +20,7 @@ public:
     virtual void texturePackJobDidFinish(std::shared_ptr<Result> result) = 0;
   };
 
-  TexturePackJob(juce::String name, Delegate *delegate) : ThreadPoolJob(name), fDelegate(delegate) {}
+  TexturePackJob(juce::String name, Region region, Delegate *delegate) : ThreadPoolJob(name), fRegion(region), fDelegate(delegate) {}
   ~TexturePackJob() override = default;
 
 protected:
@@ -83,6 +83,9 @@ protected:
     }
     return dir.getChildFile(String("r.") + String(region.first) + "." + String(region.second) + String(".gz"));
   }
+
+public:
+  Region const fRegion;
 
 protected:
   Delegate *const fDelegate;

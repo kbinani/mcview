@@ -429,6 +429,10 @@ public:
     return s;
   }
 
+  virtual int compareJobs(ThreadPoolJob *a, ThreadPoolJob *b) {
+    return 0;
+  }
+
 private:
   //==============================================================================
   juce::Array<ThreadPoolJob *> jobs;
@@ -483,6 +487,16 @@ private:
 
     {
       const juce::ScopedLock sl(lock);
+
+      struct Comparator {
+        explicit Comparator(ThreadPool *self) : fSelf(self) {}
+
+        ThreadPool *const fSelf;
+        int compareElements(ThreadPoolJob *a, ThreadPoolJob *b) {
+          return fSelf->compareJobs(a, b);
+        }
+      } comparator(this);
+      jobs.sort(comparator, true);
 
       for (int i = 0; i < jobs.size(); ++i) {
         if (auto *job = jobs[i]) {

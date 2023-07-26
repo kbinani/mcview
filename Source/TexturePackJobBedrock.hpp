@@ -4,7 +4,7 @@ namespace mcview {
 
 class TexturePackJobBedrock : public TexturePackJob {
 public:
-  TexturePackJobBedrock(leveldb::DB *db, juce::File worldDirectory, Region region, Dimension dim, bool useCache, Delegate *delegate) : TexturePackJob("", delegate), fDb(db), fWorldDirectory(worldDirectory), fRegion(region), fDimension(dim), fUseCache(useCache) {
+  TexturePackJobBedrock(leveldb::DB *db, juce::File worldDirectory, Region region, Dimension dim, bool useCache, Delegate *delegate) : TexturePackJob("", region, delegate), fDb(db), fWorldDirectory(worldDirectory), fDimension(dim), fUseCache(useCache) {
   }
 
   ThreadPoolJob::JobStatus runJob() override {
@@ -42,7 +42,6 @@ private:
   leveldb::DB *const fDb;
   juce::File const fWorldDirectory;
   Dimension const fDimension;
-  Region const fRegion;
   bool const fUseCache;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TexturePackJobBedrock)

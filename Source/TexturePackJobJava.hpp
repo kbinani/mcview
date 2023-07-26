@@ -5,7 +5,7 @@ namespace mcview {
 class TexturePackJobJava : public TexturePackJob {
 public:
   TexturePackJobJava(juce::File const &worldDirectory, juce::File const &mcaFile, Region region, Dimension dim, bool useCache, Delegate *delegate)
-      : TexturePackJob(mcaFile.getFileName(), delegate), fWorldDirectory(worldDirectory), fDimension(dim), fRegion(region), fRegionFile(mcaFile), fUseCache(useCache) {
+      : TexturePackJob(mcaFile.getFileName(), region, delegate), fWorldDirectory(worldDirectory), fDimension(dim), fRegionFile(mcaFile), fUseCache(useCache) {
   }
 
   ThreadPoolJob::JobStatus runJob() override {
@@ -52,7 +52,6 @@ public:
 private:
   juce::File const fWorldDirectory;
   Dimension const fDimension;
-  Region const fRegion;
   juce::File const fRegionFile;
   bool const fUseCache;
 
