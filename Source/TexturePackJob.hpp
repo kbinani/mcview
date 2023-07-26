@@ -76,7 +76,6 @@ protected:
     }
     String hashSource = worldDirectory.getFullPathName();
     hashSource += "\n" + String(static_cast<int>(dim));
-    hashSource += "\n" + String(region.first) + "_" + String(region.second);
     String hash = String("v5.") + String(hashSource.hashCode64());
     File dir = tmp.getChildFile(hash);
     if (!dir.exists()) {
