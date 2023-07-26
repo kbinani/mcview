@@ -7,12 +7,10 @@ public:
   TexturePackJobBedrock(leveldb::DB *db, juce::File worldDirectory, Region region, Dimension dim, bool useCache, Delegate *delegate) : TexturePackJob("", delegate), fDb(db), fWorldDirectory(worldDirectory), fRegion(region), fDimension(dim), fUseCache(useCache) {
   }
 
-  juce::ThreadPoolJob::JobStatus runJob() override {
-    using namespace juce;
-
+  ThreadPoolJob::JobStatus runJob() override {
     auto result = std::make_shared<Result>(fWorldDirectory, fDimension, fRegion);
     try {
-      File cache = CacheFile(fWorldDirectory, fDimension, fRegion);
+      juce::File cache = CacheFile(fWorldDirectory, fDimension, fRegion);
       if (fUseCache && cache.existsAsFile()) {
         if (LoadCache(result->fPixels, std::nullopt, cache)) {
           fDelegate->texturePackJobDidFinish(result);
@@ -30,11 +28,11 @@ public:
       StoreCache(result->fPixels.get(), 0, cache);
       return ThreadPoolJob::jobHasFinished;
     } catch (std::exception &e) {
-      Logger::writeToLog(e.what());
+      juce::Logger::writeToLog(e.what());
       result->fPixels.reset();
       return ThreadPoolJob::jobHasFinished;
     } catch (...) {
-      Logger::writeToLog("Unknown error");
+      juce::Logger::writeToLog("Unknown error");
       result->fPixels.reset();
       return ThreadPoolJob::jobHasFinished;
     }

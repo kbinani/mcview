@@ -31,6 +31,7 @@
 #include "RegionTextureCache.hpp"
 #include "OverScroller.hpp"
 #include "TimerInstance.hpp"
+#include "ThreadPool.hpp"
 
 #include "AboutComponent.hpp"
 #include "SettingsComponent.hpp"

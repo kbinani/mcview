@@ -2,7 +2,7 @@
 
 namespace mcview {
 
-class TexturePackJob : public juce::ThreadPoolJob {
+class TexturePackJob : public ThreadPoolJob {
 public:
   class Result {
   public:
@@ -20,7 +20,7 @@ public:
     virtual void texturePackJobDidFinish(std::shared_ptr<Result> result) = 0;
   };
 
-  TexturePackJob(juce::String name, Delegate *delegate) : juce::ThreadPoolJob(name), fDelegate(delegate) {}
+  TexturePackJob(juce::String name, Delegate *delegate) : ThreadPoolJob(name), fDelegate(delegate) {}
   ~TexturePackJob() override = default;
 
 protected:

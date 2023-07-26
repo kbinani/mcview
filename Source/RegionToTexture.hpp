@@ -127,7 +127,7 @@ public:
     return pixels.release();
   }
 
-  static juce::PixelARGB *LoadJava(mcfile::je::Region const &region, juce::ThreadPoolJob *job, Dimension dim) {
+  static juce::PixelARGB *LoadJava(mcfile::je::Region const &region, ThreadPoolJob *job, Dimension dim) {
     using namespace juce;
     using namespace mcfile::blocks::minecraft;
 
@@ -230,7 +230,7 @@ public:
     return Pack(pixelInfo, biomes, width, height);
   }
 
-  static juce::PixelARGB *LoadBedrock(leveldb::DB &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim);
+  static juce::PixelARGB *LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadPoolJob *job, Dimension dim);
 
 private:
   static juce::PixelARGB PackPixelInfoToARGB(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {

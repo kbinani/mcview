@@ -5,6 +5,7 @@
 
 #include "Dimension.hpp"
 #include "Palette.hpp"
+#include "ThreadPool.hpp"
 #include "defer.hpp"
 
 #include "RegionToTexture.hpp"
@@ -152,7 +153,7 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, juce::ThreadPoolJob *job, Dimension dim) {
+PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadPoolJob *job, Dimension dim) {
   using namespace juce;
   using namespace std;
 
