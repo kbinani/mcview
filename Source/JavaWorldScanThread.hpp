@@ -20,13 +20,13 @@ public:
   void run() override {
     juce::RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
     for (juce::DirectoryEntry entry : it) {
+      if (threadShouldExit()) {
+        return;
+      }
       juce::File f = entry.getFile();
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       if (!r) {
         continue;
-      }
-      if (threadShouldExit()) {
-        return;
       }
 
       auto region = MakeRegion(r->fX, r->fZ);

@@ -19,7 +19,10 @@ public:
 
   void run() override {
     std::set<Region> found;
-    mcfile::be::Chunk::ForAll(fDb.get(), DimensionFromDimension(fDimension), [this, &found](int cx, int cz) {
+    bool completed = mcfile::be::Chunk::ForAll(fDb.get(), DimensionFromDimension(fDimension), [this, &found](int cx, int cz) -> bool {
+      if (threadShouldExit()) {
+        return false;
+      }
       int rx = mcfile::Coordinate::RegionFromChunk(cx);
       int rz = mcfile::Coordinate::RegionFromChunk(cz);
       auto region = MakeRegion(rx, rz);
@@ -27,8 +30,11 @@ public:
         found.insert(region);
         fDelegate->bedrockWorldScanThreadDidFoundRegion(fWorldDirectory, fDimension, region);
       }
+      return true;
     });
-    fDelegate->bedrockWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+    if (completed && !threadShouldExit()) {
+      fDelegate->bedrockWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+    }
   }
 
 private:
