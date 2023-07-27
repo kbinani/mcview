@@ -2,24 +2,22 @@
 
 namespace mcview {
 
-class MainComponent : public juce::Component, private juce::AsyncUpdater {
+class MainComponent : public juce::Component, private juce::AsyncUpdater, public MapViewComponent::Delegate {
 public:
-  MainComponent()
-      : fBrowserOpened(true), fSettingsOpened(false) {
+  struct Delegate {
+    virtual ~Delegate() = default;
+    virtual void mainComponentDidClose() = 0;
+  };
+
+  explicit MainComponent(Delegate *delegate)
+      : fBrowserOpened(true), fSettingsOpened(false), fDelegate(delegate) {
     using namespace juce;
 
     fSettings.reset(new Settings());
     fSettings->load();
 
-    fMapViewComponent.reset(new MapViewComponent());
+    fMapViewComponent.reset(new MapViewComponent(this));
     fMapViewComponent->setSize(600, 400);
-    fMapViewComponent->onOpenButtonClicked = [this]() {
-      setBrowserOpened(!fBrowserOpened);
-    };
-    fMapViewComponent->onSettingsButtonClicked = [this]() {
-      setSettingsOpened(!fSettingsOpened);
-    };
-
     fMapViewComponent->setWaterTranslucent(fSettings->fWaterTranslucent);
     fMapViewComponent->setWaterOpticalDensity(fSettings->fWaterOpticalDensity);
     fMapViewComponent->setBiomeEnable(fSettings->fBiomeEnabled);
@@ -97,6 +95,9 @@ public:
     };
     addAndMakeVisible(fSettingsComponent.get());
 
+    fConcealer.reset(new ColorMat(juce::Colours::black.withAlpha(0.5f)));
+    addChildComponent(*fConcealer);
+
     setSize(1280, 720);
   }
 
@@ -133,6 +134,19 @@ public:
     if (!animator.isAnimating(fSettingsComponent.get())) {
       fSettingsComponent->setBounds(width - settingsWidth, 0, fSettingsComponent->getWidth(), height);
     }
+    fConcealer->setBounds(0, 0, width, height);
+  }
+
+  void startClosing() {
+    fConcealer->setVisible(true);
+    fConcealer->setAlwaysOnTop(true);
+    fConcealer->setBounds(getLocalBounds());
+    fMapViewComponent->startClosing();
+    repaint();
+  }
+
+  bool isClosing() const {
+    return fConcealer->isVisible();
   }
 
   void childBoundsChanged(juce::Component *) override {
@@ -194,6 +208,18 @@ public:
     }
   }
 
+  void mainViewComponentOpenButtonClicked() override {
+    setBrowserOpened(!fBrowserOpened);
+  }
+
+  void mainViewComponentSettingsButtonClicked() override {
+    setSettingsOpened(!fSettingsOpened);
+  }
+
+  void mainViewComponentClosed() override {
+    fDelegate->mainComponentDidClose();
+  }
+
 private:
   static void Animate(juce::Component *comp, int x, int y, int width, int height) {
     using namespace juce;
@@ -207,8 +233,9 @@ private:
   bool fBrowserOpened;
   std::unique_ptr<SettingsComponent> fSettingsComponent;
   bool fSettingsOpened;
-
   std::unique_ptr<Settings> fSettings;
+  std::unique_ptr<ColorMat> fConcealer;
+  Delegate *const fDelegate;
 
   static int constexpr kAnimationDuration = 300;
 

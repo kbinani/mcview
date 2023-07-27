@@ -28,18 +28,23 @@ class MapViewComponent
   static int constexpr kScrollUpdateHz = 50;
 
 public:
-  std::function<void()> onOpenButtonClicked;
-  std::function<void()> onSettingsButtonClicked;
+  struct Delegate {
+    virtual ~Delegate() = default;
+    virtual void mainViewComponentOpenButtonClicked() = 0;
+    virtual void mainViewComponentSettingsButtonClicked() = 0;
+    virtual void mainViewComponentClosed() = 0;
+  };
 
-public:
-  MapViewComponent()
+  explicit MapViewComponent(Delegate *delegate)
       : fLookAt({0, 0, 5}),
         fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
         fWaterTranslucent(true),
         fEnableBiome(true),
         fBiomeBlend(2),
         fPaletteType(PaletteType::mcview),
-        fLightingType(LightingType::topLeft) {
+        fLightingType(LightingType::topLeft),
+        fClosing(false),
+        fDelegate(delegate) {
     using namespace juce;
 
     if (auto *peer = getPeer()) {
@@ -55,7 +60,7 @@ public:
     setBrowserOpened(true);
     fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
     fBrowserOpenButton->onClick = [this]() {
-      onOpenButtonClicked();
+      fDelegate->mainViewComponentOpenButtonClicked();
     };
     addAndMakeVisible(*fBrowserOpenButton);
 
@@ -104,7 +109,7 @@ public:
     fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fSettingsButton->setImages(fSettingsButtonImage.get());
     fSettingsButton->onClick = [this]() {
-      onSettingsButtonClicked();
+      fDelegate->mainViewComponentSettingsButtonClicked();
     };
     addAndMakeVisible(*fSettingsButton);
 
@@ -134,24 +139,17 @@ public:
     fRegionUpdateChecker->startThread();
 
     Desktop::getInstance().getAnimator().addChangeListener(this);
+    fCloseWatchDogTimer.reset(new TimerInstance);
+    fCloseWatchDogTimer->fTimerCallback = [this](TimerInstance &timer) {
+      closeWatchDogTimerDidTick(timer);
+    };
 
     fSize = Point<int>(600, 400);
     setSize(600, 400);
   }
 
   ~MapViewComponent() override {
-    juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
-
-    fRegionUpdateChecker->signalThreadShouldExit();
-    if (fWorldScanThread) {
-      fWorldScanThread->signalThreadShouldExit();
-    }
-    if (fPool) {
-      fPool->abandon(0);
-    }
-    for (auto &pool : fPoolTrashBin) {
-      pool->abandon(0);
-    }
+    startClosing();
 
     fRegionUpdateChecker->waitForThreadToExit(-1);
     if (fWorldScanThread) {
@@ -165,6 +163,28 @@ public:
     }
 
     fGLContext.detach();
+  }
+
+  void startClosing() {
+    if (fClosing.get()) {
+      return;
+    }
+    fClosing = true;
+    fCloseWatchDogTimer->startTimerHz(10);
+    triggerRepaint();
+
+    juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
+
+    fRegionUpdateChecker->signalThreadShouldExit();
+    if (fWorldScanThread) {
+      fWorldScanThread->signalThreadShouldExit();
+    }
+    if (fPool) {
+      fPool->abandon(0);
+    }
+    for (auto &pool : fPoolTrashBin) {
+      pool->abandon(0);
+    }
   }
 
   void paint(juce::Graphics &g) override {
@@ -247,6 +267,12 @@ public:
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
     y += lineHeight;
+  }
+
+  void paintOverChildren(juce::Graphics &g) override {
+    if (fClosing.get()) {
+      g.fillAll(juce::Colours::black.withAlpha(0.5f));
+    }
   }
 
   void resized() override {
@@ -973,6 +999,28 @@ public:
   }
 
 private:
+  void closeWatchDogTimerDidTick(TimerInstance &timer) {
+    if (fRegionUpdateChecker->isThreadRunning()) {
+      return;
+    }
+    if (fWorldScanThread) {
+      if (fWorldScanThread->isThreadRunning()) {
+        return;
+      }
+    }
+    if (fPool) {
+      if (fPool->getNumJobs() > 0) {
+        return;
+      }
+    }
+    for (auto &pool : fPoolTrashBin) {
+      if (pool->getNumJobs() > 0) {
+        return;
+      }
+    }
+    fDelegate->mainViewComponentClosed();
+  }
+
   static void LoadPalette(std::unique_ptr<juce::OpenGLTexture> &texture, std::function<std::optional<juce::Colour>(mcfile::blocks::BlockId)> converter) {
     using namespace juce;
     int count = (int)mcfile::blocks::minecraft::minecraft_max_block_id - 1;
@@ -1676,6 +1724,9 @@ private:
   std::unique_ptr<juce::FileChooser> fFileChooser;
   std::deque<AsyncUpdateQueue> fAsyncUpdateQueue;
   std::unique_ptr<juce::Thread> fWorldScanThread;
+  juce::Atomic<bool> fClosing;
+  std::unique_ptr<TimerInstance> fCloseWatchDogTimer;
+  Delegate *const fDelegate;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

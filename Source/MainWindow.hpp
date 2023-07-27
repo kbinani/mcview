@@ -2,13 +2,14 @@
 
 namespace mcview {
 
-class MainWindow : public juce::DocumentWindow {
+class MainWindow : public juce::DocumentWindow, public MainComponent::Delegate {
 public:
   MainWindow(juce::String name) : juce::DocumentWindow(name,
                                                        juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId),
                                                        juce::DocumentWindow::allButtons) {
     setUsingNativeTitleBar(true);
-    setContentOwned(new MainComponent, true);
+    fContent.reset(new MainComponent(this));
+    setContentNonOwned(fContent.get(), true);
 
 #if JUCE_IOS || JUCE_ANDROID
     setFullScreen(true);
@@ -21,9 +22,13 @@ public:
   }
 
   void closeButtonPressed() override {
-    if (!isPresentingAboutDialog()) {
-      juce::JUCEApplication::getInstance()->systemRequestedQuit();
+    if (!isPresentingAboutDialog() && !fContent->isClosing()) {
+      fContent->startClosing();
     }
+  }
+
+  void mainComponentDidClose() override {
+    juce::JUCEApplication::getInstance()->systemRequestedQuit();
   }
 
 private:
@@ -48,6 +53,8 @@ private:
   }
 
 private:
+  std::unique_ptr<MainComponent> fContent;
+
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 };
 

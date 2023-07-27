@@ -125,6 +125,7 @@ set(mcview_files
   Source/VisibleRegions.hpp
   Source/JavaWorldScanThread.hpp
   Source/BedrockWorldScanThread.hpp
+  Source/ColorMat.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

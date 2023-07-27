@@ -59,6 +59,7 @@
 #include "JavaWorldScanThread.hpp"
 #include "BedrockWorldScanThread.hpp"
 #include "MapViewComponent.hpp"
+#include "ColorMat.hpp"
 #include "MainComponent.hpp"
 #include "MainWindow.hpp"
 // clang-format on
