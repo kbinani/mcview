@@ -4,7 +4,7 @@ namespace mcview {
 
 class BedrockTexturePackThreadPool : public TexturePackThreadPool {
 public:
-  explicit BedrockTexturePackThreadPool(juce::File dir) : fWorldDirectory(dir) {
+  BedrockTexturePackThreadPool(juce::File dir, Delegate *delegate) : TexturePackThreadPool(delegate), fWorldDirectory(dir) {
     leveldb::DB *db = nullptr;
     if (auto st = leveldb::DB::Open({}, PathFromFile(dir) / "db", &db); st.ok()) {
       fDb.reset(db);
@@ -13,11 +13,11 @@ public:
 
   ~BedrockTexturePackThreadPool() override {}
 
-  void addTexturePackJob(Region region, Dimension dim, bool useCache, TexturePackJob::Delegate *delegate) override {
+  void addTexturePackJob(Region region, Dimension dim, bool useCache) override {
     if (!fDb) {
       return;
     }
-    addJob(new BedrockTexturePackJob(fDb.get(), fWorldDirectory, region, dim, useCache, delegate), true);
+    addJob(new BedrockTexturePackJob(fDb.get(), fWorldDirectory, region, dim, useCache, this), true);
   }
 
 private:

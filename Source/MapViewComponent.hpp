@@ -8,7 +8,7 @@ class MapViewComponent
       private juce::AsyncUpdater,
       private juce::Timer,
       public juce::ChangeListener,
-      public TexturePackJob::Delegate,
+      public TexturePackThreadPool::Delegate,
       public SavePNGProgressWindow ::Delegate,
       public RegionUpdateChecker::Delegate,
       public TextInputDialog<PinEdit>::Delegate {
@@ -143,10 +143,10 @@ public:
 
     fGLContext.detach();
     if (fPool) {
-      fPool->removeAllJobs(true, -1);
+      fPool->abandon(true);
     }
     for (auto &pool : fPoolTrashBin) {
-      pool->removeAllJobs(true, -1);
+      pool->abandon(true);
     }
     fRegionUpdateChecker->signalThreadShouldExit();
     fRegionUpdateChecker->waitForThreadToExit(-1);
@@ -398,9 +398,12 @@ public:
     }
   }
 
-  void texturePackJobDidFinish(std::shared_ptr<TexturePackJob::Result> result) override {
+  void texturePackThreadPoolDidFinishJob(TexturePackThreadPool *pool, std::shared_ptr<TexturePackJob::Result> result) override {
     {
       std::lock_guard<std::mutex> lock(fMut);
+      if (pool != fPool.get()) {
+        return;
+      }
       fGLJobResults.push_back(result);
       fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
     }
@@ -429,13 +432,13 @@ public:
     WorldData data = WorldData::Load(worldDataFile);
 
     if (fPool) {
-      fPool->removeAllJobs(true, 0);
+      fPool->abandon(false);
       fPoolTrashBin.push_back(std::move(fPool));
     }
     if (edition == Edition::Bedrock) {
-      fPool.reset(new BedrockTexturePackThreadPool(directory));
+      fPool.reset(new BedrockTexturePackThreadPool(directory, this));
     } else {
-      fPool.reset(new JavaTexturePackThreadPool(directory));
+      fPool.reset(new JavaTexturePackThreadPool(directory, this));
     }
 
     auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
@@ -1128,7 +1131,7 @@ private:
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
-      fPool->addTexturePackJob(region, dim, useCache, this);
+      fPool->addTexturePackJob(region, dim, useCache);
       fLoadingRegions.insert(region);
       minX = std::min(minX, r->fX);
       maxX = std::max(maxX, r->fX + 1);
@@ -1253,7 +1256,7 @@ private:
               }
               fLoadingRegions.insert(region);
             }
-            fPool->addTexturePackJob(MakeRegion(rx, rz), dimension, true, this);
+            fPool->addTexturePackJob(MakeRegion(rx, rz), dimension, true);
             queued++;
           }
         }

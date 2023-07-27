@@ -4,12 +4,12 @@ namespace mcview {
 
 class JavaTexturePackThreadPool : public TexturePackThreadPool {
 public:
-  explicit JavaTexturePackThreadPool(juce::File directory) : fWorldDirectory(directory) {
+  JavaTexturePackThreadPool(juce::File directory, Delegate *delegate) : TexturePackThreadPool(delegate), fWorldDirectory(directory) {
   }
 
   ~JavaTexturePackThreadPool() override {}
 
-  void addTexturePackJob(Region region, Dimension dim, bool useCache, TexturePackJob::Delegate *delegate) override {
+  void addTexturePackJob(Region region, Dimension dim, bool useCache) override {
     juce::File mca;
     switch (dim) {
     case Dimension::TheNether:
@@ -23,7 +23,7 @@ public:
       mca = fWorldDirectory.getChildFile("region").getChildFile(mcfile::je::Region::GetDefaultRegionFileName(region.first, region.second));
       break;
     }
-    addJob(new JavaTexturePackJob(fWorldDirectory, mca, region, dim, useCache, delegate), true);
+    addJob(new JavaTexturePackJob(fWorldDirectory, mca, region, dim, useCache, this), true);
   }
 
 private:
