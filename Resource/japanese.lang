@@ -23,3 +23,4 @@ language: Japanese
 "Lighting type" = "光源の方向"
 "Top-left lighting (mcview original)" = "北西から(mcviewオリジナル)"
 "Top lighting (same as in-game map)" = "北から(ゲーム内の地図と同じ)"
+"Shutting down" = "終了しています"

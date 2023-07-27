@@ -271,7 +271,19 @@ public:
 
   void paintOverChildren(juce::Graphics &g) override {
     if (fClosing.get()) {
+      auto now = juce::Time::getCurrentTime();
+      int sec = (int)floor(now.currentTimeMillis() / 1000.0);
       g.fillAll(juce::Colours::black.withAlpha(0.5f));
+
+      juce::AttributedString s;
+      juce::Font font(64);
+      s.append(TRANS("Shutting down"), font, juce::Colours::white);
+      s.append(" ", font, juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 0 ? juce::Colours::white : juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 1 ? juce::Colours::white : juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 2 ? juce::Colours::white : juce::Colours::transparentWhite);
+      s.setJustification(juce::Justification::centred);
+      s.draw(g, getLocalBounds().toFloat());
     }
   }
 
@@ -1000,6 +1012,7 @@ public:
 
 private:
   void closeWatchDogTimerDidTick(TimerInstance &timer) {
+    triggerRepaint();
     if (fRegionUpdateChecker->isThreadRunning()) {
       return;
     }
