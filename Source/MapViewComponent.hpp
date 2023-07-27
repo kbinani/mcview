@@ -431,14 +431,24 @@ public:
     File worldDataFile = WorldData::WorldDataPath(directory);
     WorldData data = WorldData::Load(worldDataFile);
 
+    std::shared_ptr<leveldb::DB> db;
     if (fPool) {
       fPool->abandon(false);
+      if (auto pool = dynamic_cast<BedrockTexturePackThreadPool *>(fPool.get()); pool && pool->fWorldDirectory == directory && edition == Edition::Bedrock) {
+        db = pool->fDb;
+      }
       fPoolTrashBin.push_back(std::move(fPool));
     }
     if (edition == Edition::Bedrock) {
-      fPool.reset(new BedrockTexturePackThreadPool(directory, this));
+      if (!db) {
+        leveldb::DB *ptr = nullptr;
+        if (auto st = leveldb::DB::Open({}, PathFromFile(directory) / "db", &ptr); st.ok()) {
+          db.reset(ptr);
+        }
+      }
+      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, db, this));
     } else {
-      fPool.reset(new JavaTexturePackThreadPool(directory, this));
+      fPool.reset(new JavaTexturePackThreadPool(directory, dim, this));
     }
 
     auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
@@ -460,7 +470,46 @@ public:
       resetPinComponents();
 
       if (edition == Edition::Bedrock) {
-        // TODO:
+        if (db) {
+          std::optional<int> minX, minZ, maxX, maxZ;
+
+          mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &minX, &minZ, &maxX, &maxZ](int cx, int cz) {
+            int rx = mcfile::Coordinate::RegionFromChunk(cx);
+            int rz = mcfile::Coordinate::RegionFromChunk(cz);
+            auto region = MakeRegion(rx, rz);
+            if (fTextures.count(region) > 0) {
+              return;
+            }
+            if (minX && minZ && maxX && maxZ) {
+              minX = std::min(*minX, rx);
+              minZ = std::min(*minZ, rz);
+              maxX = std::max(*maxX, rx);
+              maxZ = std::max(*maxZ, rz);
+            } else {
+              minX = rx;
+              minZ = rz;
+              maxX = rx;
+              maxZ = rz;
+            }
+            fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
+          });
+          if (minX && minZ && maxX && maxZ) {
+            fVisibleRegions = juce::Rectangle<int>(*minX, *minZ, *maxX - *minX + 1, *maxZ - *minZ + 1);
+          }
+          int minRx, minRz, maxRx, maxRz;
+          viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
+          for (int rx = minRx; rx <= maxRx; rx++) {
+            for (int rz = minRz; rz <= maxRz; rz++) {
+              auto region = MakeRegion(rx, rz);
+              if (fTextures.count(region) > 0 && fLoadingRegions.count(region) == 0) {
+                fPool->addTexturePackJob(region, true);
+                fLoadingRegions.insert(region);
+              }
+            }
+          }
+        } else {
+          // TODO: error dialog
+        }
       } else {
         int minX = 0;
         int maxX = 0;
@@ -1131,7 +1180,7 @@ private:
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
-      fPool->addTexturePackJob(region, dim, useCache);
+      fPool->addTexturePackJob(region, useCache);
       fLoadingRegions.insert(region);
       minX = std::min(minX, r->fX);
       maxX = std::max(maxX, r->fX + 1);
@@ -1152,6 +1201,16 @@ private:
     }
   }
 
+  void viewportRegions(LookAt lookAt, int *minRx, int *minRz, int *maxRx, int *maxRz) {
+    auto size = fSize.load();
+    auto topLeft = GetMapCoordinateFromView(juce::Point<float>(0, 0), size, lookAt);
+    auto rightBottom = GetMapCoordinateFromView(juce::Point<float>(size.x, size.y), size, lookAt);
+    *minRx = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
+    *minRz = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
+    *maxRx = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.x)) + 2;
+    *maxRz = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.y)) + 2;
+  }
+
   void instantiateTextures(LookAt lookAt) {
     fTextureTrashBin.clear();
 
@@ -1160,14 +1219,8 @@ private:
     Dimension dimension;
     std::vector<std::shared_ptr<TexturePackJob::Result>> remove;
     std::vector<std::pair<std::shared_ptr<TexturePackJob::Result>, float>> distances;
-
-    auto size = fSize.load();
-    auto topLeft = GetMapCoordinateFromView(juce::Point<float>(0, 0), size, lookAt);
-    auto rightBottom = GetMapCoordinateFromView(juce::Point<float>(size.x, size.y), size, lookAt);
-    int minRx = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
-    int minRz = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
-    int maxRx = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.x)) + 2;
-    int maxRz = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.y)) + 2;
+    int minRx, minRz, maxRx, maxRz;
+    viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
     {
       std::lock_guard<std::mutex> lock(fMut);
       worldDirectory = fWorldDirectory;
@@ -1256,7 +1309,7 @@ private:
               }
               fLoadingRegions.insert(region);
             }
-            fPool->addTexturePackJob(MakeRegion(rx, rz), dimension, true);
+            fPool->addTexturePackJob(MakeRegion(rx, rz), true);
             queued++;
           }
         }

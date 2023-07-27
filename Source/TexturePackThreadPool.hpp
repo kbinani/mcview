@@ -12,7 +12,7 @@ public:
   explicit TexturePackThreadPool(Delegate *delegate) : ThreadPool((std::max)(1, (int)std::thread::hardware_concurrency() - 1)), fDelegate(delegate) {}
   virtual ~TexturePackThreadPool() {}
 
-  virtual void addTexturePackJob(Region region, Dimension dim, bool useCache) {}
+  virtual void addTexturePackJob(Region region, bool useCache) {}
 
   void texturePackJobDidFinish(std::shared_ptr<TexturePackJob::Result> result) override {
     std::lock_guard<std::mutex> lock(fMut);

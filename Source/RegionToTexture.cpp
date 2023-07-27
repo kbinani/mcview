@@ -165,8 +165,8 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadP
   std::vector<PixelInfo> pixelInfo(width * height, PixelInfo{-1, 0, 0});
   std::vector<Biome> biomes(width * height, Biome::Other);
 
-  for (int cz = rz * 32; cz < rz * 32 + 15; cz++) {
-    for (int cx = rx * 32; cx < rx * 32 + 15; cx++) {
+  for (int cz = rz * 32; cz < rz * 32 + 32; cz++) {
+    for (int cx = rx * 32; cx < rx * 32 + 32; cx++) {
       if (job->shouldExit()) {
         return nullptr;
       }

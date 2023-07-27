@@ -9,17 +9,16 @@ public:
 
   ThreadPoolJob::JobStatus runJob() override {
     auto result = std::make_shared<Result>(fWorldDirectory, fDimension, fRegion);
+    defer {
+      fDelegate->texturePackJobDidFinish(result);
+    };
     try {
       juce::File cache = CacheFile(fWorldDirectory, fDimension, fRegion);
       if (fUseCache && cache.existsAsFile()) {
         if (LoadCache(result->fPixels, std::nullopt, cache)) {
-          fDelegate->texturePackJobDidFinish(result);
+          return ThreadPoolJob::jobHasFinished;
         }
       }
-
-      defer {
-        fDelegate->texturePackJobDidFinish(result);
-      };
 
       result->fPixels.reset(RegionToTexture::LoadBedrock(*fDb, fRegion.first, fRegion.second, this, fDimension));
       if (shouldExit()) {
