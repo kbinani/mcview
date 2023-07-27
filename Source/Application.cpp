@@ -79,7 +79,7 @@ public:
   }
 
   bool moreThanOneInstanceAllowed() override {
-    return true;
+    return false;
   }
 
   void initialise(juce::String const &) override {
