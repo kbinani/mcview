@@ -12,7 +12,8 @@ class MapViewComponent
       public SavePNGProgressWindow ::Delegate,
       public RegionUpdateChecker::Delegate,
       public TextInputDialog<PinEdit>::Delegate,
-      public JavaWorldScanThread::Delegate {
+      public JavaWorldScanThread::Delegate,
+      public BedrockWorldScanThread ::Delegate {
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
 
   using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool>;
@@ -526,18 +527,9 @@ public:
         setLookAt(clampLookAt(nextLookAt));
         startLoadingTimer();
 
-        mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &vr](int cx, int cz) {
-          int rx = mcfile::Coordinate::RegionFromChunk(cx);
-          int rz = mcfile::Coordinate::RegionFromChunk(cz);
-          auto region = MakeRegion(rx, rz);
-          if (fTextures.count(region) > 0) {
-            return;
-          }
-          vr.add(rx, rz);
-          fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
-        });
-        fVisibleRegions = vr;
-        setLookAt(clampedLookAt());
+        auto th = new BedrockWorldScanThread(db, directory, dim, this);
+        th->startThread();
+        fWorldScanThread.reset(th);
       } else {
         // TODO: error dialog
       }
@@ -583,6 +575,8 @@ public:
     VisibleRegions vr = fVisibleRegions.load();
     vr.add(region.first, region.second);
     fVisibleRegions.store(vr);
+
+    triggerRepaint();
   }
 
   void javaWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dimension) override {
@@ -591,6 +585,24 @@ public:
       return;
     }
     fRegionUpdateChecker->setDirectory(worldDirectory, dimension);
+  }
+
+  void bedrockWorldScanThreadDidFoundRegion(juce::File worldDirectory, Dimension dimension, Region region) override {
+    std::lock_guard<std::mutex> lock(fMut);
+    if (fWorldDirectory != worldDirectory || fDimension != dimension) {
+      return;
+    }
+    if (fTextures.count(region) == 0) {
+      fTextures[region] = std::make_unique<RegionTextureCache>(worldDirectory, dimension, region);
+    }
+    VisibleRegions vr = fVisibleRegions.load();
+    vr.add(region.first, region.second);
+    fVisibleRegions.store(vr);
+
+    triggerRepaint();
+  }
+
+  void bedrockWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dim) override {
   }
 
   void enqueueTextureLoadingJava(std::vector<juce::File> files, Dimension dim, bool useCache) {
