@@ -123,6 +123,7 @@ set(mcview_files
   Source/BedrockTexturePackJob.hpp
   Source/BedrockTexturePackThreadPool.hpp
   Source/VisibleRegions.hpp
+  Source/JavaWorldScanThread.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

@@ -35,7 +35,7 @@ public:
 private:
   void checkUpdatedFiles(std::map<std::string, int64_t> &updated) {
     using namespace juce;
-    using namespace juce;
+
     File d;
     Dimension dim;
     {
@@ -44,6 +44,9 @@ private:
       dim = fDim;
     }
 
+    if (d == File()) {
+      return;
+    }
     if (!d.exists()) {
       return;
     }
@@ -65,6 +68,9 @@ private:
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       if (!r) {
         continue;
+      }
+      if (threadShouldExit()) {
+        return;
       }
       Time modified = f.getLastModificationTime();
       std::string fullpath = f.getFullPathName().toStdString();

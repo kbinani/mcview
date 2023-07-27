@@ -56,6 +56,7 @@
 #include "GLAttributes.hpp"
 #include "GLBuffer.hpp"
 #include "PinEdit.hpp"
+#include "JavaWorldScanThread.hpp"
 #include "MapViewComponent.hpp"
 #include "MainComponent.hpp"
 #include "MainWindow.hpp"

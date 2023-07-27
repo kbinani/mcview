@@ -52,17 +52,17 @@ public:
 
   int getWidth() const {
     if (isEmpty()) {
-        return 0;
+      return 0;
     } else {
-        return *fMaxRx - *fMinRx + 1;
+      return *fMaxRx - *fMinRx + 1;
     }
   }
 
   int getHeight() const {
     if (isEmpty()) {
-        return 0;
+      return 0;
     } else {
-        return *fMaxRz - *fMinRz + 1;
+      return *fMaxRz - *fMinRz + 1;
     }
   }
 

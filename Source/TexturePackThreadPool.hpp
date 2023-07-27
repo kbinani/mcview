@@ -46,12 +46,12 @@ public:
     }
   }
 
-  void abandon(bool waitUntilTerminate) {
+  void abandon(int timeoutMs) {
     {
       std::lock_guard<std::mutex> lock(fMut);
       fDelegate = nullptr;
     }
-    removeAllJobs(true, waitUntilTerminate ? -1 : 0);
+    removeAllJobs(true, timeoutMs);
   }
 
 public:

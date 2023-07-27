@@ -11,7 +11,8 @@ class MapViewComponent
       public TexturePackThreadPool::Delegate,
       public SavePNGProgressWindow ::Delegate,
       public RegionUpdateChecker::Delegate,
-      public TextInputDialog<PinEdit>::Delegate {
+      public TextInputDialog<PinEdit>::Delegate,
+      public JavaWorldScanThread::Delegate {
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
 
   using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool>;
@@ -140,15 +141,29 @@ public:
   ~MapViewComponent() override {
     juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
 
-    fGLContext.detach();
+    fRegionUpdateChecker->signalThreadShouldExit();
+    if (fWorldScanThread) {
+      fWorldScanThread->signalThreadShouldExit();
+    }
     if (fPool) {
-      fPool->abandon(true);
+      fPool->abandon(0);
     }
     for (auto &pool : fPoolTrashBin) {
-      pool->abandon(true);
+      pool->abandon(0);
     }
-    fRegionUpdateChecker->signalThreadShouldExit();
+
     fRegionUpdateChecker->waitForThreadToExit(-1);
+    if (fWorldScanThread) {
+      fWorldScanThread->waitForThreadToExit(-1);
+    }
+    if (fPool) {
+      fPool->abandon(-1);
+    }
+    for (auto &pool : fPoolTrashBin) {
+      pool->abandon(-1);
+    }
+
+    fGLContext.detach();
   }
 
   void paint(juce::Graphics &g) override {
@@ -418,8 +433,9 @@ public:
     if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
       return;
     }
+    std::lock_guard<std::mutex> lock(fMut);
 
-    fRegionUpdateChecker->setDirectory(directory, dim);
+    fRegionUpdateChecker->setDirectory(File(), Dimension::Overworld);
 
     fOverworld->setEnabled(dim != Dimension::Overworld);
     fNether->setEnabled(dim != Dimension::TheNether);
@@ -432,7 +448,7 @@ public:
 
     std::shared_ptr<leveldb::DB> db;
     if (fPool) {
-      fPool->abandon(false);
+      fPool->abandon(0);
       if (auto pool = dynamic_cast<BedrockTexturePackThreadPool *>(fPool.get()); pool && pool->fWorldDirectory == directory && edition == Edition::Bedrock) {
         db = pool->fDb;
       }
@@ -450,122 +466,131 @@ public:
       fPool.reset(new JavaTexturePackThreadPool(directory, dim, this));
     }
 
+    if (fWorldScanThread) {
+      fWorldScanThread->stopThread(-1);
+      fWorldScanThread.reset();
+    }
+
     auto garbageTextures = std::make_shared<std::map<Region, std::unique_ptr<RegionTextureCache>>>();
     garbageTextures->swap(fTextures);
 
-    {
-      std::lock_guard<std::mutex> lk(fMut);
+    LookAt const lookAt = fLookAt.load();
 
-      LookAt const lookAt = fLookAt.load();
+    fLoadingRegions.clear();
+    fWorldDirectory = directory;
+    fDimension = dim;
+    fWorldData = data;
+    fEdition = edition;
+    for (auto &it : *garbageTextures) {
+      fTextureTrashBin.push_back(std::move(it.second));
+    }
+    fVisibleRegions = VisibleRegions();
+    resetPinComponents();
 
-      fLoadingRegions.clear();
-      fWorldDirectory = directory;
-      fDimension = dim;
-      fWorldData = data;
-      fEdition = edition;
-      for (auto &it : *garbageTextures) {
-        fTextureTrashBin.push_back(std::move(it.second));
-      }
-      fVisibleRegions = VisibleRegions();
-      resetPinComponents();
+    VisibleRegions vr;
 
-      VisibleRegions vr;
-
-      if (edition == Edition::Bedrock) {
-        if (db) {
-          LookAt nextLookAt = lookAt;
-          nextLookAt.fX = 0;
-          nextLookAt.fZ = 0;
-          int minRx, minRz, maxRx, maxRz;
-          viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
-          VisibleRegions vr;
-
-          for (int rz = minRz; rz <= maxRz; rz++) {
-            for (int rx = minRx; rx <= maxRx; rx++) {
-              bool exists = false;
-              for (int cz = rz * 32; cz < rz * 32 + 32; cz++) {
-                for (int cx = rx * 32; cx < rx * 32 + 32; cx++) {
-                  if (mcfile::be::Chunk::Exists(db.get(), cx, cz, DimensionFromDimension(dim))) {
-                    exists = true;
-                    break;
-                  }
-                }
-                if (exists) {
-                  break;
-                }
-              }
-              if (!exists) {
-                continue;
-              }
-              auto region = MakeRegion(rx, rz);
-              vr.add(rx, rz);
-              fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
-              fPool->addTexturePackJob(region, true);
-              fLoadingRegions.insert(region);
-            }
-          }
-          fVisibleRegions = vr;
-          setLookAt(clampLookAt(nextLookAt));
-          startLoadingTimer();
-
-          mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &vr](int cx, int cz) {
-            int rx = mcfile::Coordinate::RegionFromChunk(cx);
-            int rz = mcfile::Coordinate::RegionFromChunk(cz);
-            auto region = MakeRegion(rx, rz);
-            if (fTextures.count(region) > 0) {
-              return;
-            }
-            vr.add(rx, rz);
-            fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
-          });
-          fVisibleRegions = vr;
-          setLookAt(clampedLookAt());
-        } else {
-          // TODO: error dialog
-        }
-      } else {
+    if (edition == Edition::Bedrock) {
+      if (db) {
         LookAt nextLookAt = lookAt;
         nextLookAt.fX = 0;
         nextLookAt.fZ = 0;
         int minRx, minRz, maxRx, maxRz;
         viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
+        VisibleRegions vr;
 
-        File dir = DimensionDirectory(fWorldDirectory, fDimension);
-        std::vector<File> files;
         for (int rz = minRz; rz <= maxRz; rz++) {
           for (int rx = minRx; rx <= maxRx; rx++) {
-            auto mca = dir.getChildFile(mcfile::je::Region::GetDefaultRegionFileName(rx, rz));
-            if (!mca.existsAsFile()) {
+            bool exists = false;
+            for (int cz = rz * 32; cz < rz * 32 + 32; cz++) {
+              for (int cx = rx * 32; cx < rx * 32 + 32; cx++) {
+                if (mcfile::be::Chunk::Exists(db.get(), cx, cz, DimensionFromDimension(dim))) {
+                  exists = true;
+                  break;
+                }
+              }
+              if (exists) {
+                break;
+              }
+            }
+            if (!exists) {
               continue;
             }
-            auto r = mcfile::je::Region::MakeRegion(PathFromFile(mca));
-            if (!r) {
-              continue;
-            }
-            files.push_back(mca);
-          }
-        }
-        unsafeEnqueueTextureLoadingJava(files, dim, true);
-        setLookAt(clampLookAt(nextLookAt));
-
-        VisibleRegions vr = fVisibleRegions;
-        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
-        for (DirectoryEntry entry : it) {
-          File f = entry.getFile();
-          auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
-          if (!r) {
-            continue;
-          }
-          vr.add(r->fX, r->fZ);
-          auto region = MakeRegion(r->fX, r->fZ);
-          if (auto found = fTextures.find(region); found == fTextures.end()) {
-            fTextures[region] = std::make_unique<RegionTextureCache>(fWorldDirectory, fDimension, region);
+            auto region = MakeRegion(rx, rz);
+            vr.add(rx, rz);
+            fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
+            fPool->addTexturePackJob(region, true);
+            fLoadingRegions.insert(region);
           }
         }
         fVisibleRegions = vr;
+        setLookAt(clampLookAt(nextLookAt));
+        startLoadingTimer();
+
+        mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &vr](int cx, int cz) {
+          int rx = mcfile::Coordinate::RegionFromChunk(cx);
+          int rz = mcfile::Coordinate::RegionFromChunk(cz);
+          auto region = MakeRegion(rx, rz);
+          if (fTextures.count(region) > 0) {
+            return;
+          }
+          vr.add(rx, rz);
+          fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
+        });
+        fVisibleRegions = vr;
         setLookAt(clampedLookAt());
+      } else {
+        // TODO: error dialog
       }
+    } else {
+      LookAt nextLookAt = lookAt;
+      nextLookAt.fX = 0;
+      nextLookAt.fZ = 0;
+      int minRx, minRz, maxRx, maxRz;
+      viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
+
+      File dir = DimensionDirectory(fWorldDirectory, fDimension);
+      std::vector<File> files;
+      for (int rz = minRz; rz <= maxRz; rz++) {
+        for (int rx = minRx; rx <= maxRx; rx++) {
+          auto mca = dir.getChildFile(mcfile::je::Region::GetDefaultRegionFileName(rx, rz));
+          if (!mca.existsAsFile()) {
+            continue;
+          }
+          auto r = mcfile::je::Region::MakeRegion(PathFromFile(mca));
+          if (!r) {
+            continue;
+          }
+          files.push_back(mca);
+        }
+      }
+      unsafeEnqueueTextureLoadingJava(files, dim, true);
+      setLookAt(clampLookAt(nextLookAt));
+
+      auto th = new JavaWorldScanThread(directory, dim, this);
+      th->startThread();
+      fWorldScanThread.reset(th);
     }
+  }
+
+  void javaWorldScanThreadDidFoundRegion(juce::File worldDirectory, Dimension dimension, Region region) override {
+    std::lock_guard<std::mutex> lock(fMut);
+    if (fWorldDirectory != worldDirectory || fDimension != dimension) {
+      return;
+    }
+    if (fTextures.count(region) == 0) {
+      fTextures[region] = std::make_unique<RegionTextureCache>(worldDirectory, dimension, region);
+    }
+    VisibleRegions vr = fVisibleRegions.load();
+    vr.add(region.first, region.second);
+    fVisibleRegions.store(vr);
+  }
+
+  void javaWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dimension) override {
+    std::lock_guard<std::mutex> lock(fMut);
+    if (fWorldDirectory != worldDirectory || fDimension != dimension) {
+      return;
+    }
+    fRegionUpdateChecker->setDirectory(worldDirectory, dimension);
   }
 
   void enqueueTextureLoadingJava(std::vector<juce::File> files, Dimension dim, bool useCache) {
@@ -584,6 +609,7 @@ public:
   void render(int const width, int const height, LookAt const lookAt, bool enableUI) {
     using namespace juce;
     using namespace juce::gl;
+    std::lock_guard<std::mutex> lock(fMut);
 
     if (enableUI) {
       OpenGLHelpers::clear(Colours::white);
@@ -594,7 +620,7 @@ public:
     glViewport(0, 0, width, height);
 
     if (enableUI) {
-      drawBackground();
+      unsafeDrawBackground();
     }
 
     Time const now = Time::getCurrentTime();
@@ -629,9 +655,8 @@ public:
     glEnable(GL_TEXTURE_2D);
 
     fGLShader->use();
-    auto const &textures = fTextures;
 
-    for (auto &it : textures) {
+    for (auto &it : fTextures) {
       auto &cache = it.second;
       if (!cache->fTexture) {
         continue;
@@ -706,7 +731,7 @@ public:
       int const x = it.first.first;
       int const z = it.first.second;
 
-      if (auto const &north = textures.find(MakeRegion(x, z - 1)); north != textures.end() && north->second->fTexture) {
+      if (auto const &north = fTextures.find(MakeRegion(x, z - 1)); north != fTextures.end() && north->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 1);
         north->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -716,7 +741,7 @@ public:
         }
       }
 
-      if (auto const &northEast = textures.find(MakeRegion(x + 1, z - 1)); northEast != textures.end() && northEast->second->fTexture) {
+      if (auto const &northEast = fTextures.find(MakeRegion(x + 1, z - 1)); northEast != fTextures.end() && northEast->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 2);
         northEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -726,7 +751,7 @@ public:
         }
       }
 
-      if (auto const &east = textures.find(MakeRegion(x + 1, z)); east != textures.end() && east->second->fTexture) {
+      if (auto const &east = fTextures.find(MakeRegion(x + 1, z)); east != fTextures.end() && east->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 3);
         east->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -736,7 +761,7 @@ public:
         }
       }
 
-      if (auto const &southEast = textures.find(MakeRegion(x + 1, z + 1)); southEast != textures.end() && southEast->second->fTexture) {
+      if (auto const &southEast = fTextures.find(MakeRegion(x + 1, z + 1)); southEast != fTextures.end() && southEast->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 4);
         southEast->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -746,7 +771,7 @@ public:
         }
       }
 
-      if (auto const &south = textures.find(MakeRegion(x, z + 1)); south != textures.end() && south->second->fTexture) {
+      if (auto const &south = fTextures.find(MakeRegion(x, z + 1)); south != fTextures.end() && south->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 5);
         south->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -756,7 +781,7 @@ public:
         }
       }
 
-      if (auto const &southWest = textures.find(MakeRegion(x - 1, z + 1)); southWest != textures.end() && southWest->second->fTexture) {
+      if (auto const &southWest = fTextures.find(MakeRegion(x - 1, z + 1)); southWest != fTextures.end() && southWest->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 6);
         southWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -766,7 +791,7 @@ public:
         }
       }
 
-      if (auto const &west = textures.find(MakeRegion(x - 1, z)); west != textures.end() && west->second->fTexture) {
+      if (auto const &west = fTextures.find(MakeRegion(x - 1, z)); west != fTextures.end() && west->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 7);
         west->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -776,7 +801,7 @@ public:
         }
       }
 
-      if (auto const &northWest = textures.find(MakeRegion(x - 1, z - 1)); northWest != textures.end() && northWest->second->fTexture) {
+      if (auto const &northWest = fTextures.find(MakeRegion(x - 1, z - 1)); northWest != fTextures.end() && northWest->second->fTexture) {
         fGLContext.extensions.glActiveTexture(GL_TEXTURE0 + 8);
         northWest->second->fTexture->bind();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -824,7 +849,7 @@ public:
       fGLAttributes->disable(fGLContext);
     }
 
-    instantiateTextures(lookAt);
+    unsafeInstantiateTextures(lookAt);
   }
 
   void handleAsyncUpdate() override {
@@ -1055,7 +1080,7 @@ private:
     triggerRepaint();
   }
 
-  void drawBackground() {
+  void unsafeDrawBackground() {
     using namespace juce;
     Point<int> size = fSize.load();
     const int width = size.x;
@@ -1100,13 +1125,8 @@ private:
       g.drawHorizontalLine(y, 0, width);
     }
 
-    std::set<Region> loadingRegions;
-    {
-      std::lock_guard<std::mutex> lock(fMut);
-      loadingRegions = fLoadingRegions;
-    }
     g.setColour(Colour::fromRGBA(0, 0, 0, 37));
-    for (Region region : loadingRegions) {
+    for (Region region : fLoadingRegions) {
       int const x = region.first * 512;
       int const z = region.second * 512;
       Point<float> topLeft = getViewCoordinateFromMap(Point<float>(x, z), current);
@@ -1223,7 +1243,7 @@ private:
     *maxRz = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.y)) + 2;
   }
 
-  void instantiateTextures(LookAt lookAt) {
+  void unsafeInstantiateTextures(LookAt lookAt) {
     fTextureTrashBin.clear();
 
     bool loadingFinished = false;
@@ -1233,30 +1253,29 @@ private:
     std::vector<std::pair<std::shared_ptr<TexturePackJob::Result>, float>> distances;
     int minRx, minRz, maxRx, maxRz;
     viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
-    {
-      std::lock_guard<std::mutex> lock(fMut);
-      worldDirectory = fWorldDirectory;
-      dimension = fDimension;
 
-      for (size_t i = 0; i < fGLJobResults.size(); i++) {
-        auto const &result = fGLJobResults[i];
-        if (result->fWorldDirectory != worldDirectory) {
-          remove.push_back(result);
-          continue;
-        }
-        if (result->fDimension != dimension) {
-          remove.push_back(result);
-          continue;
-        }
-        if (result->fRegion.first < minRx || maxRx < result->fRegion.first || result->fRegion.second < minRz || maxRz < result->fRegion.second) {
-          fLoadingRegions.erase(result->fRegion);
-          remove.push_back(result);
-          continue;
-        }
-        float distance = DistanceSqBetweenRegionAndLookAt(lookAt, result->fRegion);
-        distances.push_back(std::make_pair(result, distance));
+    worldDirectory = fWorldDirectory;
+    dimension = fDimension;
+
+    for (size_t i = 0; i < fGLJobResults.size(); i++) {
+      auto const &result = fGLJobResults[i];
+      if (result->fWorldDirectory != worldDirectory) {
+        remove.push_back(result);
+        continue;
       }
+      if (result->fDimension != dimension) {
+        remove.push_back(result);
+        continue;
+      }
+      if (result->fRegion.first < minRx || maxRx < result->fRegion.first || result->fRegion.second < minRz || maxRz < result->fRegion.second) {
+        fLoadingRegions.erase(result->fRegion);
+        remove.push_back(result);
+        continue;
+      }
+      float distance = DistanceSqBetweenRegionAndLookAt(lookAt, result->fRegion);
+      distances.push_back(std::make_pair(result, distance));
     }
+
     std::sort(distances.begin(), distances.end(), [](auto const &a, auto const &b) {
       return a.second < b.second;
     });
@@ -1280,7 +1299,6 @@ private:
         }
       }
 
-      std::lock_guard<std::mutex> lock(fMut);
       auto it = fLoadingRegions.find(j->fRegion);
       if (it != fLoadingRegions.end()) {
         fLoadingRegions.erase(it);
@@ -1289,14 +1307,11 @@ private:
         }
       }
     }
-    {
-      std::lock_guard<std::mutex> lock(fMut);
-      for (auto const &it : remove) {
-        for (size_t i = 0; i < fGLJobResults.size(); i++) {
-          if (it.get() == fGLJobResults[i].get()) {
-            fGLJobResults.erase(fGLJobResults.begin() + i);
-            break;
-          }
+    for (auto const &it : remove) {
+      for (size_t i = 0; i < fGLJobResults.size(); i++) {
+        if (it.get() == fGLJobResults[i].get()) {
+          fGLJobResults.erase(fGLJobResults.begin() + i);
+          break;
         }
       }
     }
@@ -1314,13 +1329,10 @@ private:
         for (int rz = minRz; rz <= maxRz; rz++) {
           auto region = MakeRegion(rx, rz);
           if (auto found = fTextures.find(region); found != fTextures.end() && !found->second->fTexture) {
-            {
-              std::lock_guard<std::mutex> lock(fMut);
-              if (fLoadingRegions.count(region) > 0) {
-                continue;
-              }
-              fLoadingRegions.insert(region);
+            if (fLoadingRegions.count(region) > 0) {
+              continue;
             }
+            fLoadingRegions.insert(region);
             fPool->addTexturePackJob(MakeRegion(rx, rz), true);
             queued++;
           }
@@ -1333,7 +1345,6 @@ private:
     }
     if (loadingFinished) {
       callAfterDelay(kFadeDurationMS, [this]() {
-        std::lock_guard<std::mutex> lock(fMut);
         if (fLoadingRegions.empty()) {
           stopTimer();
         }
@@ -1622,6 +1633,7 @@ private:
 
   std::unique_ptr<juce::FileChooser> fFileChooser;
   std::deque<AsyncUpdateQueue> fAsyncUpdateQueue;
+  std::unique_ptr<juce::Thread> fWorldScanThread;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
