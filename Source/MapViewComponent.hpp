@@ -15,8 +15,9 @@ class MapViewComponent
       public JavaWorldScanThread::Delegate,
       public BedrockWorldScanThread ::Delegate {
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
+  struct AsyncUpdateQueueTriggerRepaint {};
 
-  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool>;
+  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -458,9 +459,18 @@ public:
         return;
       }
       fGLJobResults.push_back(result);
-      fAsyncUpdateQueue.push_back(AsyncUpdateQueueReleaseGarbageThreadPool{});
+      unsafeEnqueueAsyncUpdate(AsyncUpdateQueueReleaseGarbageThreadPool{});
     }
     triggerAsyncUpdate();
+  }
+
+  void unsafeEnqueueAsyncUpdate(AsyncUpdateQueue q) {
+    fAsyncUpdateQueue.push_back(q);
+  }
+
+  void enqueueAsyncUpdate(AsyncUpdateQueue q) {
+    std::lock_guard<std::mutex> lock(fMut);
+    unsafeEnqueueAsyncUpdate(q);
   }
 
   void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) override {
@@ -644,7 +654,7 @@ public:
     vr.add(region.first, region.second);
     fVisibleRegions.store(vr);
 
-    triggerRepaint();
+    unsafeEnqueueAsyncUpdate(AsyncUpdateQueueTriggerRepaint{});
   }
 
   void javaWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dimension) override {
@@ -667,7 +677,7 @@ public:
     vr.add(region.first, region.second);
     fVisibleRegions.store(vr);
 
-    triggerRepaint();
+    unsafeEnqueueAsyncUpdate(AsyncUpdateQueueTriggerRepaint{});
   }
 
   void bedrockWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dim) override {
@@ -945,6 +955,8 @@ public:
             fPoolTrashBin.erase(fPoolTrashBin.begin() + i);
           }
         }
+      } else if (std::holds_alternative<AsyncUpdateQueueTriggerRepaint>(q)) {
+        triggerRepaint();
       }
     }
   }
