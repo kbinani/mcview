@@ -499,6 +499,7 @@ public:
         viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
         VisibleRegions vr;
 
+        std::vector<Region> regions;
         for (int rz = minRz; rz <= maxRz; rz++) {
           for (int rx = minRx; rx <= maxRx; rx++) {
             bool exists = false;
@@ -518,10 +519,24 @@ public:
             }
             auto region = MakeRegion(rx, rz);
             vr.add(rx, rz);
-            fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
-            fPool->addTexturePackJob(region, true);
-            fLoadingRegions.insert(region);
+            regions.push_back(region);
           }
+        }
+        std::sort(regions.begin(), regions.end(), [](Region const &a, Region const &b) {
+          float distanceA = Point<float>(a.first * 512 + 256, a.second * 512 + 256).getDistanceFromOrigin();
+          float distanceB = Point<float>(b.first * 512 + 256, b.second * 512 + 256).getDistanceFromOrigin();
+          if (distanceA < distanceB) {
+            return -1;
+          } else if (distanceA > distanceB) {
+            return 1;
+          } else {
+            return 0;
+          }
+        });
+        for (Region region : regions) {
+          fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
+          fPool->addTexturePackJob(region, true);
+          fLoadingRegions.insert(region);
         }
         fVisibleRegions = vr;
         setLookAt(clampLookAt(nextLookAt));
@@ -541,7 +556,7 @@ public:
       viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
 
       File dir = DimensionDirectory(fWorldDirectory, fDimension);
-      std::vector<File> files;
+      std::vector<std::pair<Region, File>> files;
       for (int rz = minRz; rz <= maxRz; rz++) {
         for (int rx = minRx; rx <= maxRx; rx++) {
           auto mca = dir.getChildFile(mcfile::je::Region::GetDefaultRegionFileName(rx, rz));
@@ -552,10 +567,25 @@ public:
           if (!r) {
             continue;
           }
-          files.push_back(mca);
+          files.push_back(std::make_pair(MakeRegion(rx, rz), mca));
         }
       }
-      unsafeEnqueueTextureLoadingJava(files, dim, true);
+      std::sort(files.begin(), files.end(), [](auto const &a, auto const &b) {
+        float distanceA = Point<float>(a.first.first * 512 + 256, a.first.second * 512 + 256).getDistanceFromOrigin();
+        float distanceB = Point<float>(b.first.first * 512 + 256, b.first.second * 512 + 256).getDistanceFromOrigin();
+        if (distanceA < distanceB) {
+          return -1;
+        } else if (distanceA > distanceB) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+      std::vector<File> sorted;
+      for (auto const &it : files) {
+        sorted.push_back(it.second);
+      }
+      unsafeEnqueueTextureLoadingJava(sorted, dim, true);
       setLookAt(clampLookAt(nextLookAt));
 
       auto th = new JavaWorldScanThread(directory, dim, this);
