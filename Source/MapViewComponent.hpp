@@ -32,7 +32,6 @@ public:
 public:
   MapViewComponent()
       : fLookAt({0, 0, 5}),
-        fVisibleRegions({0, 0, 0, 0}),
         fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
         fWaterTranslucent(true),
         fEnableBiome(true),
@@ -376,7 +375,7 @@ public:
     float const vz = -dz / dt;
     LookAt current = clampedLookAt();
 
-    juce::Rectangle<int> visible = fVisibleRegions.load();
+    VisibleRegions visible = fVisibleRegions.load();
     fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
                     vx, vz,
                     visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
@@ -467,84 +466,104 @@ public:
       for (auto &it : *garbageTextures) {
         fTextureTrashBin.push_back(std::move(it.second));
       }
+      fVisibleRegions = VisibleRegions();
       resetPinComponents();
+
+      VisibleRegions vr;
 
       if (edition == Edition::Bedrock) {
         if (db) {
-          std::optional<int> minX, minZ, maxX, maxZ;
+          LookAt nextLookAt = lookAt;
+          nextLookAt.fX = 0;
+          nextLookAt.fZ = 0;
+          int minRx, minRz, maxRx, maxRz;
+          viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
+          VisibleRegions vr;
 
-          mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &minX, &minZ, &maxX, &maxZ](int cx, int cz) {
+          for (int rz = minRz; rz <= maxRz; rz++) {
+            for (int rx = minRx; rx <= maxRx; rx++) {
+              bool exists = false;
+              for (int cz = rz * 32; cz < rz * 32 + 32; cz++) {
+                for (int cx = rx * 32; cx < rx * 32 + 32; cx++) {
+                  if (mcfile::be::Chunk::Exists(db.get(), cx, cz, DimensionFromDimension(dim))) {
+                    exists = true;
+                    break;
+                  }
+                }
+                if (exists) {
+                  break;
+                }
+              }
+              if (!exists) {
+                continue;
+              }
+              auto region = MakeRegion(rx, rz);
+              vr.add(rx, rz);
+              fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
+              fPool->addTexturePackJob(region, true);
+              fLoadingRegions.insert(region);
+            }
+          }
+          fVisibleRegions = vr;
+          setLookAt(clampLookAt(nextLookAt));
+          startLoadingTimer();
+
+          mcfile::be::Chunk::ForAll(db.get(), DimensionFromDimension(dim), [this, directory, dim, &vr](int cx, int cz) {
             int rx = mcfile::Coordinate::RegionFromChunk(cx);
             int rz = mcfile::Coordinate::RegionFromChunk(cz);
             auto region = MakeRegion(rx, rz);
             if (fTextures.count(region) > 0) {
               return;
             }
-            if (minX && minZ && maxX && maxZ) {
-              minX = std::min(*minX, rx);
-              minZ = std::min(*minZ, rz);
-              maxX = std::max(*maxX, rx);
-              maxZ = std::max(*maxZ, rz);
-            } else {
-              minX = rx;
-              minZ = rz;
-              maxX = rx;
-              maxZ = rz;
-            }
+            vr.add(rx, rz);
             fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
           });
-          if (minX && minZ && maxX && maxZ) {
-            fVisibleRegions = juce::Rectangle<int>(*minX, *minZ, *maxX - *minX + 1, *maxZ - *minZ + 1);
-          }
-          int minRx, minRz, maxRx, maxRz;
-          viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
-          for (int rx = minRx; rx <= maxRx; rx++) {
-            for (int rz = minRz; rz <= maxRz; rz++) {
-              auto region = MakeRegion(rx, rz);
-              if (fTextures.count(region) > 0 && fLoadingRegions.count(region) == 0) {
-                fPool->addTexturePackJob(region, true);
-                fLoadingRegions.insert(region);
-              }
-            }
-          }
+          fVisibleRegions = vr;
+          setLookAt(clampedLookAt());
         } else {
           // TODO: error dialog
         }
       } else {
-        int minX = 0;
-        int maxX = 0;
-        int minZ = 0;
-        int maxZ = 0;
+        LookAt nextLookAt = lookAt;
+        nextLookAt.fX = 0;
+        nextLookAt.fZ = 0;
+        int minRx, minRz, maxRx, maxRz;
+        viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
 
-        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
+        File dir = DimensionDirectory(fWorldDirectory, fDimension);
         std::vector<File> files;
+        for (int rz = minRz; rz <= maxRz; rz++) {
+          for (int rx = minRx; rx <= maxRx; rx++) {
+            auto mca = dir.getChildFile(mcfile::je::Region::GetDefaultRegionFileName(rx, rz));
+            if (!mca.existsAsFile()) {
+              continue;
+            }
+            auto r = mcfile::je::Region::MakeRegion(PathFromFile(mca));
+            if (!r) {
+              continue;
+            }
+            files.push_back(mca);
+          }
+        }
+        unsafeEnqueueTextureLoadingJava(files, dim, true);
+        setLookAt(clampLookAt(nextLookAt));
+
+        VisibleRegions vr = fVisibleRegions;
+        RangedDirectoryIterator it(DimensionDirectory(fWorldDirectory, fDimension), false, "*.mca");
         for (DirectoryEntry entry : it) {
           File f = entry.getFile();
           auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
           if (!r) {
             continue;
           }
-          minX = std::min(minX, r->fX);
-          maxX = std::max(maxX, r->fX);
-          minZ = std::min(minZ, r->fZ);
-          maxZ = std::max(maxZ, r->fZ);
-          files.push_back(f);
+          vr.add(r->fX, r->fZ);
+          auto region = MakeRegion(r->fX, r->fZ);
+          if (auto found = fTextures.find(region); found == fTextures.end()) {
+            fTextures[region] = std::make_unique<RegionTextureCache>(fWorldDirectory, fDimension, region);
+          }
         }
-
-        LookAt next = lookAt;
-        next.fX = 0;
-        next.fZ = 0;
-        fVisibleRegions = juce::Rectangle<int>(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
-        setLookAt(next);
-
-        std::sort(files.begin(), files.end(), [next](File const &a, File const &b) {
-          auto rA = mcfile::je::Region::MakeRegion(PathFromFile(a));
-          auto rB = mcfile::je::Region::MakeRegion(PathFromFile(b));
-          auto distanceA = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rA->fX, rA->fZ));
-          auto distanceB = DistanceSqBetweenRegionAndLookAt(next, MakeRegion(rB->fX, rB->fZ));
-          return distanceA < distanceB;
-        });
-        unsafeEnqueueTextureLoadingJava(files, dim, true);
+        fVisibleRegions = vr;
+        setLookAt(clampedLookAt());
       }
     }
   }
@@ -1135,7 +1154,7 @@ private:
   }
 
   LookAt clampLookAt(LookAt l) const {
-    juce::Rectangle<int> visibleRegions = fVisibleRegions.load();
+    VisibleRegions visibleRegions = fVisibleRegions.load();
 
     if (visibleRegions.getWidth() == 0 && visibleRegions.getHeight() == 0) {
       return l;
@@ -1171,27 +1190,20 @@ private:
       return;
     }
 
-    juce::Rectangle<int> visibleRegions = fVisibleRegions.load();
-    int minX = visibleRegions.getX();
-    int maxX = visibleRegions.getRight();
-    int minY = visibleRegions.getY();
-    int maxY = visibleRegions.getBottom();
+    VisibleRegions visibleRegions = fVisibleRegions.load();
 
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       auto region = MakeRegion(r->fX, r->fZ);
       fPool->addTexturePackJob(region, useCache);
       fLoadingRegions.insert(region);
-      minX = std::min(minX, r->fX);
-      maxX = std::max(maxX, r->fX + 1);
-      minY = std::min(minY, r->fZ);
-      maxY = std::max(maxY, r->fZ + 1);
+      visibleRegions.add(r->fX, r->fZ);
       if (auto found = fTextures.find(region); found == fTextures.end()) {
         fTextures[region] = std::make_unique<RegionTextureCache>(fWorldDirectory, fDimension, region);
       }
     }
 
-    fVisibleRegions = juce::Rectangle<int>(minX, minY, maxX - minX, maxY - minY);
+    fVisibleRegions = visibleRegions;
     startLoadingTimer();
   }
 
@@ -1559,7 +1571,7 @@ private:
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteBedrock;
 
   std::atomic<LookAt> fLookAt;
-  std::atomic<juce::Rectangle<int>> fVisibleRegions;
+  std::atomic<VisibleRegions> fVisibleRegions;
   std::atomic<juce::Point<int>> fSize;
 
   juce::Point<float> fCenterWhenDragStart;

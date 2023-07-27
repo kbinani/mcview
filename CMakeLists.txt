@@ -10,6 +10,8 @@ set(BUILD_SHARED_LIBS OFF)
 set(mcview_macos_deployment_target "10.15")
 set(mcview_apple_development_team_id "XM695N4A7T")
 
+include(cmake/CPM.cmake)
+
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   add_definitions(
     /DUNICODE
@@ -30,6 +32,11 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${mcview_apple_development_team_id}")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
+
+CPMAddPackage(
+  NAME libminecraft-file
+  GITHUB_REPOSITORY kbinani/libminecraft-file
+  GIT_TAG 308e9d1d84aa8ed622cbe1c535cfd8e3c25bb1e1)
 
 add_subdirectory(ext/je2be-core)
 add_subdirectory(ext/JUCE)
@@ -115,6 +122,7 @@ set(mcview_files
   Source/JavaTexturePackThreadPool.hpp
   Source/BedrockTexturePackJob.hpp
   Source/BedrockTexturePackThreadPool.hpp
+  Source/VisibleRegions.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

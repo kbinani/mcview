@@ -32,6 +32,7 @@
 #include "OverScroller.hpp"
 #include "TimerInstance.hpp"
 #include "ThreadPool.hpp"
+#include "VisibleRegions.hpp"
 
 #include "AboutComponent.hpp"
 #include "SettingsComponent.hpp"
