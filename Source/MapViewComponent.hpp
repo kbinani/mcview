@@ -573,13 +573,7 @@ public:
         std::sort(regions.begin(), regions.end(), [](Region const &a, Region const &b) {
           float distanceA = Point<float>(a.first * 512 + 256, a.second * 512 + 256).getDistanceFromOrigin();
           float distanceB = Point<float>(b.first * 512 + 256, b.second * 512 + 256).getDistanceFromOrigin();
-          if (distanceA < distanceB) {
-            return -1;
-          } else if (distanceA > distanceB) {
-            return 1;
-          } else {
-            return 0;
-          }
+          return distanceA < distanceB;
         });
         for (Region region : regions) {
           fTextures[region] = std::make_unique<RegionTextureCache>(directory, dim, region);
@@ -621,13 +615,7 @@ public:
       std::sort(files.begin(), files.end(), [](auto const &a, auto const &b) {
         float distanceA = Point<float>(a.first.first * 512 + 256, a.first.second * 512 + 256).getDistanceFromOrigin();
         float distanceB = Point<float>(b.first.first * 512 + 256, b.first.second * 512 + 256).getDistanceFromOrigin();
-        if (distanceA < distanceB) {
-          return -1;
-        } else if (distanceA > distanceB) {
-          return 1;
-        } else {
-          return 0;
-        }
+        return distanceA < distanceB;
       });
       std::vector<File> sorted;
       for (auto const &it : files) {
