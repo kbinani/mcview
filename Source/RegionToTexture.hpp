@@ -198,21 +198,21 @@ public:
       int const eX = chunk.maxBlockX();
       for (int z = sZ; z <= eZ; z++) {
         for (int x = sX; x <= eX; x++) {
+          if (job->shouldExit()) {
+            return false;
+          }
           Biome biome = ToBiome(chunk.biomeAt(x, z));
           int i = (z - minZ) * width + (x - minX);
           biomes[i] = biome;
         }
-        if (job->shouldExit()) {
-          return false;
-        }
       }
       for (int z = sZ; z <= eZ; z++) {
         for (int x = sX; x <= eX; x++) {
-          int const idx = (z - minZ) * width + (x - minX);
-          assert(0 <= idx && idx < width * height);
           if (job->shouldExit()) {
             return false;
           }
+          int const idx = (z - minZ) * width + (x - minX);
+          assert(0 <= idx && idx < width * height);
           auto info = PillarPixelInfo(dim, x, z, maxSectionY * 16 + 15, [&chunk](int x, int y, int z) { return chunk.blockIdAt(x, y, z); });
           if (info) {
             pixelInfo[idx] = *info;
