@@ -10,19 +10,8 @@ public:
   ~JavaTexturePackThreadPool() override {}
 
   void addTexturePackJob(Region region, bool useCache) override {
-    juce::File mca;
-    switch (fDimension) {
-    case Dimension::TheNether:
-      mca = fWorldDirectory.getChildFile("DIM-1").getChildFile("region").getChildFile(mcfile::je::Region::GetDefaultRegionFileName(region.first, region.second));
-      break;
-    case Dimension::TheEnd:
-      mca = fWorldDirectory.getChildFile("DIM1").getChildFile("region").getChildFile(mcfile::je::Region::GetDefaultRegionFileName(region.first, region.second));
-      break;
-    case Dimension::Overworld:
-    default:
-      mca = fWorldDirectory.getChildFile("region").getChildFile(mcfile::je::Region::GetDefaultRegionFileName(region.first, region.second));
-      break;
-    }
+    juce::File dir = DimensionDirectory(fWorldDirectory, fDimension);
+    juce::File mca = dir.getChildFile(mcfile::je::Region::GetDefaultRegionFileName(region.first, region.second));
     addJob(new JavaTexturePackJob(fWorldDirectory, mca, region, fDimension, useCache, this), true);
   }
 
