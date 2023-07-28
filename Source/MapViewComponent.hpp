@@ -453,19 +453,18 @@ public:
   }
 
   void texturePackThreadPoolDidFinishJob(TexturePackThreadPool *pool, std::shared_ptr<TexturePackJob::Result> result) override {
-    {
-      std::lock_guard<std::mutex> lock(fMut);
-      if (pool != fPool.get()) {
-        return;
-      }
-      fGLJobResults.push_back(result);
-      unsafeEnqueueAsyncUpdate(AsyncUpdateQueueReleaseGarbageThreadPool{});
+    std::lock_guard<std::mutex> lock(fMut);
+    if (pool != fPool.get()) {
+      return;
     }
-    triggerAsyncUpdate();
+    fGLJobResults.push_back(result);
+    unsafeEnqueueAsyncUpdate(AsyncUpdateQueueReleaseGarbageThreadPool{});
+    unsafeEnqueueAsyncUpdate(AsyncUpdateQueueTriggerRepaint{});
   }
 
   void unsafeEnqueueAsyncUpdate(AsyncUpdateQueue q) {
     fAsyncUpdateQueue.push_back(q);
+    triggerAsyncUpdate();
   }
 
   void enqueueAsyncUpdate(AsyncUpdateQueue q) {
