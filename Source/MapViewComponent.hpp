@@ -424,6 +424,10 @@ public:
     if (dt <= 0.0f) {
       return;
     }
+    juce::Logger::outputDebugString(juce::String(e.eventTime.toMilliseconds() - p1.eventTime.toMilliseconds()));
+    if (e.eventTime.toMilliseconds() - p1.eventTime.toMilliseconds() > 100) {
+      return;
+    }
     float const dx = p1.x - p0.x;
     float const dz = p1.y - p0.y;
     float const vx = -dx / dt;
