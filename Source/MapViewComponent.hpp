@@ -16,8 +16,9 @@ class MapViewComponent
       public BedrockWorldScanThread ::Delegate {
   struct AsyncUpdateQueueReleaseGarbageThreadPool {};
   struct AsyncUpdateQueueTriggerRepaint {};
+  struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
 
-  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint>;
+  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint, AsyncUpdateQueueUpdateCaptureButtonStatus>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -100,6 +101,7 @@ public:
                                                         BinaryData::baseline_camera_white_18dp_pngSize);
     fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fCaptureButton->setImages(fCaptureButtonImage.get());
+    fCaptureButton->setEnabled(false);
     fCaptureButton->onClick = [this]() {
       captureToImage();
     };
@@ -143,6 +145,18 @@ public:
     fCloseWatchDogTimer.reset(new TimerInstance);
     fCloseWatchDogTimer->fTimerCallback = [this](TimerInstance &timer) {
       closeWatchDogTimerDidTick(timer);
+    };
+    fCaptureButtonEnableTimer.reset(new TimerInstance);
+    fCaptureButtonEnableTimer->fTimerCallback = [this](TimerInstance &timer) {
+      timer.stopTimer();
+      bool enable = false;
+      {
+        std::lock_guard<std::mutex> lock(fMut);
+        enable = unsafeShouldEnableCaptureButton();
+      }
+      if (enable) {
+        fCaptureButton->setEnabled(true);
+      }
     };
 
     fSize = Point<int>(600, 400);
@@ -493,8 +507,6 @@ public:
     fNether->setEnabled(dim != Dimension::TheNether);
     fEnd->setEnabled(dim != Dimension::TheEnd);
 
-    fCaptureButton->setEnabled(false);
-
     File worldDataFile = WorldData::WorldDataPath(directory);
     WorldData data = WorldData::Load(worldDataFile);
 
@@ -584,7 +596,7 @@ public:
           fLoadingRegions.insert(region);
         }
         fVisibleRegions = vr;
-        setLookAt(clampLookAt(nextLookAt));
+        unsafeSetLookAt(clampLookAt(nextLookAt));
         startLoadingTimer();
 
         auto th = new BedrockWorldScanThread(db, directory, dim, this);
@@ -625,12 +637,14 @@ public:
         sorted.push_back(it.second);
       }
       unsafeEnqueueTextureLoadingJava(sorted, dim, true);
-      setLookAt(clampLookAt(nextLookAt));
+      unsafeSetLookAt(clampLookAt(nextLookAt));
 
       auto th = new JavaWorldScanThread(directory, dim, this);
       th->startThread();
       fWorldScanThread.reset(th);
     }
+
+    unsafeUpdateCaptureButtonStatus();
   }
 
   void javaWorldScanThreadDidFoundRegion(juce::File worldDirectory, Dimension dimension, Region region) override {
@@ -934,10 +948,18 @@ public:
   }
 
   void handleAsyncUpdate() override {
-    std::deque<AsyncUpdateQueue> queue;
+    std::deque<AsyncUpdateQueue> copy;
     {
       std::lock_guard<std::mutex> lock(fMut);
-      queue.swap(fAsyncUpdateQueue);
+      copy.swap(fAsyncUpdateQueue);
+    }
+    std::set<size_t> indices;
+    std::deque<AsyncUpdateQueue> queue;
+    for (auto const &q : copy) {
+      if (indices.count(q.index()) == 0) {
+        queue.push_back(q);
+        indices.insert(q.index());
+      }
     }
     for (auto const &q : queue) {
       if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
@@ -948,6 +970,8 @@ public:
         }
       } else if (std::holds_alternative<AsyncUpdateQueueTriggerRepaint>(q)) {
         triggerRepaint();
+      } else if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
+        updateCaptureButtonStatus();
       }
     }
   }
@@ -1014,6 +1038,48 @@ public:
   }
 
 private:
+  void updateCaptureButtonStatus() {
+    std::lock_guard<std::mutex> lock(fMut);
+    unsafeUpdateCaptureButtonStatus();
+  }
+
+  bool unsafeShouldEnableCaptureButton() {
+    if (fCapturingToImage) {
+      return false;
+    }
+    auto lookAt = clampedLookAt();
+    int minRx, minRz, maxRx, maxRz;
+    viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
+    int count = 0;
+    for (int rz = minRz; rz <= maxRz; rz++) {
+      for (int rx = minRx; rx <= maxRx; rx++) {
+        auto region = MakeRegion(rx, rz);
+        if (fTextures.count(region) > 0) {
+          if (fLoadingRegions.count(region) > 0) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  void unsafeUpdateCaptureButtonStatus() {
+    if (fCaptureButtonEnableTimer->isTimerRunning()) {
+      return;
+    }
+    bool enable = unsafeShouldEnableCaptureButton();
+    if (enable == fCaptureButton->isEnabled()) {
+      return;
+    }
+    fCaptureButtonEnableTimer->stopTimer();
+    if (enable) {
+      fCaptureButtonEnableTimer->startTimer(500);
+    } else {
+      fCaptureButton->setEnabled(false);
+    }
+  }
+
   void closeWatchDogTimerDidTick(TimerInstance &timer) {
     triggerRepaint();
     if (fRegionUpdateChecker->isThreadRunning()) {
@@ -1248,12 +1314,14 @@ private:
 
   void captureToImage() {
     using namespace juce;
-    fCaptureButton->setEnabled(false);
+    fCapturingToImage = true;
+    updateCaptureButtonStatus();
 
     fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
     fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const &chooser) {
       defer {
-        fCaptureButton->setEnabled(true);
+        fCapturingToImage = false;
+        updateCaptureButtonStatus();
       };
       File file = chooser.getResult();
       if (file == File()) {
@@ -1301,13 +1369,19 @@ private:
     return clampLookAt(fLookAt.load());
   }
 
-  void setLookAt(LookAt next) {
+  void unsafeSetLookAt(LookAt next) {
     auto c = clampLookAt(next);
     fLookAt = c;
     if (fPool) {
       fPool->fLookAt = c;
     }
     updateAllPinComponentPosition();
+    unsafeUpdateCaptureButtonStatus();
+  }
+
+  void setLookAt(LookAt next) {
+    std::lock_guard<std::mutex> lock(fMut);
+    unsafeSetLookAt(next);
   }
 
   void unsafeEnqueueTextureLoadingJava(std::vector<juce::File> files, Dimension dim, bool useCache) {
@@ -1330,6 +1404,7 @@ private:
     }
 
     fVisibleRegions = visibleRegions;
+    unsafeUpdateCaptureButtonStatus();
     startLoadingTimer();
   }
 
@@ -1353,6 +1428,7 @@ private:
     fTextureTrashBin.clear();
 
     bool loadingFinished = false;
+    bool needsUpdatingCaptureButton = false;
     juce::File worldDirectory;
     Dimension dimension;
     std::vector<std::shared_ptr<TexturePackJob::Result>> remove;
@@ -1375,6 +1451,7 @@ private:
       }
       if (result->fRegion.first < minRx || maxRx < result->fRegion.first || result->fRegion.second < minRz || maxRz < result->fRegion.second) {
         fLoadingRegions.erase(result->fRegion);
+        needsUpdatingCaptureButton = true;
         remove.push_back(result);
         continue;
       }
@@ -1411,6 +1488,7 @@ private:
         if (fLoadingRegions.empty()) {
           loadingFinished = true;
         }
+        needsUpdatingCaptureButton = true;
       }
     }
     for (auto const &it : remove) {
@@ -1426,6 +1504,7 @@ private:
       if (rx < minRx || maxRx < rx || rz < minRz || maxRz < rz) {
         if (it.second->fTexture) {
           it.second->fTexture.reset();
+          needsUpdatingCaptureButton = true;
         }
       }
     }
@@ -1436,6 +1515,7 @@ private:
           if (rx < minRx || maxRx < rx || rz < minRz || maxRz < rz) {
             if (fPool->removeJob(job, false, 0)) {
               fLoadingRegions.erase(MakeRegion(rx, rz));
+              needsUpdatingCaptureButton = true;
             }
           }
         }
@@ -1449,6 +1529,7 @@ private:
               continue;
             }
             fLoadingRegions.insert(region);
+            needsUpdatingCaptureButton = true;
             fPool->addTexturePackJob(MakeRegion(rx, rz), true);
             queued++;
           }
@@ -1465,6 +1546,9 @@ private:
           stopTimer();
         }
       });
+    }
+    if (needsUpdatingCaptureButton) {
+      unsafeEnqueueAsyncUpdate(AsyncUpdateQueueUpdateCaptureButtonStatus{});
     }
   }
 
@@ -1753,6 +1837,8 @@ private:
   juce::Atomic<bool> fClosing;
   std::unique_ptr<TimerInstance> fCloseWatchDogTimer;
   Delegate *const fDelegate;
+  bool fCapturingToImage = false;
+  std::unique_ptr<TimerInstance> fCaptureButtonEnableTimer;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
