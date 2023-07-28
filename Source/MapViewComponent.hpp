@@ -1427,6 +1427,16 @@ private:
       }
     }
     if (fPool) {
+      for (int i = fPool->getNumJobs(); i >= 0; i--) {
+        if (auto job = dynamic_cast<TexturePackJob *>(fPool->getJob(i)); job && !job->isRunning()) {
+          auto [rx, rz] = job->fRegion;
+          if (rx < minRx || maxRx < rx || rz < minRz || maxRz < rz) {
+            if (fPool->removeJob(job, false, 0)) {
+              fLoadingRegions.erase(MakeRegion(rx, rz));
+            }
+          }
+        }
+      }
       int queued = 0;
       for (int rx = minRx; rx <= maxRx; rx++) {
         for (int rz = minRz; rz <= maxRz; rz++) {
