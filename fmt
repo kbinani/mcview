@@ -3,4 +3,7 @@
 (
   cd "$(dirname "$0")"
   git ls-files . | grep -e '\.cpp$' -e '\.hpp$' | xargs -P$(nproc) -n1 clang-format -i
+  (
+    cd build/_deps/libminecraft-file-src && ./fmt
+  )
 )
