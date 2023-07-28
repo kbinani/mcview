@@ -181,49 +181,51 @@ public:
 
     bool error = false;
     bool didset = false;
-    bool completed = region.loadAllChunks(error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
-      int maxSectionY = -9999;
-      for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
-        if (chunk.fSections[i]) {
-          maxSectionY = chunk.fSections[i]->y();
-          break;
-        }
-      }
-      if (maxSectionY < -4) {
-        return !job->shouldExit();
-      }
-      int const sZ = chunk.minBlockZ();
-      int const eZ = chunk.maxBlockZ();
-      int const sX = chunk.minBlockX();
-      int const eX = chunk.maxBlockX();
-      for (int z = sZ; z <= eZ; z++) {
-        for (int x = sX; x <= eX; x++) {
-          if (job->shouldExit()) {
-            return false;
+    bool completed = region.loadAllChunks(
+        error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
+          int maxSectionY = -9999;
+          for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
+            if (chunk.fSections[i]) {
+              maxSectionY = chunk.fSections[i]->y();
+              break;
+            }
           }
-          Biome biome = ToBiome(chunk.biomeAt(x, z));
-          int i = (z - minZ) * width + (x - minX);
-          biomes[i] = biome;
-        }
-      }
-      for (int z = sZ; z <= eZ; z++) {
-        for (int x = sX; x <= eX; x++) {
-          if (job->shouldExit()) {
-            return false;
+          if (maxSectionY < -4) {
+            return !job->shouldExit();
           }
-          int const idx = (z - minZ) * width + (x - minX);
-          assert(0 <= idx && idx < width * height);
-          auto info = PillarPixelInfo(dim, x, z, maxSectionY * 16 + 15, [&chunk](int x, int y, int z) { return chunk.blockIdAt(x, y, z); });
-          if (info) {
-            pixelInfo[idx] = *info;
-            didset = true;
+          int const sZ = chunk.minBlockZ();
+          int const eZ = chunk.maxBlockZ();
+          int const sX = chunk.minBlockX();
+          int const eX = chunk.maxBlockX();
+          for (int z = sZ; z <= eZ; z++) {
+            for (int x = sX; x <= eX; x++) {
+              if (job->shouldExit()) {
+                return false;
+              }
+              Biome biome = ToBiome(chunk.biomeAt(x, z));
+              int i = (z - minZ) * width + (x - minX);
+              biomes[i] = biome;
+            }
           }
-        }
-      }
-      return !job->shouldExit();
-    });
+          for (int z = sZ; z <= eZ; z++) {
+            for (int x = sX; x <= eX; x++) {
+              if (job->shouldExit()) {
+                return false;
+              }
+              int const idx = (z - minZ) * width + (x - minX);
+              assert(0 <= idx && idx < width * height);
+              auto info = PillarPixelInfo(dim, x, z, maxSectionY * 16 + 15, [&chunk](int x, int y, int z) { return chunk.blockIdAt(x, y, z); });
+              if (info) {
+                pixelInfo[idx] = *info;
+                didset = true;
+              }
+            }
+          }
+          return !job->shouldExit();
+        },
+        true);
 
-    if (!didset || !completed) {
+    if (error || !didset || !completed) {
       return nullptr;
     }
 
