@@ -46,7 +46,8 @@ public:
         fPaletteType(PaletteType::mcview),
         fLightingType(LightingType::topLeft),
         fClosing(false),
-        fDelegate(delegate) {
+        fDelegate(delegate),
+        fCapturingToImage(false) {
     using namespace juce;
 
     if (auto *peer = getPeer()) {
@@ -352,6 +353,9 @@ public:
   }
 
   void renderOpenGL() override {
+    if (fCapturingToImage.get()) {
+      return;
+    }
     LookAt lookAt = clampedLookAt();
     auto desktopScale = (float)fGLContext.getRenderingScale();
     juce::Point<int> size = fSize.load();
@@ -372,6 +376,11 @@ public:
 
   void savePNGProgressWindowRender(int const width, int const height, LookAt const lookAt) override {
     return render(width, height, lookAt, false);
+  }
+
+  void savePNGProgressWindowDidFinishRendering() override {
+    fCapturingToImage = false;
+    unsafeEnqueueAsyncUpdate(AsyncUpdateQueueUpdateCaptureButtonStatus{});
   }
 
   void mouseMagnify(juce::MouseEvent const &event, float scaleFactor) override {
@@ -438,7 +447,6 @@ public:
     if (dt <= 0.0f) {
       return;
     }
-    juce::Logger::outputDebugString(juce::String(e.eventTime.toMilliseconds() - p1.eventTime.toMilliseconds()));
     if (e.eventTime.toMilliseconds() - p1.eventTime.toMilliseconds() > 100) {
       return;
     }
@@ -1044,7 +1052,7 @@ private:
   }
 
   bool unsafeShouldEnableCaptureButton() {
-    if (fCapturingToImage) {
+    if (fCapturingToImage.get()) {
       return false;
     }
     auto lookAt = clampedLookAt();
@@ -1317,33 +1325,24 @@ private:
     fCapturingToImage = true;
     updateCaptureButtonStatus();
 
+    if (fSavePngWindow) {
+      fSavePngWindow->stopThread(-1);
+      fSavePngWindow.reset();
+    }
+
     fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
     fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const &chooser) {
-      defer {
-        fCapturingToImage = false;
-        updateCaptureButtonStatus();
-      };
       File file = chooser.getResult();
       if (file == File()) {
         return;
       }
 
+      LookAt lookAt = clampedLookAt();
       int minX, maxX, minZ, maxZ;
-      minX = maxX = fTextures.begin()->first.first;
-      minZ = maxZ = fTextures.begin()->first.second;
-      for (auto const &it : fTextures) {
-        auto region = it.first;
-        int const x = region.first;
-        int const z = region.second;
-        minX = std::min(minX, x);
-        maxX = std::max(maxX, x);
-        minZ = std::min(minZ, z);
-        maxZ = std::max(maxZ, z);
-      }
-      juce::Rectangle<int> bounds(minX, minZ, maxX - minX, maxZ - minZ);
+      viewportRegions(lookAt, &minX, &minZ, &maxX, &maxZ);
 
-      SavePNGProgressWindow wnd(this, fGLContext, file, bounds);
-      wnd.run();
+      fSavePngWindow.reset(new SavePNGProgressWindow(this, fGLContext, file, minX, minZ, maxX, maxZ));
+      fSavePngWindow->launchThread();
     });
   }
 
@@ -1837,7 +1836,8 @@ private:
   juce::Atomic<bool> fClosing;
   std::unique_ptr<TimerInstance> fCloseWatchDogTimer;
   Delegate *const fDelegate;
-  bool fCapturingToImage = false;
+  juce::Atomic<bool> fCapturingToImage;
+  std::unique_ptr<SavePNGProgressWindow> fSavePngWindow;
   std::unique_ptr<TimerInstance> fCaptureButtonEnableTimer;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)

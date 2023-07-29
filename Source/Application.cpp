@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <latch>
 #include <variant>
 
 // clang-format off

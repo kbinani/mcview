@@ -8,71 +8,79 @@ public:
   public:
     virtual ~Delegate() = default;
     virtual void savePNGProgressWindowRender(int const width, int const height, LookAt const lookAt) = 0;
+    virtual void savePNGProgressWindowDidFinishRendering() = 0;
   };
 
-  SavePNGProgressWindow(Delegate *delegate, juce::OpenGLContext &openGLContext, juce::File file, juce::Rectangle<int> regionBoundingBox) : juce::ThreadWithProgressWindow(TRANS("Writing image file"), true, false), fDelegate(delegate), fGLContext(openGLContext), fFile(file), fRegionBoundingBox(regionBoundingBox) {
+  SavePNGProgressWindow(Delegate *delegate,
+                        juce::OpenGLContext &openGLContext,
+                        juce::File file,
+                        int minRx, int minRz, int maxRx, int maxRz)
+      : juce::ThreadWithProgressWindow(TRANS("Writing image file"), true, false),
+        fDelegate(delegate),
+        fGLContext(openGLContext),
+        fFile(file),
+        fMinRx(minRx), fMinRz(minRz), fMaxRx(maxRx), fMaxRz(maxRz) {
   }
 
-  void run() {
+  void run() override {
     using namespace juce;
-    auto bounds = fRegionBoundingBox;
-    if (bounds.getWidth() == 0 || bounds.getHeight() == 0) {
+
+    if (fMinRx > fMaxRx || fMinRz > fMaxRz) {
       return;
     }
 
-    int const minBlockX = bounds.getX() * 512;
-    int const minBlockZ = bounds.getY() * 512;
-    int const maxBlockX = (bounds.getRight() + 1) * 512 - 1;
-    int const maxBlockZ = (bounds.getBottom() + 1) * 512 - 1;
+    int const minBlockX = fMinRx * 512;
+    int const minBlockZ = fMinRz * 512;
+    int const maxBlockX = fMaxRx * 512 - 1;
+    int const maxBlockZ = fMaxRz * 512 - 1;
 
     int const width = maxBlockX - minBlockX + 1;
     int const height = maxBlockZ - minBlockZ + 1;
 
-    int const kMaxMemoryUsage = 32 * 1024 * 1024;
-    int const row = std::max(kMaxMemoryUsage / ((int)sizeof(PixelARGB) * width), 128);
+    auto image = std::make_unique<Image>(Image::PixelFormat::ARGB, width, height, true);
+    Image::BitmapData data(*image, Image::BitmapData::readWrite);
+    if (data.lineStride != 4 * width || data.pixelStride != 4) {
+      return;
+    }
 
-    std::vector<PixelARGB> pixels(width * row);
-    PixelARGB *pixelsPtr = pixels.data();
-    int const numFrames = (int)ceil(height / float(row));
+    std::latch latch(1);
+
+    fGLContext.executeOnGLThread(
+        [this, &latch, &data, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height](OpenGLContext &ctx) {
+          std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
+          buffer->initialise(ctx, width, height);
+          buffer->makeCurrentRenderingTarget();
+
+          LookAt lookAt;
+          lookAt.fX = minBlockX + width / 2.0f;
+          lookAt.fZ = minBlockZ + height / 2.0f;
+          lookAt.fBlocksPerPixel = 1;
+          fDelegate->savePNGProgressWindowRender(width, height, lookAt);
+
+          buffer->readPixels((PixelARGB *)data.data, juce::Rectangle<int>(0, 0, width, height));
+          buffer->releaseAsRenderingTarget();
+
+          buffer->release();
+          buffer.reset();
+
+          latch.count_down();
+
+          fDelegate->savePNGProgressWindowDidFinishRendering();
+        },
+        false);
+
+    latch.wait();
+    setProgress(0.1);
 
     FileOutputStream stream(fFile);
-    stream.truncate();
     stream.setPosition(0);
+    stream.truncate();
     PNGWriter writer(width, height, stream);
-
-    fGLContext.executeOnGLThread([this, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height, pixelsPtr, row, numFrames, &writer](OpenGLContext &ctx) {
-      int y = 0;
-      for (int i = 0; i < numFrames; i++) {
-        std::fill_n(pixelsPtr, width, PixelARGB());
-
-        std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
-        buffer->initialise(ctx, width, row);
-        buffer->makeCurrentRenderingTarget();
-
-        LookAt lookAt;
-        lookAt.fX = minBlockX + width / 2.0f;
-        lookAt.fZ = minBlockZ + i * row + row / 2.0f;
-        lookAt.fBlocksPerPixel = 1;
-        fDelegate->savePNGProgressWindowRender(width, row, lookAt);
-
-        buffer->readPixels(pixelsPtr, juce::Rectangle<int>(0, 0, width, row));
-        buffer->releaseAsRenderingTarget();
-
-        buffer->release();
-        buffer.reset();
-
-        for (int j = row; --j >= 0;) {
-          writer.writeRow(pixelsPtr + width * j);
-          y++;
-          setProgress(y / float(height));
-          if (y >= height) {
-            break;
-          }
-        }
-      }
-    },
-                                 true);
-
+    for (int y = 0; y < height; y++) {
+      writer.writeRow((PixelARGB *)data.getLinePointer(height - y - 1));
+      double p = (y + 1) / (double)height;
+      setProgress(0.1 + p * 0.9);
+    }
     setProgress(1);
   }
 
@@ -80,7 +88,7 @@ private:
   Delegate *const fDelegate;
   juce::OpenGLContext &fGLContext;
   juce::File fFile;
-  juce::Rectangle<int> fRegionBoundingBox;
+  int fMinRx, fMinRz, fMaxRx, fMaxRz;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SavePNGProgressWindow)
 };
