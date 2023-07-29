@@ -1,6 +1,7 @@
 #include <colormap/colormap.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
+#include <leveldb/env.h>
 #include <minecraft-file.hpp>
 #include <nlohmann/json.hpp>
 
@@ -34,6 +35,7 @@
 #include "TimerInstance.hpp"
 #include "ThreadPool.hpp"
 #include "VisibleRegions.hpp"
+#include "FirewallEnv.hpp"
 
 #include "AboutComponent.hpp"
 #include "SettingsComponent.hpp"

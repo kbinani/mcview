@@ -29,4 +29,20 @@ static juce::File DefaultBedrockSaveDirectory() {
 #endif
 }
 
+static juce::File TempDirectory() {
+#if JUCE_WINDOWS
+  return juce::File::getSpecialLocation(juce::File::SpecialLocationType::tempDirectory).getChildFile("mcview");
+#else
+  return juce::File::getSpecialLocation(juce::File::SpecialLocationType::tempDirectory);
+#endif
+}
+
+static juce::File CacheDirectory() {
+  return TempDirectory().getChildFile("cache");
+}
+
+static juce::File WorkingDirectory() {
+  return TempDirectory().getChildFile("runtime");
+}
+
 } // namespace mcview

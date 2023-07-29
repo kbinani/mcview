@@ -66,18 +66,14 @@ protected:
 
   static juce::File CacheFile(juce::File const &worldDirectory, Dimension dim, Region region) {
     using namespace juce;
-#if JUCE_WINDOWS
-    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("mcview").getChildFile("cache");
-#else
-    File tmp = File::getSpecialLocation(File::SpecialLocationType::tempDirectory).getChildFile("cache");
-#endif
-    if (!tmp.exists()) {
-      tmp.createDirectory();
+    File cache = CacheDirectory();
+    if (!cache.exists()) {
+      cache.createDirectory();
     }
     String hashSource = worldDirectory.getFullPathName();
     hashSource += "\n" + String(static_cast<int>(dim));
     String hash = String("v5.") + String(hashSource.hashCode64());
-    File dir = tmp.getChildFile(hash);
+    File dir = cache.getChildFile(hash);
     if (!dir.exists()) {
       dir.createDirectory();
     }

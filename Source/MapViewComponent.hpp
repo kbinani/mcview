@@ -50,6 +50,9 @@ public:
         fCapturingToImage(false) {
     using namespace juce;
 
+    WorkingDirectory().createDirectory();
+    fFirewallEnv.reset(new FirewallEnv(PathFromFile(WorkingDirectory())));
+
     if (auto *peer = getPeer()) {
       peer->setCurrentRenderingEngine(0);
     }
@@ -1841,6 +1844,7 @@ private:
   juce::Atomic<bool> fCapturingToImage;
   std::unique_ptr<SavePNGProgressWindow> fSavePngWindow;
   std::unique_ptr<TimerInstance> fCaptureButtonEnableTimer;
+  std::unique_ptr<FirewallEnv> fFirewallEnv;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };
