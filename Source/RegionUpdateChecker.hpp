@@ -64,13 +64,13 @@ private:
     RangedDirectoryIterator it(DimensionDirectory(d, dim), false, "*.mca");
     std::vector<File> files;
     for (DirectoryEntry entry : it) {
+      if (threadShouldExit()) {
+        return;
+      }
       File f = entry.getFile();
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
       if (!r) {
         continue;
-      }
-      if (threadShouldExit()) {
-        return;
       }
       Time modified = f.getLastModificationTime();
       std::string fullpath = f.getFullPathName().toStdString();
