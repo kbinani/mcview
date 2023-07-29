@@ -46,7 +46,7 @@ public:
     std::latch latch(1);
 
     fGLContext.executeOnGLThread(
-        [this, &latch, &data, minBlockX, maxBlockX, minBlockZ, maxBlockZ, width, height](OpenGLContext &ctx) {
+        [this, &latch, &data, minBlockX, minBlockZ, width, height](OpenGLContext &ctx) {
           std::unique_ptr<OpenGLFrameBuffer> buffer(new OpenGLFrameBuffer());
           buffer->initialise(ctx, width, height);
           buffer->makeCurrentRenderingTarget();

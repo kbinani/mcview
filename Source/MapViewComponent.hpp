@@ -362,7 +362,7 @@ public:
     int const width = size.x * desktopScale;
     int const height = size.y * desktopScale;
     lookAt.fBlocksPerPixel /= desktopScale;
-    render(width, height, lookAt, true);
+    render(width, height, lookAt, false);
   }
 
   void openGLContextClosing() override {
@@ -375,7 +375,7 @@ public:
   }
 
   void savePNGProgressWindowRender(int const width, int const height, LookAt const lookAt) override {
-    return render(width, height, lookAt, false);
+    return render(width, height, lookAt, true);
   }
 
   void savePNGProgressWindowDidFinishRendering() override {
@@ -709,20 +709,20 @@ public:
     }
   }
 
-  void render(int const width, int const height, LookAt const lookAt, bool enableUI) {
+  void render(int const width, int const height, LookAt const lookAt, bool capturing) {
     using namespace juce;
     using namespace juce::gl;
     std::lock_guard<std::mutex> lock(fMut);
 
-    if (enableUI) {
-      OpenGLHelpers::clear(Colours::white);
-    } else {
+    if (capturing) {
       OpenGLHelpers::clear(Colours::transparentBlack);
+    } else {
+      OpenGLHelpers::clear(Colours::white);
     }
 
     glViewport(0, 0, width, height);
 
-    if (enableUI) {
+    if (!capturing) {
       unsafeDrawBackground();
     }
 
@@ -814,7 +814,7 @@ public:
       }
 
       if (fGLUniforms->fade.get() != nullptr) {
-        if (enableUI) {
+        if (!capturing) {
           int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
           GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
           fGLUniforms->fade->set(a);
@@ -952,7 +952,9 @@ public:
       fGLAttributes->disable(fGLContext);
     }
 
-    unsafeInstantiateTextures(lookAt);
+    if (!capturing) {
+      unsafeInstantiateTextures(lookAt);
+    }
   }
 
   void handleAsyncUpdate() override {
