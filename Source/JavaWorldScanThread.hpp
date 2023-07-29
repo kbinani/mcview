@@ -2,7 +2,7 @@
 
 namespace mcview {
 
-class JavaWorldScanThread : public juce::Thread {
+class JavaWorldScanThread : public WorldScanThread {
 public:
   struct Delegate {
     virtual ~Delegate() = default;
@@ -11,7 +11,7 @@ public:
   };
 
   JavaWorldScanThread(juce::File worldDirectory, Dimension dimension, Delegate *delegate)
-      : Thread("javaworldscanthread"),
+      : WorldScanThread("Java World Scan Thread"),
         fWorldDirectory(worldDirectory),
         fDimension(dimension),
         fDelegate(delegate) {
@@ -30,15 +30,27 @@ public:
       }
 
       auto region = MakeRegion(r->fX, r->fZ);
-      fDelegate->javaWorldScanThreadDidFoundRegion(fWorldDirectory, fDimension, region);
+      auto delegate = fDelegate.load();
+      if (delegate) {
+        delegate->javaWorldScanThreadDidFoundRegion(fWorldDirectory, fDimension, region);
+      } else {
+        return;
+      }
     }
-    fDelegate->javaWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+    auto delegate = fDelegate.load();
+    if (delegate) {
+      delegate->javaWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+    }
+  }
+
+  void abandon() override {
+    fDelegate.store(nullptr);
   }
 
 private:
   juce::File fWorldDirectory;
   Dimension fDimension;
-  Delegate *const fDelegate;
+  std::atomic<Delegate *> fDelegate;
 };
 
 } // namespace mcview

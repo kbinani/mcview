@@ -60,6 +60,7 @@
 #include "GLAttributes.hpp"
 #include "GLBuffer.hpp"
 #include "PinEdit.hpp"
+#include "WorldScanThread.hpp"
 #include "JavaWorldScanThread.hpp"
 #include "BedrockWorldScanThread.hpp"
 #include "MapViewComponent.hpp"

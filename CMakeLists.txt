@@ -129,6 +129,7 @@ set(mcview_files
   Source/FirewallEnv.hpp
   Source/ProxyEnv.hpp
   Source/DirectoryCleanupThread.hpp
+  Source/WorldScanThread.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

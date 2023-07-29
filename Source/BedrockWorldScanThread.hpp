@@ -2,7 +2,7 @@
 
 namespace mcview {
 
-class BedrockWorldScanThread : public juce::Thread {
+class BedrockWorldScanThread : public WorldScanThread {
 public:
   struct Delegate {
     virtual ~Delegate() = default;
@@ -11,7 +11,7 @@ public:
   };
 
   BedrockWorldScanThread(std::shared_ptr<leveldb::DB> db, juce::File worldDirectory, Dimension dim, Delegate *delegate)
-      : juce::Thread("bedrockworldscanthread"),
+      : WorldScanThread("Bedrock World Scan Thread"),
         fDb(db),
         fWorldDirectory(worldDirectory),
         fDimension(dim),
@@ -28,20 +28,32 @@ public:
       auto region = MakeRegion(rx, rz);
       if (found.count(region) == 0) {
         found.insert(region);
-        fDelegate->bedrockWorldScanThreadDidFoundRegion(fWorldDirectory, fDimension, region);
+        auto delegate = fDelegate.load();
+        if (delegate) {
+          delegate->bedrockWorldScanThreadDidFoundRegion(fWorldDirectory, fDimension, region);
+        } else {
+          return false;
+        }
       }
       return true;
     });
     if (completed && !threadShouldExit()) {
-      fDelegate->bedrockWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+      auto delegate = fDelegate.load();
+      if (delegate) {
+        delegate->bedrockWorldScanThreadDidFinish(fWorldDirectory, fDimension);
+      }
     }
+  }
+
+  void abandon() override {
+    fDelegate.store(nullptr);
   }
 
 private:
   std::shared_ptr<leveldb::DB> fDb;
   juce::File const fWorldDirectory;
   Dimension const fDimension;
-  Delegate *const fDelegate;
+  std::atomic<Delegate *> fDelegate;
 };
 
 } // namespace mcview

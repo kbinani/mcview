@@ -514,6 +514,10 @@ public:
     if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
       return;
     }
+    if (fWorldScanThread) {
+      fWorldScanThread->abandon();
+    }
+
     std::lock_guard<std::mutex> lock(fMut);
 
     fRegionUpdateChecker->setDirectory(File(), Dimension::Overworld);
@@ -1852,7 +1856,7 @@ private:
 
   std::unique_ptr<juce::FileChooser> fFileChooser;
   std::deque<AsyncUpdateQueue> fAsyncUpdateQueue;
-  std::unique_ptr<juce::Thread> fWorldScanThread;
+  std::unique_ptr<WorldScanThread> fWorldScanThread;
   juce::Atomic<bool> fClosing;
   std::unique_ptr<TimerInstance> fCloseWatchDogTimer;
   Delegate *const fDelegate;
