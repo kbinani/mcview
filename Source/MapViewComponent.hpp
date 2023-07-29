@@ -974,7 +974,7 @@ public:
       fGLAttributes->disable(fGLContext);
     }
 
-    if (!capturing) {
+    if (!capturing && !fClosing.get()) {
       unsafeInstantiateTextures(lookAt);
     }
   }
