@@ -23,7 +23,13 @@ static juce::File DefaultJavaSaveDirectory() {
 static juce::File DefaultBedrockSaveDirectory() {
   using namespace juce;
 #if JUCE_WINDOWS
-  return File::getSpecialLocation(File::windowsLocalAppData).getChildFile("Packages").getChildFile("Microsoft.MinecraftUWP_8wekyb3d8bbwe").getChildFile("LocalState").getChildFile("games").getChildFile("com.mojang").getChildFile("minecraftWorlds");
+  return File::getSpecialLocation(File::windowsLocalAppData)
+      .getChildFile("Packages")
+      .getChildFile("Microsoft.MinecraftUWP_8wekyb3d8bbwe")
+      .getChildFile("LocalState")
+      .getChildFile("games")
+      .getChildFile("com.mojang")
+      .getChildFile("minecraftWorlds");
 #else
   return File();
 #endif

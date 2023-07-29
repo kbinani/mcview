@@ -7,4 +7,4 @@ enum class Edition {
   Bedrock,
 };
 
-}
+} // namespace mcview

@@ -7,4 +7,4 @@ enum class LightingType {
   top = 2,
 };
 
-}
+} // namespace mcview

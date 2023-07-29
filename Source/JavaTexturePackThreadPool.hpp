@@ -4,7 +4,10 @@ namespace mcview {
 
 class JavaTexturePackThreadPool : public TexturePackThreadPool {
 public:
-  JavaTexturePackThreadPool(juce::File directory, Dimension dim, Delegate *delegate) : TexturePackThreadPool(delegate), fWorldDirectory(directory), fDimension(dim) {
+  JavaTexturePackThreadPool(juce::File directory, Dimension dim, Delegate *delegate)
+      : TexturePackThreadPool(delegate),
+        fWorldDirectory(directory),
+        fDimension(dim) {
   }
 
   ~JavaTexturePackThreadPool() override {}

@@ -4,9 +4,9 @@ namespace mcview {
 
 class MainWindow : public juce::DocumentWindow, public MainComponent::Delegate {
 public:
-  MainWindow(juce::String name) : juce::DocumentWindow(name,
-                                                       juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId),
-                                                       juce::DocumentWindow::allButtons) {
+  explicit MainWindow(juce::String name) : juce::DocumentWindow(name,
+                                                                juce::Desktop::getInstance().getDefaultLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId),
+                                                                juce::DocumentWindow::allButtons) {
     setUsingNativeTitleBar(true);
     fContent.reset(new MainComponent(this));
     setContentNonOwned(fContent.get(), true);

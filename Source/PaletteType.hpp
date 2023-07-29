@@ -8,4 +8,4 @@ enum class PaletteType {
   bedrock = 2,
 };
 
-}
+} // namespace mcview

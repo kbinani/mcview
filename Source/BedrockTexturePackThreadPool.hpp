@@ -4,7 +4,16 @@ namespace mcview {
 
 class BedrockTexturePackThreadPool : public TexturePackThreadPool {
 public:
-  BedrockTexturePackThreadPool(juce::File dir, Dimension dim, std::shared_ptr<leveldb::DB> db, std::shared_ptr<ProxyEnv> env, Delegate *delegate) : TexturePackThreadPool(delegate), fDb(db), fEnv(env), fWorldDirectory(dir), fDimension(dim) {
+  BedrockTexturePackThreadPool(juce::File dir,
+                               Dimension dim,
+                               std::shared_ptr<leveldb::DB> db,
+                               std::shared_ptr<ProxyEnv> env,
+                               Delegate *delegate)
+      : TexturePackThreadPool(delegate),
+        fDb(db),
+        fEnv(env),
+        fWorldDirectory(dir),
+        fDimension(dim) {
   }
 
   ~BedrockTexturePackThreadPool() override {

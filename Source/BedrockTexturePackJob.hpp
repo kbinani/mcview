@@ -4,7 +4,17 @@ namespace mcview {
 
 class BedrockTexturePackJob : public TexturePackJob {
 public:
-  BedrockTexturePackJob(leveldb::DB *db, juce::File worldDirectory, Region region, Dimension dim, bool useCache, Delegate *delegate) : TexturePackJob("", region, delegate), fDb(db), fWorldDirectory(worldDirectory), fDimension(dim), fUseCache(useCache) {
+  BedrockTexturePackJob(leveldb::DB *db,
+                        juce::File worldDirectory,
+                        Region region,
+                        Dimension dim,
+                        bool useCache,
+                        Delegate *delegate)
+      : TexturePackJob("", region, delegate),
+        fDb(db),
+        fWorldDirectory(worldDirectory),
+        fDimension(dim),
+        fUseCache(useCache) {
   }
 
   ThreadPoolJob::JobStatus runJob() override {
