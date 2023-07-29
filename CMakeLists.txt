@@ -127,6 +127,7 @@ set(mcview_files
   Source/BedrockWorldScanThread.hpp
   Source/ColorMat.hpp
   Source/FirewallEnv.hpp
+  Source/ProxyEnv.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

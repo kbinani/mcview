@@ -36,6 +36,7 @@
 #include "ThreadPool.hpp"
 #include "VisibleRegions.hpp"
 #include "FirewallEnv.hpp"
+#include "ProxyEnv.hpp"
 
 #include "AboutComponent.hpp"
 #include "SettingsComponent.hpp"

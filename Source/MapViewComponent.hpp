@@ -173,13 +173,17 @@ public:
     fRegionUpdateChecker->waitForThreadToExit(-1);
     if (fWorldScanThread) {
       fWorldScanThread->waitForThreadToExit(-1);
+      fWorldScanThread.reset();
     }
     if (fPool) {
       fPool->abandon(-1);
+      fPool.reset();
     }
     for (auto &pool : fPoolTrashBin) {
       pool->abandon(-1);
+      pool.reset();
     }
+    fFirewallEnv.reset();
 
     fGLContext.detach();
   }
@@ -522,21 +526,32 @@ public:
     WorldData data = WorldData::Load(worldDataFile);
 
     std::shared_ptr<leveldb::DB> db;
+    std::shared_ptr<ProxyEnv> env;
     if (fPool) {
       fPool->abandon(0);
       if (auto pool = dynamic_cast<BedrockTexturePackThreadPool *>(fPool.get()); pool && pool->fWorldDirectory == directory && edition == Edition::Bedrock) {
         db = pool->fDb;
+        env = pool->fEnv;
       }
       fPoolTrashBin.push_back(std::move(fPool));
     }
     if (edition == Edition::Bedrock) {
-      if (!db) {
-        leveldb::DB *ptr = nullptr;
-        if (auto st = leveldb::DB::Open({}, PathFromFile(directory) / "db", &ptr); st.ok()) {
-          db.reset(ptr);
+      if (!db || !env) {
+        juce::String workDirName = juce::String("proxy-") + juce::Uuid().toDashedString();
+        juce::File work = WorkingDirectory().getChildFile(workDirName);
+        if (work.deleteRecursively()) {
+          if (work.createDirectory()) {
+            env = std::make_shared<ProxyEnv>(fFirewallEnv.get(), PathFromFile(directory), PathFromFile(work));
+            leveldb::Options options;
+            options.env = env.get();
+            leveldb::DB *ptr = nullptr;
+            if (auto st = leveldb::DB::Open(options, PathFromFile(directory) / "db", &ptr); st.ok()) {
+              db.reset(ptr);
+            }
+          }
         }
       }
-      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, db, this));
+      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, db, env, this));
     } else {
       fPool.reset(new JavaTexturePackThreadPool(directory, dim, this));
     }
