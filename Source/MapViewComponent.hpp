@@ -1351,7 +1351,7 @@ private:
     }
 
     fFileChooser.reset(new FileChooser(TRANS("Choose file name"), File(), "*.png", true));
-    fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode, [this](FileChooser const &chooser) {
+    fFileChooser->launchAsync(FileBrowserComponent::FileChooserFlags::saveMode | FileBrowserComponent::FileChooserFlags::warnAboutOverwriting, [this](FileChooser const &chooser) {
       File file = chooser.getResult();
       if (file == File()) {
         return;
