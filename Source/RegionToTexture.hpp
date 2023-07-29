@@ -127,7 +127,7 @@ public:
     return pixels.release();
   }
 
-  static juce::PixelARGB *LoadJava(mcfile::je::Region const &region, ThreadPoolJob *job, Dimension dim) {
+  static juce::PixelARGB *LoadJava(mcfile::je::Region const &region, Dimension dim, ThreadPoolJob &job) {
     using namespace juce;
     using namespace mcfile::blocks::minecraft;
 
@@ -179,10 +179,9 @@ public:
   }
 #endif
 
-    bool error = false;
     bool didset = false;
     bool completed = region.loadAllChunks(
-        error, [&pixelInfo, &biomes, minX, minZ, width, height, job, dim, &didset](mcfile::je::Chunk const &chunk) {
+        [&pixelInfo, &biomes, minX, minZ, width, height, &job, dim, &didset](mcfile::je::Chunk const &chunk) {
           int maxSectionY = -9999;
           for (int i = (int)chunk.fSections.size() - 1; i >= 0; i--) {
             if (chunk.fSections[i]) {
@@ -191,7 +190,7 @@ public:
             }
           }
           if (maxSectionY < -4) {
-            return !job->shouldExit();
+            return !job.shouldExit();
           }
           int const sZ = chunk.minBlockZ();
           int const eZ = chunk.maxBlockZ();
@@ -199,7 +198,7 @@ public:
           int const eX = chunk.maxBlockX();
           for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
-              if (job->shouldExit()) {
+              if (job.shouldExit()) {
                 return false;
               }
               Biome biome = ToBiome(chunk.biomeAt(x, z));
@@ -209,7 +208,7 @@ public:
           }
           for (int z = sZ; z <= eZ; z++) {
             for (int x = sX; x <= eX; x++) {
-              if (job->shouldExit()) {
+              if (job.shouldExit()) {
                 return false;
               }
               int const idx = (z - minZ) * width + (x - minX);
@@ -221,18 +220,18 @@ public:
               }
             }
           }
-          return !job->shouldExit();
+          return !job.shouldExit();
         },
-        true);
+        {.freadAtOnce = true});
 
-    if (error || !didset || !completed) {
+    if (!didset || !completed) {
       return nullptr;
     }
 
     return Pack(pixelInfo, biomes, width, height);
   }
 
-  static juce::PixelARGB *LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadPoolJob *job, Dimension dim);
+  static juce::PixelARGB *LoadBedrock(leveldb::DB &db, int rx, int rz, Dimension dim, ThreadPoolJob &job);
 
 private:
   static juce::PixelARGB PackPixelInfoToARGB(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {

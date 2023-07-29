@@ -153,7 +153,7 @@ std::map<Biome, Colour> const RegionToTexture::kFoliageToColor = {
     {Biome::Badlands, Colour(10387789)},
 };
 
-PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadPoolJob *job, Dimension dim) {
+PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, Dimension dim, ThreadPoolJob &job) {
   using namespace juce;
   using namespace std;
 
@@ -167,7 +167,7 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadP
 
   for (int cz = rz * 32; cz < rz * 32 + 32; cz++) {
     for (int cx = rx * 32; cx < rx * 32 + 32; cx++) {
-      if (job->shouldExit()) {
+      if (job.shouldExit()) {
         return nullptr;
       }
       auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), &db, mcfile::Endian::Little, {});
@@ -186,7 +186,7 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadP
             biomes[i] = biome;
           }
         }
-        if (job->shouldExit()) {
+        if (job.shouldExit()) {
           return nullptr;
         }
       }
@@ -194,7 +194,7 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, ThreadP
         for (int x = sX; x <= eX; x++) {
           int const idx = (z - z0) * width + (x - x0);
           assert(0 <= idx && idx < width * height);
-          if (job->shouldExit()) {
+          if (job.shouldExit()) {
             return nullptr;
           }
           auto info = PillarPixelInfo(dim, x, z, chunk->maxBlockY(), [&chunk](int x, int y, int z) -> mcfile::blocks::BlockId {

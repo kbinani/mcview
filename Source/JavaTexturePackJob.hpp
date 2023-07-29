@@ -39,7 +39,7 @@ public:
       if (!region) {
         return ThreadPoolJob::jobHasFinished;
       }
-      result->fPixels.reset(RegionToTexture::LoadJava(*region, this, fDimension));
+      result->fPixels.reset(RegionToTexture::LoadJava(*region, fDimension, *this));
       if (shouldExit()) {
         return ThreadPoolJob::jobHasFinished;
       }

@@ -30,7 +30,7 @@ public:
         }
       }
 
-      result->fPixels.reset(RegionToTexture::LoadBedrock(*fDb, fRegion.first, fRegion.second, this, fDimension));
+      result->fPixels.reset(RegionToTexture::LoadBedrock(*fDb, fRegion.first, fRegion.second, fDimension, *this));
       if (shouldExit()) {
         return ThreadPoolJob::jobHasFinished;
       }
