@@ -23,6 +23,10 @@ public:
   TexturePackJob(juce::String name, Region region, Delegate *delegate) : ThreadPoolJob(name), fRegion(region), fDelegate(delegate) {}
   ~TexturePackJob() override = default;
 
+  static juce::String CacheDirPrefix() {
+    return juce::String("v5.");
+  }
+
 protected:
   static bool LoadCache(std::unique_ptr<juce::PixelARGB[]> &pixels, std::optional<int64_t> timestamp, juce::File file) {
     juce::FileInputStream stream(file);
@@ -72,8 +76,8 @@ protected:
     }
     String hashSource = worldDirectory.getFullPathName();
     hashSource += "\n" + String(static_cast<int>(dim));
-    String hash = String("v5.") + String(hashSource.hashCode64());
-    File dir = cache.getChildFile(hash);
+    String dirname = CacheDirPrefix() + String(hashSource.hashCode64());
+    File dir = cache.getChildFile(dirname);
     if (!dir.exists()) {
       dir.createDirectory();
     }

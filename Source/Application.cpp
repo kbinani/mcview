@@ -66,6 +66,7 @@
 #include "ColorMat.hpp"
 #include "MainComponent.hpp"
 #include "MainWindow.hpp"
+#include "DirectoryCleanupThread.hpp"
 // clang-format on
 
 namespace mcview {
@@ -89,6 +90,8 @@ public:
   void initialise(juce::String const &) override {
     using namespace juce;
 
+    fCleanup.reset(new DirectoryCleanupThread);
+    fCleanup->startThread();
     LocalisedStrings::setCurrentMappings(LocalizationHelper::CurrentLocalisedStrings());
 
     fLookAndFeel.reset(new mcview::LookAndFeel());
@@ -98,6 +101,9 @@ public:
 
   void shutdown() override {
     mainWindow = nullptr;
+    if (fCleanup) {
+      fCleanup->stopThread(-1);
+    }
   }
 
   void systemRequestedQuit() override {
@@ -110,6 +116,7 @@ public:
 private:
   std::unique_ptr<MainWindow> mainWindow;
   std::unique_ptr<mcview::LookAndFeel> fLookAndFeel;
+  std::unique_ptr<DirectoryCleanupThread> fCleanup;
 };
 
 } // namespace mcview
