@@ -531,11 +531,13 @@ public:
 
     std::shared_ptr<leveldb::DB> db;
     std::shared_ptr<ProxyEnv> env;
+    std::optional<int64_t> lastPlayed;
     if (fPool) {
       fPool->abandon(0);
       if (auto pool = dynamic_cast<BedrockTexturePackThreadPool *>(fPool.get()); pool && pool->fWorldDirectory == directory && edition == Edition::Bedrock) {
         db = pool->fDb;
         env = pool->fEnv;
+        lastPlayed = pool->fLastPlayed;
       }
       fPoolTrashBin.push_back(std::move(fPool));
     }
@@ -543,19 +545,19 @@ public:
       if (!db || !env) {
         juce::String workDirName = juce::String("proxy-") + juce::Uuid().toDashedString();
         juce::File work = WorkingDirectory().getChildFile(workDirName);
-        if (work.deleteRecursively()) {
-          if (work.createDirectory()) {
-            env = std::make_shared<ProxyEnv>(fFirewallEnv.get(), PathFromFile(directory), PathFromFile(work));
-            leveldb::Options options;
-            options.env = env.get();
-            leveldb::DB *ptr = nullptr;
-            if (auto st = leveldb::DB::Open(options, PathFromFile(directory) / "db", &ptr); st.ok()) {
-              db.reset(ptr);
-            }
+        if (work.deleteRecursively() && work.createDirectory()) {
+          auto path = PathFromFile(directory);
+          env = std::make_shared<ProxyEnv>(fFirewallEnv.get(), path, PathFromFile(work));
+          leveldb::Options options;
+          options.env = env.get();
+          leveldb::DB *ptr = nullptr;
+          if (auto st = leveldb::DB::Open(options, path / "db", &ptr); st.ok()) {
+            db.reset(ptr);
           }
+          lastPlayed = ReadLastPlayedTimestamp(path / "level.dat");
         }
       }
-      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, db, env, this));
+      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, lastPlayed, db, env, this));
     } else {
       fPool.reset(new JavaTexturePackThreadPool(directory, dim, this));
     }
@@ -1070,6 +1072,33 @@ public:
   }
 
 private:
+  static std::optional<int64_t> ReadLastPlayedTimestamp(std::filesystem::path const &dat) {
+    auto fs = std::make_shared<mcfile::stream::FileInputStream>(dat);
+    if (!fs->valid()) {
+      return std::nullopt;
+    }
+    mcfile::stream::InputStreamReader reader(fs, mcfile::Endian::Little);
+    uint32_t version;
+    if (!reader.read(&version)) {
+      return std::nullopt;
+    }
+    uint32_t size;
+    if (!reader.read(&size)) {
+      return std::nullopt;
+    }
+    std::string buffer;
+    buffer.resize(size);
+    if (!fs->read(buffer.data(), buffer.size())) {
+      return std::nullopt;
+    }
+    fs.reset();
+    auto comp = mcfile::nbt::CompoundTag::Read(buffer, mcfile::Endian::Little);
+    if (!comp) {
+      return std::nullopt;
+    }
+    return comp->int64(u8"LastPlayed");
+  }
+
   void updateCaptureButtonStatus() {
     std::lock_guard<std::mutex> lock(fMut);
     unsafeUpdateCaptureButtonStatus();

@@ -6,6 +6,7 @@ class BedrockTexturePackThreadPool : public TexturePackThreadPool {
 public:
   BedrockTexturePackThreadPool(juce::File dir,
                                Dimension dim,
+                               std::optional<int64_t> lastPlayed,
                                std::shared_ptr<leveldb::DB> db,
                                std::shared_ptr<ProxyEnv> env,
                                Delegate *delegate)
@@ -13,7 +14,8 @@ public:
         fDb(db),
         fEnv(env),
         fWorldDirectory(dir),
-        fDimension(dim) {
+        fDimension(dim),
+        fLastPlayed(lastPlayed) {
   }
 
   ~BedrockTexturePackThreadPool() override {
@@ -25,7 +27,7 @@ public:
     if (!fDb || !fEnv) {
       return;
     }
-    addJob(new BedrockTexturePackJob(fDb.get(), fWorldDirectory, region, fDimension, useCache, this), true);
+    addJob(new BedrockTexturePackJob(fDb.get(), fWorldDirectory, region, fDimension, fLastPlayed, useCache, this), true);
   }
 
 public:
@@ -33,6 +35,7 @@ public:
   std::shared_ptr<ProxyEnv> fEnv;
   juce::File const fWorldDirectory;
   Dimension const fDimension;
+  std::optional<int64_t> const fLastPlayed;
 };
 
 } // namespace mcview
