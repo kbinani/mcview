@@ -225,38 +225,34 @@ public:
 
     LookAt const lookAt = fLookAt.load();
 
-    Point<float> const topLeft = getMapCoordinateFromView(Point<float>(0, 0), lookAt);
-    Point<float> const bottomRight = getMapCoordinateFromView(Point<float>(width, height), lookAt);
-    int const minRegionX = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
-    int const maxRegionX = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.x)) + 1;
-    int const minRegionZ = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.y)) - 1;
-    int const maxRegionZ = mcfile::Coordinate::RegionFromBlock((int)ceil(bottomRight.y)) + 1;
-    int const numRegionsOnDisplay = (maxRegionX - minRegionX + 1) * (maxRegionZ - minRegionZ + 1);
+    int minRx, minRz, maxRx, maxRz;
+    viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
+    int const numRegionsOnDisplay = (maxRx - minRx + 1) * (maxRz - minRz + 1);
 
     if (KeyPress::isKeyCurrentlyDown(KeyPress::F1Key)) {
       g.setColour(Colours::black);
       float const thickness = 1;
       // vertical lines
-      for (int x = minRegionX; x <= maxRegionX; x++) {
+      for (int x = minRx; x <= maxRx; x++) {
         int const bx = x * 512;
-        int const minBz = minRegionZ * 512;
-        int const maxBz = maxRegionZ * 512;
+        int const minBz = minRz * 512;
+        int const maxBz = maxRz * 512;
         Point<float> const top = getViewCoordinateFromMap(Point<float>(bx, minBz), lookAt);
         Point<float> const bottom = getViewCoordinateFromMap(Point<float>(bx, maxBz), lookAt);
         g.drawLine(top.x, top.y, bottom.x, bottom.y, thickness);
       }
-      for (int z = minRegionZ; z <= maxRegionZ; z++) {
+      for (int z = minRz; z <= maxRz; z++) {
         int const bz = z * 512;
-        int const minBx = minRegionX * 512;
-        int const maxBx = maxRegionX * 512;
+        int const minBx = minRx * 512;
+        int const maxBx = maxRx * 512;
         Point<float> const left = getViewCoordinateFromMap(Point<float>(minBx, bz), lookAt);
         Point<float> const right = getViewCoordinateFromMap(Point<float>(maxBx, bz), lookAt);
         g.drawLine(left.x, left.y, right.x, right.y, thickness);
       }
       if (numRegionsOnDisplay < 64) {
         g.setFont(20);
-        for (int x = minRegionX; x <= maxRegionX; x++) {
-          for (int z = minRegionZ; z <= maxRegionZ; z++) {
+        for (int x = minRx; x <= maxRx; x++) {
+          for (int z = minRz; z <= maxRz; z++) {
             Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
             Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
             g.drawFittedText(String::formatted("r.%d.%d.mca", x, z),
@@ -571,6 +567,7 @@ public:
     garbageTextures->swap(fTextures);
 
     LookAt const lookAt = fLookAt.load();
+    juce::Point<int> size = fSize.load();
 
     fLoadingRegions.clear();
     fWorldDirectory = directory;
@@ -591,7 +588,7 @@ public:
         nextLookAt.fX = 0;
         nextLookAt.fZ = 0;
         int minRx, minRz, maxRx, maxRz;
-        viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
+        viewportRegions(nextLookAt, size.x, size.y, &minRx, &minRz, &maxRx, &maxRz);
         VisibleRegions vr;
 
         std::vector<Region> regions;
@@ -642,7 +639,7 @@ public:
       nextLookAt.fX = 0;
       nextLookAt.fZ = 0;
       int minRx, minRz, maxRx, maxRz;
-      viewportRegions(nextLookAt, &minRx, &minRz, &maxRx, &maxRz);
+      viewportRegions(nextLookAt, size.x, size.y, &minRx, &minRz, &maxRx, &maxRz);
 
       File dir = DimensionDirectory(fWorldDirectory, fDimension);
       std::vector<std::pair<Region, File>> files;
@@ -783,7 +780,14 @@ public:
 
     fGLShader->use();
 
+    int minRx, minRz, maxRx, maxRz;
+    viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
+
     for (auto &it : fTextures) {
+      auto [rx, rz] = it.first;
+      if (rx < minRx || maxRx < rx || rz < minRz || maxRz < rz) {
+        continue;
+      }
       auto &cache = it.second;
       if (!cache->fTexture) {
         continue;
@@ -977,7 +981,7 @@ public:
     }
 
     if (!capturing && !fClosing.get()) {
-      unsafeInstantiateTextures(lookAt);
+      unsafeInstantiateTextures();
     }
   }
 
@@ -1108,9 +1112,8 @@ private:
     if (fCapturingToImage.get()) {
       return false;
     }
-    auto lookAt = clampedLookAt();
     int minRx, minRz, maxRx, maxRz;
-    viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
+    viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
     int count = 0;
     for (int rz = minRz; rz <= maxRz; rz++) {
       for (int rx = minRx; rx <= maxRx; rx++) {
@@ -1390,9 +1393,8 @@ private:
         return;
       }
 
-      LookAt lookAt = clampedLookAt();
       int minX, maxX, minZ, maxZ;
-      viewportRegions(lookAt, &minX, &minZ, &maxX, &maxZ);
+      viewportRegions(&minX, &minZ, &maxX, &maxZ);
 
       fSavePngWindow.reset(new SavePNGProgressWindow(this, fGLContext, file, minX, minZ, maxX, maxZ));
       fSavePngWindow->launchThread();
@@ -1466,8 +1468,14 @@ private:
     }
   }
 
-  void viewportRegions(LookAt lookAt, int *minRx, int *minRz, int *maxRx, int *maxRz) {
+  void viewportRegions(int *minRx, int *minRz, int *maxRx, int *maxRz) {
+    auto lookAt = fLookAt.load();
     auto size = fSize.load();
+    viewportRegions(lookAt, size.x, size.y, minRx, minRz, maxRx, maxRz);
+  }
+
+  void viewportRegions(LookAt lookAt, int width, int height, int *minRx, int *minRz, int *maxRx, int *maxRz) {
+    juce::Point<int> size(width, height);
     auto topLeft = GetMapCoordinateFromView(juce::Point<float>(0, 0), size, lookAt);
     auto rightBottom = GetMapCoordinateFromView(juce::Point<float>(size.x, size.y), size, lookAt);
     *minRx = mcfile::Coordinate::RegionFromBlock((int)floor(topLeft.x)) - 1;
@@ -1476,8 +1484,9 @@ private:
     *maxRz = mcfile::Coordinate::RegionFromBlock((int)ceil(rightBottom.y)) + 2;
   }
 
-  void unsafeInstantiateTextures(LookAt lookAt) {
+  void unsafeInstantiateTextures() {
     fTextureTrashBin.clear();
+    LookAt lookAt = fLookAt.load();
 
     bool loadingFinished = false;
     bool needsUpdatingCaptureButton = false;
@@ -1486,7 +1495,7 @@ private:
     std::vector<std::shared_ptr<TexturePackJob::Result>> remove;
     std::vector<std::pair<std::shared_ptr<TexturePackJob::Result>, float>> distances;
     int minRx, minRz, maxRx, maxRz;
-    viewportRegions(lookAt, &minRx, &minRz, &maxRx, &maxRz);
+    viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
 
     worldDirectory = fWorldDirectory;
     dimension = fDimension;
