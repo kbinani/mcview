@@ -31,6 +31,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "${mcview_macos_deployment_target}")
   set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${mcview_apple_development_team_id}")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+  add_compile_options(-Wno-shorten-64-to-32)
 endif()
 
 CPMAddPackage(
