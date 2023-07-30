@@ -5,7 +5,7 @@ namespace mcview {
 class RegionTextureCache {
 public:
   RegionTextureCache(juce::File worldDirectory, Dimension dim, Region region)
-      : fWorldDirectory(worldDirectory), fDimension(dim), fRegion(region) {
+      : fWorldDirectory(worldDirectory), fDimension(dim), fRegion(region), fSuccessful(true) {
   }
 
   void load(juce::PixelARGB *pixels) {
@@ -22,6 +22,7 @@ public:
   Region const fRegion;
   std::unique_ptr<juce::OpenGLTexture> fTexture;
   juce::Time fLoadTime;
+  bool fSuccessful;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RegionTextureCache);
 };

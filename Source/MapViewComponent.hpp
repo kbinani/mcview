@@ -1445,16 +1445,28 @@ private:
     }
 
     VisibleRegions visibleRegions = fVisibleRegions.load();
+    int minRx, minRz, maxRx, maxRz;
+    viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
 
     for (File const &f : files) {
       auto r = mcfile::je::Region::MakeRegion(PathFromFile(f));
+      if (!r) {
+        continue;
+      }
       auto region = MakeRegion(r->fX, r->fZ);
-      fPool->addTexturePackJob(region, useCache);
-      fLoadingRegions.insert(region);
-      visibleRegions.add(r->fX, r->fZ);
       if (auto found = fTextures.find(region); found == fTextures.end()) {
         fTextures[region] = std::make_unique<RegionTextureCache>(fWorldDirectory, fDimension, region);
       }
+      visibleRegions.add(r->fX, r->fZ);
+
+      if (r->fX < minRx || maxRx < r->fX || r->fZ < minRz || maxRz < r->fZ) {
+        continue;
+      }
+      if (fLoadingRegions.count(region) > 0) {
+        continue;
+      }
+      fPool->addTexturePackJob(region, useCache);
+      fLoadingRegions.insert(region);
     }
 
     fVisibleRegions = visibleRegions;
@@ -1486,6 +1498,7 @@ private:
 
   void unsafeInstantiateTextures() {
     fTextureTrashBin.clear();
+
     LookAt lookAt = fLookAt.load();
 
     bool loadingFinished = false;
@@ -1536,10 +1549,13 @@ private:
         if (before != fTextures.end()) {
           cache->fLoadTime = before->second->fLoadTime;
         }
+        cache->fSuccessful = true;
         fTextures[j->fRegion] = std::move(cache);
       } else {
+        assert(before != fTextures.end());
         if (before != fTextures.end()) {
           before->second->fTexture.reset();
+          before->second->fSuccessful = false;
         }
       }
 
@@ -1585,7 +1601,7 @@ private:
       for (int rx = minRx; rx <= maxRx; rx++) {
         for (int rz = minRz; rz <= maxRz; rz++) {
           auto region = MakeRegion(rx, rz);
-          if (auto found = fTextures.find(region); found != fTextures.end() && !found->second->fTexture) {
+          if (auto found = fTextures.find(region); found != fTextures.end() && !found->second->fTexture && found->second->fSuccessful) {
             if (fLoadingRegions.count(region) > 0) {
               continue;
             }
