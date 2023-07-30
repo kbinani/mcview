@@ -12,7 +12,6 @@ public:
 private:
   juce::OutputStream &fStream;
   int fWidth;
-  int fHeight;
   void *fWriteStruct;
   void *fInfoStruct;
   juce::HeapBlock<juce::uint8> fRowData;

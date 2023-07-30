@@ -12,8 +12,8 @@ public:
 
   DirectoryBrowserModel(Delegate *delegate, juce::File directory, juce::LookAndFeel const &laf)
       : fDirectory(directory), fDelegate(delegate) {
-    juce::DirectoryIterator it(fDirectory, false, "*", juce::File::findDirectories);
-    while (it.next()) {
+
+    for (auto const &it : juce::RangedDirectoryIterator(fDirectory, false, "*", juce::File::findDirectories)) {
       juce::File file = it.getFile();
       if (!file.isDirectory()) {
         continue;

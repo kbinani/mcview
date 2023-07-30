@@ -1,6 +1,13 @@
 #import <Foundation/Foundation.h>
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <nlohmann/json.hpp>
+
+#include "Edition.hpp"
+
+#include "Directory.hpp"
+#include "LightingType.hpp"
+#include "PaletteType.hpp"
 
 #include "Settings.hpp"
 

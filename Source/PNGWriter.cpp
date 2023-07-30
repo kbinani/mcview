@@ -636,7 +636,7 @@ using namespace juce;
 namespace mcview {
 
 PNGWriter::PNGWriter(int width, int height, OutputStream &stream)
-    : fStream(stream), fWidth(width), fHeight(height), fWriteStruct(nullptr), fInfoStruct(nullptr), fRowData(width * 4) {
+    : fStream(stream), fWidth(width), fWriteStruct(nullptr), fInfoStruct(nullptr), fRowData(width * 4) {
   using namespace pnglibNamespace;
 
   auto pngWriteStruct = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);

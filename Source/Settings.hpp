@@ -163,7 +163,7 @@ public:
       json item;
       Directory dir = fDirectories[i];
 #if JUCE_MAC
-      juce::String b = Bookmark(f);
+      juce::String b = Bookmark(dir.fDirectory);
       if (b.isEmpty()) {
         continue;
       }

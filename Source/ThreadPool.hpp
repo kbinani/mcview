@@ -2,6 +2,8 @@
 
 namespace mcview {
 
+class ThreadPool;
+
 class ThreadPoolJob {
 public:
   //==============================================================================
@@ -437,7 +439,6 @@ private:
   //==============================================================================
   juce::Array<ThreadPoolJob *> jobs;
 
-  struct ThreadPoolThread;
   friend class ThreadPoolJob;
   juce::OwnedArray<ThreadPoolThread> threads;
 
