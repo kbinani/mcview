@@ -37,6 +37,9 @@ public:
     virtual void mainViewComponentClosed() = 0;
   };
 
+  static int constexpr kMinimumWidth = 250;
+  static int constexpr kMinimumHeight = 250;
+
   explicit MapViewComponent(Delegate *delegate)
       : fLookAt({0, 0, 5}),
         fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
@@ -742,7 +745,9 @@ public:
     } else {
       OpenGLHelpers::clear(Colours::white);
     }
-
+    if (width <= 0 || height <= 0) {
+      return;
+    }
     glViewport(0, 0, width, height);
 
     if (!capturing) {

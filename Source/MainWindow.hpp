@@ -17,6 +17,10 @@ public:
     setResizable(true, true);
     centreWithSize(getWidth(), getHeight());
 #endif
+    setResizeLimits(BrowserComponent::kDefaultWidth + MapViewComponent::kMinimumWidth + SettingsComponent::kDefaultWidth,
+                    MapViewComponent::kMinimumHeight,
+                    std::numeric_limits<int>::max(),
+                    std::numeric_limits<int>::max());
 
     setVisible(true);
   }

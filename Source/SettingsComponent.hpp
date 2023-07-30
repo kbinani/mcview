@@ -232,6 +232,8 @@ public:
   std::function<void(PaletteType)> onPaletteChanged;
   std::function<void(LightingType type)> onLightingChanged;
 
+  static constexpr int kDefaultWidth = 250;
+
 public:
   explicit SettingsComponent(Settings const &settings) {
     using namespace juce;
@@ -293,7 +295,7 @@ public:
       DialogWindow *dialog = options.launchAsync();
     };
 
-    setSize(250, 600);
+    setSize(kDefaultWidth, 600);
   }
 
   void paint(juce::Graphics &g) override {
