@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(BUILD_SHARED_LIBS OFF)
 
-set(mcview_macos_deployment_target "10.15")
+set(mcview_macos_deployment_target "11.0")
 set(mcview_apple_development_team_id "XM695N4A7T")
 
 include(cmake/CPM.cmake)
