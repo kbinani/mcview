@@ -14,10 +14,24 @@ class BrowserComponent : public juce::Component, private juce::Timer {
         fButton.reset(new juce::DrawableButton("", juce::DrawableButton::ButtonStyle::ImageOnButtonBackground));
         fButton->setImages(fButtonIcon.get());
         fButton->onClick = [this]() {
-          onRemoveButtonClicked(fFile);
+          onClickRemoveButton();
         };
         addAndMakeVisible(*fButton);
       }
+    }
+
+    void onClickRemoveButton() {
+      auto options = juce::MessageBoxOptions()
+                         .withButton(TRANS("Delete"))
+                         .withButton(TRANS("Cancel"))
+                         .withIconType(juce::MessageBoxIconType::QuestionIcon)
+                         .withMessage(TRANS("Do you really want to delete?"))
+                         .withTitle(TRANS("Confirm"));
+      juce::NativeMessageBox::showAsync(options, [this](int buttonIndex) {
+        if (buttonIndex == 0) {
+          onRemoveButtonClicked(fFile);
+        }
+      });
     }
 
     void mouseDown(juce::MouseEvent const &e) override {

@@ -30,3 +30,5 @@ language: Japanese
 "Cancel" = "キャンセル"
 "Add Bedrock edition save directory" = "統合版のディレクトリを追加"
 "Add Java edition save directory" = "Java 版のディレクトリを追加"
+"Confirm" = "確認"
+"Do you really want to delete?" = "本当に削除しますか"
