@@ -44,8 +44,10 @@ protected:
       if (ungzip.read(pixels.get(), expectedBytes) != expectedBytes) {
         return false;
       }
+      return true;
+    } else {
+      return false;
     }
-    return true;
   }
 
   static void StoreCache(juce::PixelARGB const *pixels, int64_t timestamp, juce::File file) {
