@@ -1530,7 +1530,7 @@ private:
         fTextures[j->fRegion] = std::move(cache);
       } else {
         if (before != fTextures.end()) {
-          fTextures.erase(before);
+          before->second->fTexture.reset();
         }
       }
 
@@ -1582,7 +1582,7 @@ private:
             }
             fLoadingRegions.insert(region);
             needsUpdatingCaptureButton = true;
-            fPool->addTexturePackJob(MakeRegion(rx, rz), true);
+            fPool->addTexturePackJob(region, true);
             queued++;
           }
         }
