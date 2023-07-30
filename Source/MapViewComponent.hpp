@@ -106,6 +106,7 @@ public:
     fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fCaptureButton->setImages(fCaptureButtonImage.get());
     fCaptureButton->setEnabled(false);
+    fCaptureButton->setTooltip(TRANS("Capture"));
     fCaptureButton->onClick = [this]() {
       captureToImage();
     };
@@ -115,6 +116,7 @@ public:
                                                          BinaryData::baseline_settings_white_18dp_pngSize);
     fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fSettingsButton->setImages(fSettingsButtonImage.get());
+    fSettingsButton->setTooltip(TRANS("Settings"));
     fSettingsButton->onClick = [this]() {
       fDelegate->mainViewComponentSettingsButtonClicked();
     };
