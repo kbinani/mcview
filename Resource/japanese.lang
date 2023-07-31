@@ -32,3 +32,6 @@ language: Japanese
 "Add Java edition save directory" = "Java 版のディレクトリを追加"
 "Confirm" = "確認"
 "Do you really want to delete?" = "本当に削除しますか"
+"Error" = "エラー"
+"Failed compiling shader" = "シェーダーのコンパイルに失敗しました"
+"The selected world could not be opened" = "ワールドを読み込めませんでした"

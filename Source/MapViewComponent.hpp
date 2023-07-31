@@ -655,7 +655,12 @@ public:
         th->startThread();
         fWorldScanThread.reset(th);
       } else {
-        // TODO: error dialog
+        auto opt = juce::MessageBoxOptions()
+                       .withTitle(TRANS("Error"))
+                       .withMessage(TRANS("The selected world could not be opened"))
+                       .withIconType(juce::MessageBoxIconType::WarningIcon)
+                       .withButton("OK");
+        juce::NativeMessageBox::showAsync(opt, nullptr);
       }
     } else {
       LookAt nextLookAt = lookAt;
