@@ -14,11 +14,29 @@ class MapViewComponent
       public TextInputDialog<PinEdit>::Delegate,
       public JavaWorldScanThread::Delegate,
       public BedrockWorldScanThread ::Delegate {
-  struct AsyncUpdateQueueReleaseGarbageThreadPool {};
-  struct AsyncUpdateQueueTriggerRepaint {};
-  struct AsyncUpdateQueueUpdateCaptureButtonStatus {};
+  struct AsyncUpdateQueueReleaseGarbageThreadPool {
+    bool operator==(AsyncUpdateQueueReleaseGarbageThreadPool const &) const {
+      return true;
+    }
+  };
+  struct AsyncUpdateQueueTriggerRepaint {
+    bool operator==(AsyncUpdateQueueTriggerRepaint const &) const {
+      return true;
+    }
+  };
+  struct AsyncUpdateQueueUpdateCaptureButtonStatus {
+    bool operator==(AsyncUpdateQueueUpdateCaptureButtonStatus const &) const {
+      return true;
+    }
+  };
+  struct AsyncUpdateQueueShowShaderCompileErrorMessage {
+    juce::String fMessage;
+    bool operator==(AsyncUpdateQueueShowShaderCompileErrorMessage const &other) const {
+      return fMessage == other.fMessage;
+    }
+  };
 
-  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint, AsyncUpdateQueueUpdateCaptureButtonStatus>;
+  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint, AsyncUpdateQueueUpdateCaptureButtonStatus, AsyncUpdateQueueShowShaderCompileErrorMessage>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -758,8 +776,15 @@ public:
     PaletteType palette = fPaletteType.get();
     LightingType lighting = fLightingType.get();
 
+    if (fGLShaderCompileAlreadyFailed) {
+      return;
+    }
     if (!fGLShader) {
       updateShader();
+      if (!fGLShader) {
+        fGLShaderCompileAlreadyFailed = true;
+        return;
+      }
     }
     OpenGLTexture *paletteTexture = nullptr;
     if (palette == PaletteType::java) {
@@ -998,14 +1023,21 @@ public:
       std::lock_guard<std::mutex> lock(fMut);
       copy.swap(fAsyncUpdateQueue);
     }
-    std::set<size_t> indices;
     std::deque<AsyncUpdateQueue> queue;
     for (auto const &q : copy) {
-      if (indices.count(q.index()) == 0) {
-        queue.push_back(q);
-        indices.insert(q.index());
+      bool found = false;
+      for (auto const &o : queue) {
+        if (o == q) {
+          found = true;
+          break;
+        }
       }
+      if (found) {
+        continue;
+      }
+      queue.push_back(q);
     }
+    juce::StringArray shaderCompileErrorMessages;
     for (auto const &q : queue) {
       if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
         for (int i = (int)fPoolTrashBin.size() - 1; i >= 0; i--) {
@@ -1017,7 +1049,18 @@ public:
         triggerRepaint();
       } else if (std::holds_alternative<AsyncUpdateQueueUpdateCaptureButtonStatus>(q)) {
         updateCaptureButtonStatus();
+      } else if (std::holds_alternative<AsyncUpdateQueueShowShaderCompileErrorMessage>(q)) {
+        auto p = std::get<AsyncUpdateQueueShowShaderCompileErrorMessage>(q);
+        shaderCompileErrorMessages.add(p.fMessage);
       }
+    }
+    if (!shaderCompileErrorMessages.isEmpty()) {
+      auto opt = juce::MessageBoxOptions()
+                     .withButton("OK")
+                     .withIconType(juce::MessageBoxIconType::WarningIcon)
+                     .withTitle(TRANS("Error"))
+                     .withMessage(TRANS("Failed compiling shader") + ": \n" + shaderCompileErrorMessages.joinIntoString("\n"));
+      juce::NativeMessageBox::showAsync(opt, nullptr);
     }
   }
 
@@ -1119,6 +1162,9 @@ private:
     if (fCapturingToImage.get()) {
       return false;
     }
+    if (fGLShaderCompileAlreadyFailed) {
+      return false;
+    }
     int minRx, minRz, maxRx, maxRz;
     viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
     int count = 0;
@@ -1196,8 +1242,10 @@ private:
     std::unique_ptr<juce::OpenGLShaderProgram> newShader(new juce::OpenGLShaderProgram(fGLContext));
 
     if (!newShader->addVertexShader(String::fromUTF8(BinaryData::tile_vert, BinaryData::tile_vertSize))) {
-      juce::Logger::outputDebugString("addVertexShader failed");
-      juce::Logger::outputDebugString(newShader->getLastError());
+      AsyncUpdateQueueShowShaderCompileErrorMessage m;
+      m.fMessage = "addVertexShader failed: " + newShader->getLastError();
+      unsafeEnqueueAsyncUpdate(m);
+      return;
     }
 
     colormap::kbinani::Altitude altitude;
@@ -1252,13 +1300,17 @@ private:
     }
 #endif
     if (!newShader->addFragmentShader(fragmentShader)) {
-      juce::Logger::outputDebugString("addFragmentShader failed");
-      juce::Logger::outputDebugString(newShader->getLastError());
+      AsyncUpdateQueueShowShaderCompileErrorMessage q;
+      q.fMessage = "addFragmentShader failed: " + newShader->getLastError();
+      unsafeEnqueueAsyncUpdate(q);
+      return;
     }
 
     if (!newShader->link()) {
-      juce::Logger::outputDebugString("link failed");
-      juce::Logger::outputDebugString(newShader->getLastError());
+      AsyncUpdateQueueShowShaderCompileErrorMessage q;
+      q.fMessage = "link failed: " + newShader->getLastError();
+      unsafeEnqueueAsyncUpdate(q);
+      return;
     }
     newShader->use();
 
@@ -1864,6 +1916,7 @@ private:
   std::unique_ptr<juce::OpenGLTexture> fGLPalette;
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteJava;
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteBedrock;
+  bool fGLShaderCompileAlreadyFailed = false;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<VisibleRegions> fVisibleRegions;
