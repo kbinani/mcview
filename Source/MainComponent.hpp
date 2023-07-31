@@ -2,7 +2,7 @@
 
 namespace mcview {
 
-class MainComponent : public juce::Component, private juce::AsyncUpdater, public MapViewComponent::Delegate {
+class MainComponent : public juce::Component, private juce::AsyncUpdater, public MapViewComponent::Delegate, public juce::Timer {
 public:
   struct Delegate {
     virtual ~Delegate() = default;
@@ -121,18 +121,19 @@ public:
     }
     int const width = getWidth();
     int const height = getHeight();
-    int const browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;
-    int const settingsWidth = fSettingsOpened ? fSettingsComponent->getWidth() : 0;
+    int browserWidth, mapWidth, settingsWidth;
+    int actualBrowserWidth, actualSettingsWidth;
+    decideWidths(browserWidth, mapWidth, settingsWidth, actualBrowserWidth, actualSettingsWidth);
 
     auto &animator = Desktop::getInstance().getAnimator();
     if (!animator.isAnimating(fBrowser.get())) {
-      fBrowser->setBounds(fBrowserOpened ? 0 : -fBrowser->getWidth(), 0, fBrowser->getWidth(), height);
+      fBrowser->setBounds(browserWidth - actualBrowserWidth, 0, actualBrowserWidth, height);
     }
     if (!animator.isAnimating(fMapViewComponent.get())) {
-      fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
+      fMapViewComponent->setBounds(browserWidth, 0, mapWidth, height);
     }
     if (!animator.isAnimating(fSettingsComponent.get())) {
-      fSettingsComponent->setBounds(width - settingsWidth, 0, fSettingsComponent->getWidth(), height);
+      fSettingsComponent->setBounds(browserWidth + mapWidth, 0, actualSettingsWidth, height);
     }
     fConcealer->setBounds(0, 0, width, height);
   }
@@ -153,32 +154,22 @@ public:
     resized();
   }
 
+  void timerCallback() override {
+    stopTimer();
+    auto &animator = juce::Desktop::getInstance().getAnimator();
+    animator.cancelAllAnimations(true);
+    resized();
+  }
+
   void setBrowserOpened(bool opened) {
     if (fBrowserOpened == opened) {
       return;
     }
     fBrowserOpened = opened;
-
-    int const width = getWidth();
-    int const height = getHeight();
-
     fBrowser->setVisible(opened);
-    int const settingsWidth = fSettingsOpened ? fSettingsComponent->getWidth() : 0;
-
-    if (opened) {
-      int const w = fBrowser->getWidth();
-      fBrowser->setBounds(-w, 0, w, height);
-      Animate(fBrowser.get(), 0, 0, w, height);
-      fMapViewComponent->setBounds(0, 0, width - settingsWidth, height);
-      Animate(fMapViewComponent.get(), w, 0, width - w - settingsWidth, height);
-    } else {
-      int const w = fBrowser->getWidth();
-      fBrowser->setBounds(0, 0, w, height);
-      Animate(fBrowser.get(), -w, 0, w, height);
-      fMapViewComponent->setBounds(w, 0, width - w - settingsWidth, height);
-      Animate(fMapViewComponent.get(), 0, 0, width - settingsWidth, height);
-    }
     fMapViewComponent->setBrowserOpened(opened);
+
+    startAnimations();
   }
 
   void setSettingsOpened(bool opened) {
@@ -186,26 +177,9 @@ public:
       return;
     }
     fSettingsOpened = opened;
-
-    int const width = getWidth();
-    int const height = getHeight();
-
-    int const browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;
-    int const settingsWidth = fSettingsComponent->getWidth();
-
     fSettingsComponent->setVisible(fSettingsOpened);
 
-    if (fSettingsOpened) {
-      fSettingsComponent->setBounds(width, 0, settingsWidth, height);
-      Animate(fSettingsComponent.get(), width - settingsWidth, 0, settingsWidth, height);
-      fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth, height);
-      Animate(fMapViewComponent.get(), browserWidth, 0, width - browserWidth - settingsWidth, height);
-    } else {
-      fSettingsComponent->setBounds(width - settingsWidth, 0, settingsWidth, height);
-      Animate(fSettingsComponent.get(), width, 0, settingsWidth, height);
-      fMapViewComponent->setBounds(browserWidth, 0, width - browserWidth - settingsWidth, height);
-      Animate(fMapViewComponent.get(), browserWidth, 0, width - browserWidth, height);
-    }
+    startAnimations();
   }
 
   void mainViewComponentOpenButtonClicked() override {
@@ -221,9 +195,39 @@ public:
   }
 
 private:
+  void decideWidths(int &browserWidth, int &mapWidth, int &settingsWidth, int &actualBrowserWidth, int &actualSettingsWidth) {
+    int const width = getWidth();
+    browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;
+    settingsWidth = fSettingsOpened ? fSettingsComponent->getWidth() : 0;
+    mapWidth = std::max(MapViewComponent::kMinimumWidth, width - browserWidth - settingsWidth);
+    int widthOverflow = mapWidth + browserWidth + settingsWidth - width;
+    if (widthOverflow > 0) {
+      browserWidth = std::max(BrowserComponent::kMinimumWidth, browserWidth - widthOverflow / 2);
+      settingsWidth = std::max(0, width - mapWidth - browserWidth);
+    }
+    if (fBrowserOpened) {
+      actualBrowserWidth = browserWidth;
+    } else {
+      actualBrowserWidth = fBrowser->getWidth();
+    }
+    actualSettingsWidth = SettingsComponent::kDefaultWidth;
+  }
+
+  void startAnimations() {
+    int const width = getWidth();
+    int const height = getHeight();
+    int browserWidth, mapWidth, settingsWidth;
+    int actualBrowserWidth, actualSettingsWidth;
+    decideWidths(browserWidth, mapWidth, settingsWidth, actualBrowserWidth, actualSettingsWidth);
+
+    Animate(fBrowser.get(), browserWidth - actualBrowserWidth, 0, actualBrowserWidth, height);
+    Animate(fMapViewComponent.get(), browserWidth, 0, mapWidth, height);
+    Animate(fSettingsComponent.get(), width - settingsWidth, 0, actualSettingsWidth, height);
+    startTimer(kAnimationDuration);
+  }
+
   static void Animate(juce::Component *comp, int x, int y, int width, int height) {
-    using namespace juce;
-    auto &animator = Desktop::getInstance().getAnimator();
+    auto &animator = juce::Desktop::getInstance().getAnimator();
     animator.animateComponent(comp, {x, y, width, height}, 1.0f, kAnimationDuration, false, 0.0, 0.0);
   }
 

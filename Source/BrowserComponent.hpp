@@ -101,7 +101,7 @@ class BrowserComponent : public juce::Component, private juce::Timer {
 public:
   BrowserComponent() {
     fConstrainer.reset(new juce::ComponentBoundsConstrainer());
-    fConstrainer->setMinimumWidth(100);
+    fConstrainer->setMinimumWidth(kMinimumWidth);
     fResizer.reset(new juce::ResizableEdgeComponent(this, fConstrainer.get(), juce::ResizableEdgeComponent::Edge::rightEdge));
     addAndMakeVisible(*fResizer);
 
@@ -199,6 +199,7 @@ public:
   std::function<void(juce::File)> onRemove;
 
   static int constexpr kDefaultWidth = 214;
+  static int constexpr kMinimumWidth = 100;
 
 private:
   void browseJava() {
