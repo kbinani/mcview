@@ -5,8 +5,8 @@ namespace mcview {
 class BrowserComponent : public juce::Component, private juce::Timer {
   class Header : public juce::Component {
   public:
-    Header(juce::ConcertinaPanel *parent, juce::File file, juce::String const &title, bool removable)
-        : fMouseDown(false), fMouseOver(false), fParent(parent), fTitle(title), fFile(file) {
+    Header(juce::ConcertinaPanel *parent, Directory directory, juce::String const &title, bool removable)
+        : fMouseDown(false), fMouseOver(false), fParent(parent), fTitle(title), fDirectory(directory) {
       if (removable) {
         fButtonIcon.reset(juce::Drawable::createFromImageData(BinaryData::baseline_remove_white_18dp_png,
                                                               BinaryData::baseline_remove_white_18dp_pngSize)
@@ -22,14 +22,14 @@ class BrowserComponent : public juce::Component, private juce::Timer {
 
     void onClickRemoveButton() {
       auto options = juce::MessageBoxOptions()
-                         .withButton(TRANS("Delete"))
+                         .withButton(TRANS("Unregister"))
                          .withButton(TRANS("Cancel"))
                          .withIconType(juce::MessageBoxIconType::QuestionIcon)
-                         .withMessage(TRANS("Do you really want to delete?"))
+                         .withMessage(TRANS("Do you really want to unregister?"))
                          .withTitle(TRANS("Confirm"));
       juce::NativeMessageBox::showAsync(options, [this](int buttonIndex) {
         if (buttonIndex == 0) {
-          onRemoveButtonClicked(fFile);
+          onRemoveButtonClicked(fDirectory);
         }
       });
     }
@@ -79,7 +79,7 @@ class BrowserComponent : public juce::Component, private juce::Timer {
     }
 
   public:
-    std::function<void(juce::File)> onRemoveButtonClicked;
+    std::function<void(Directory d)> onRemoveButtonClicked;
 
   private:
     static int constexpr kButtonSize = 20;
@@ -90,7 +90,7 @@ class BrowserComponent : public juce::Component, private juce::Timer {
     juce::String fTitle;
     std::unique_ptr<juce::DrawableButton> fButton;
     std::unique_ptr<juce::Drawable> fButtonIcon;
-    juce::File fFile;
+    Directory fDirectory;
   };
 
   enum {
@@ -155,16 +155,25 @@ public:
     } else if (bedrock) {
       title = "Default Bedrock";
     } else {
-      title = directory.fDirectory.getFileName();
+      title = directory.fDirectory.getFileName() + " (";
+      switch (directory.fEdition) {
+      case Edition::Bedrock:
+        title += "Bedrock";
+        break;
+      case Edition::Java:
+        title += "Java";
+        break;
+      }
+      title += ")";
       removable = true;
     }
-    Header *header = new Header(fPanel.get(), directory.fDirectory, title, removable);
+    Header *header = new Header(fPanel.get(), directory, title, removable);
     DirectoryBrowserComponent *browser = new DirectoryBrowserComponent(directory.fDirectory, directory.fEdition);
     browser->onSelect = [this](Directory d) {
       onSelect(d);
     };
-    header->onRemoveButtonClicked = [this](juce::File f) {
-      removeDirectory(f);
+    header->onRemoveButtonClicked = [this](Directory d) {
+      removeDirectory(d);
     };
     fPanel->addPanel(fPanel->getNumPanels(), browser, true);
     fPanel->setCustomPanelHeader(browser, header, true);
@@ -196,7 +205,7 @@ public:
 
   std::function<void(Directory)> onSelect;
   std::function<void(Directory)> onAdd;
-  std::function<void(juce::File)> onRemove;
+  std::function<void(Directory)> onRemove;
 
   static int constexpr kDefaultWidth = 214;
   static int constexpr kMinimumWidth = 100;
@@ -217,7 +226,7 @@ private:
       }
       for (int i = 0; i < fBrowsers.size(); i++) {
         auto b = fBrowsers[i];
-        if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+        if (b->fDirectory.getFullPathName() == directory.getFullPathName() && b->fEdition == Edition::Java) {
           return;
         }
       }
@@ -239,7 +248,7 @@ private:
       }
       for (int i = 0; i < fBrowsers.size(); i++) {
         auto b = fBrowsers[i];
-        if (b->fDirectory.getFullPathName() == directory.getFullPathName()) {
+        if (b->fDirectory.getFullPathName() == directory.getFullPathName() && b->fEdition == Edition::Bedrock) {
           return;
         }
       }
@@ -250,21 +259,21 @@ private:
     });
   }
 
-  void removeDirectory(juce::File dir) {
+  void removeDirectory(Directory d) {
     for (int i = 1; i < fPanel->getNumPanels(); i++) {
       Component *comp = fPanel->getPanel(i);
       DirectoryBrowserComponent *browser = dynamic_cast<DirectoryBrowserComponent *>(comp);
       if (!browser) {
         continue;
       }
-      if (dir.getFullPathName() != browser->fDirectory.getFullPathName()) {
+      if (d.fDirectory.getFullPathName() != browser->fDirectory.getFullPathName() || d.fEdition != browser->fEdition) {
         continue;
       }
       fPanel->removePanel(comp);
       fBrowsers.remove(i);
     }
     if (onRemove) {
-      onRemove(dir);
+      onRemove(d);
     }
     fTimerStarted = juce::Time::getCurrentTime();
     startTimerHz(50);

@@ -58,8 +58,8 @@ public:
       fSettings->addDirectory(d);
       fSettings->save();
     };
-    fBrowser->onRemove = [this](File dir) {
-      fSettings->removeDirectory(dir);
+    fBrowser->onRemove = [this](Directory d) {
+      fSettings->removeDirectory(d);
       fSettings->save();
     };
     addAndMakeVisible(fBrowser.get());

@@ -29,16 +29,16 @@ public:
 
   void addDirectory(Directory d) {
     for (int i = 0; i < fDirectories.size(); i++) {
-      if (fDirectories[i].fDirectory == d.fDirectory) {
+      if (fDirectories[i].fDirectory == d.fDirectory && fDirectories[i].fEdition == d.fEdition) {
         return;
       }
     }
     fDirectories.add(d);
   }
 
-  void removeDirectory(juce::File f) {
+  void removeDirectory(Directory d) {
     for (int i = 0; i < fDirectories.size(); i++) {
-      if (fDirectories[i].fDirectory == f) {
+      if (fDirectories[i].fDirectory == d.fDirectory && fDirectories[i].fEdition == d.fEdition) {
         fDirectories.remove(i);
         return;
       }
