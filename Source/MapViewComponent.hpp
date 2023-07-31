@@ -9,11 +9,12 @@ class MapViewComponent
       private juce::Timer,
       public juce::ChangeListener,
       public TexturePackThreadPool::Delegate,
-      public SavePNGProgressWindow ::Delegate,
+      public SavePNGProgressWindow::Delegate,
       public RegionUpdateChecker::Delegate,
       public TextInputDialog<PinEdit>::Delegate,
       public JavaWorldScanThread::Delegate,
-      public BedrockWorldScanThread ::Delegate {
+      public BedrockWorldScanThread::Delegate {
+
   struct AsyncUpdateQueueReleaseGarbageThreadPool {
     bool operator==(AsyncUpdateQueueReleaseGarbageThreadPool const &) const {
       return true;
@@ -36,7 +37,11 @@ class MapViewComponent
     }
   };
 
-  using AsyncUpdateQueue = std::variant<AsyncUpdateQueueReleaseGarbageThreadPool, AsyncUpdateQueueTriggerRepaint, AsyncUpdateQueueUpdateCaptureButtonStatus, AsyncUpdateQueueShowShaderCompileErrorMessage>;
+  using AsyncUpdateQueue = std::variant<
+      AsyncUpdateQueueReleaseGarbageThreadPool,
+      AsyncUpdateQueueTriggerRepaint,
+      AsyncUpdateQueueUpdateCaptureButtonStatus,
+      AsyncUpdateQueueShowShaderCompileErrorMessage>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -169,6 +174,7 @@ public:
     fRegionUpdateChecker->startThread();
 
     Desktop::getInstance().getAnimator().addChangeListener(this);
+
     fCloseWatchDogTimer.reset(new TimerInstance);
     fCloseWatchDogTimer->fTimerCallback = [this](TimerInstance &timer) {
       closeWatchDogTimerDidTick(timer);
