@@ -491,8 +491,8 @@ public:
     VisibleRegions visible = fVisibleRegions.load();
     fScroller.fling(current.fX / current.fBlocksPerPixel, current.fZ / current.fBlocksPerPixel,
                     vx, vz,
-                    visible.getX() * 512 / current.fBlocksPerPixel, visible.getRight() * 512 / current.fBlocksPerPixel,
-                    visible.getY() * 512 / current.fBlocksPerPixel, visible.getBottom() * 512 / current.fBlocksPerPixel);
+                    visible.getX() * 512 / current.fBlocksPerPixel, (visible.getRight() * 512 + 512) / current.fBlocksPerPixel,
+                    visible.getY() * 512 / current.fBlocksPerPixel, (visible.getBottom() * 512 + 512) / current.fBlocksPerPixel);
     fScrollerTimer.stopTimer();
     fScrollerTimer.startTimerHz(kScrollUpdateHz);
   }
@@ -1480,11 +1480,11 @@ private:
 
     float const minX = visibleRegions.getX() * 512;
     float const minZ = visibleRegions.getY() * 512;
-    float const maxX = visibleRegions.getRight() * 512;
-    float const maxZ = visibleRegions.getBottom() * 512;
+    float const maxX = visibleRegions.getRight() * 512 + 512;
+    float const maxZ = visibleRegions.getBottom() * 512 + 512;
 
-    l.fX = std::min(std::max(l.fX, minX), maxX);
-    l.fZ = std::min(std::max(l.fZ, minZ), maxZ);
+    l.fX = std::clamp(l.fX, minX, maxX);
+    l.fZ = std::clamp(l.fZ, minZ, maxZ);
 
     return l;
   }
