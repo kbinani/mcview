@@ -276,14 +276,23 @@ public:
   }
 
   leveldb::Status UnlockFile(leveldb::FileLock *lock) override {
+    if (!fE) {
+      return IOError();
+    }
     return fE->UnlockFile(lock);
   }
 
   void Schedule(void (*function)(void *arg), void *arg) override {
+    if (!fE) {
+      return;
+    }
     fE->Schedule(function, arg);
   }
 
   void StartThread(void (*function)(void *arg), void *arg) override {
+    if (!fE) {
+      return;
+    }
     fE->StartThread(function, arg);
   }
 
@@ -303,10 +312,16 @@ public:
   }
 
   uint64_t NowMicros() override {
+    if (!fE) {
+      return 0;
+    }
     return fE->NowMicros();
   }
 
   void SleepForMicroseconds(int micros) override {
+    if (!fE) {
+      return;
+    }
     fE->SleepForMicroseconds(micros);
   }
 
