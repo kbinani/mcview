@@ -11,13 +11,14 @@ class BrowserComponent : public juce::Component, private juce::Timer {
         fButtonIcon.reset(juce::Drawable::createFromImageData(BinaryData::baseline_remove_white_18dp_png,
                                                               BinaryData::baseline_remove_white_18dp_pngSize)
                               .release());
-        fButton.reset(new juce::DrawableButton("", juce::DrawableButton::ButtonStyle::ImageOnButtonBackground));
+        fButton.reset(new ImageButton("", juce::DrawableButton::ButtonStyle::ImageOnButtonBackground));
         fButton->setImages(fButtonIcon.get());
         fButton->onClick = [this]() {
           onClickRemoveButton();
         };
         addAndMakeVisible(*fButton);
       }
+      setMouseCursor(juce::MouseCursor::PointingHandCursor);
     }
 
     void onClickRemoveButton() {
@@ -111,8 +112,9 @@ public:
     fAddButtonImage.reset(juce::Drawable::createFromImageData(BinaryData::baseline_add_white_18dp_png,
                                                               BinaryData::baseline_add_white_18dp_pngSize)
                               .release());
-    fAddButton.reset(new juce::DrawableButton("Add", juce::DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fAddButton.reset(new ImageButton("Add", juce::DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fAddButton->setImages(fAddButtonImage.get());
+    fAddButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     addAndMakeVisible(*fAddButton);
     fAddButton->onClick = [this]() {
       browse();
@@ -292,7 +294,7 @@ private:
   std::unique_ptr<juce::ResizableEdgeComponent> fResizer;
   std::unique_ptr<juce::ComponentBoundsConstrainer> fConstrainer;
   std::unique_ptr<juce::ConcertinaPanel> fPanel;
-  std::unique_ptr<juce::DrawableButton> fAddButton;
+  std::unique_ptr<ImageButton> fAddButton;
   std::unique_ptr<juce::Drawable> fAddButtonImage;
   std::unique_ptr<juce::FileChooser> fFileChooser;
 

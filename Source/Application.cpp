@@ -38,6 +38,7 @@
 #include "FirewallEnv.hpp"
 #include "ProxyEnv.hpp"
 
+#include "ImageButton.hpp"
 #include "AboutComponent.hpp"
 #include "SettingsComponent.hpp"
 #include "DirectoryBrowserModel.hpp"

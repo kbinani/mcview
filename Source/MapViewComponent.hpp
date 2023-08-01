@@ -88,7 +88,7 @@ public:
     fBrowserOpenButtonImageOpen = Drawable::createFromImageData(BinaryData::baseline_keyboard_arrow_right_white_18dp_png,
                                                                 BinaryData::baseline_keyboard_arrow_right_white_18dp_pngSize);
 
-    fBrowserOpenButton.reset(new DrawableButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fBrowserOpenButton.reset(new ImageButton("Browser", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     setBrowserOpened(true);
     fBrowserOpenButton->setSize(kButtonSize, kButtonSize);
     fBrowserOpenButton->onClick = [this]() {
@@ -98,7 +98,7 @@ public:
 
     fOverworldImage = Drawable::createFromImageData(BinaryData::baseline_landscape_white_18dp_png,
                                                     BinaryData::baseline_landscape_white_18dp_pngSize);
-    fOverworld.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fOverworld.reset(new ImageButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fOverworld->setImages(fOverworldImage.get());
     fOverworld->onClick = [this]() {
       setWorldDirectory(fWorldDirectory, Dimension::Overworld, fEdition);
@@ -108,7 +108,7 @@ public:
     addAndMakeVisible(*fOverworld);
 
     fNetherImage = Drawable::createFromImageData(BinaryData::baseline_whatshot_white_18dp_png, BinaryData::baseline_whatshot_white_18dp_pngSize);
-    fNether.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fNether.reset(new ImageButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fNether->setImages(fNetherImage.get());
     fNether->onClick = [this]() {
       setWorldDirectory(fWorldDirectory, Dimension::TheNether, fEdition);
@@ -118,7 +118,7 @@ public:
     addAndMakeVisible(*fNether);
 
     fEndImage = Drawable::createFromImageData(BinaryData::baseline_brightness_3_white_18dp_png, BinaryData::baseline_brightness_3_white_18dp_pngSize);
-    fEnd.reset(new DrawableButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fEnd.reset(new ImageButton("", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fEnd->setImages(fEndImage.get());
     fEnd->onClick = [this]() {
       setWorldDirectory(fWorldDirectory, Dimension::TheEnd, fEdition);
@@ -129,7 +129,7 @@ public:
 
     fCaptureButtonImage = Drawable::createFromImageData(BinaryData::baseline_camera_white_18dp_png,
                                                         BinaryData::baseline_camera_white_18dp_pngSize);
-    fCaptureButton.reset(new DrawableButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fCaptureButton.reset(new ImageButton("Capture", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fCaptureButton->setImages(fCaptureButtonImage.get());
     fCaptureButton->setEnabled(false);
     fCaptureButton->setTooltip(TRANS("Capture"));
@@ -140,7 +140,7 @@ public:
 
     fSettingsButtonImage = Drawable::createFromImageData(BinaryData::baseline_settings_white_18dp_png,
                                                          BinaryData::baseline_settings_white_18dp_pngSize);
-    fSettingsButton.reset(new DrawableButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
+    fSettingsButton.reset(new ImageButton("Settings", DrawableButton::ButtonStyle::ImageOnButtonBackground));
     fSettingsButton->setImages(fSettingsButtonImage.get());
     fSettingsButton->setTooltip(TRANS("Settings"));
     fSettingsButton->onClick = [this]() {
@@ -1944,23 +1944,23 @@ private:
   std::set<Region> fLoadingRegions;
   std::mutex fMut;
 
-  std::unique_ptr<juce::DrawableButton> fBrowserOpenButton;
+  std::unique_ptr<ImageButton> fBrowserOpenButton;
   std::unique_ptr<juce::Drawable> fBrowserOpenButtonImageOpen;
   std::unique_ptr<juce::Drawable> fBrowserOpenButtonImageClose;
 
-  std::unique_ptr<juce::DrawableButton> fOverworld;
+  std::unique_ptr<ImageButton> fOverworld;
   std::unique_ptr<juce::Drawable> fOverworldImage;
 
-  std::unique_ptr<juce::DrawableButton> fNether;
+  std::unique_ptr<ImageButton> fNether;
   std::unique_ptr<juce::Drawable> fNetherImage;
 
-  std::unique_ptr<juce::DrawableButton> fEnd;
+  std::unique_ptr<ImageButton> fEnd;
   std::unique_ptr<juce::Drawable> fEndImage;
 
-  std::unique_ptr<juce::DrawableButton> fCaptureButton;
+  std::unique_ptr<ImageButton> fCaptureButton;
   std::unique_ptr<juce::Drawable> fCaptureButtonImage;
 
-  std::unique_ptr<juce::DrawableButton> fSettingsButton;
+  std::unique_ptr<ImageButton> fSettingsButton;
   std::unique_ptr<juce::Drawable> fSettingsButtonImage;
 
   std::unique_ptr<juce::TooltipWindow> fTooltipWindow;
