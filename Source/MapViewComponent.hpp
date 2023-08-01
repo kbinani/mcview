@@ -666,7 +666,7 @@ public:
                        .withMessage(TRANS("The selected world could not be opened"))
                        .withIconType(juce::MessageBoxIconType::WarningIcon)
                        .withButton("OK");
-        juce::NativeMessageBox::showAsync(opt, nullptr);
+        juce::AlertWindow::showAsync(opt, nullptr);
       }
     } else {
       LookAt nextLookAt = lookAt;
@@ -1066,12 +1066,14 @@ public:
       }
     }
     if (!shaderCompileErrorMessages.isEmpty()) {
+      shaderCompileErrorMessages.insert(0, "mcview version: " + juce::String(JUCE_APPLICATION_VERSION_STRING));
+      shaderCompileErrorMessages.insert(1, TRANS("Failed compiling shader") + ": ");
       auto opt = juce::MessageBoxOptions()
                      .withButton("OK")
                      .withIconType(juce::MessageBoxIconType::WarningIcon)
                      .withTitle(TRANS("Error"))
-                     .withMessage(TRANS("Failed compiling shader") + ": \n" + shaderCompileErrorMessages.joinIntoString("\n"));
-      juce::NativeMessageBox::showAsync(opt, nullptr);
+                     .withMessage(shaderCompileErrorMessages.joinIntoString("\n"));
+      juce::AlertWindow::showAsync(opt, nullptr);
     }
   }
 

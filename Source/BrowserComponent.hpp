@@ -28,8 +28,8 @@ class BrowserComponent : public juce::Component, private juce::Timer {
                          .withIconType(juce::MessageBoxIconType::QuestionIcon)
                          .withMessage(TRANS("Do you really want to unregister?"))
                          .withTitle(TRANS("Confirm"));
-      juce::NativeMessageBox::showAsync(options, [this](int buttonIndex) {
-        if (buttonIndex == 0) {
+      juce::AlertWindow::showAsync(options, [this](int buttonIndex) {
+        if (buttonIndex == 1) {
           onRemoveButtonClicked(fDirectory);
         }
       });
