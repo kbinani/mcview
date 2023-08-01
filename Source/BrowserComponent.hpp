@@ -37,18 +37,22 @@ class BrowserComponent : public juce::Component, private juce::Timer {
 
     void mouseDown(juce::MouseEvent const &e) override {
       fMouseDown = true;
+      repaint();
     }
 
     void mouseUp(juce::MouseEvent const &e) override {
       fMouseDown = false;
+      repaint();
     }
 
     void mouseEnter(juce::MouseEvent const &e) override {
       fMouseOver = true;
+      repaint();
     }
 
     void mouseExit(juce::MouseEvent const &e) override {
       fMouseOver = false;
+      repaint();
     }
 
     void paint(juce::Graphics &g) override {
