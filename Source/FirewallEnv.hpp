@@ -145,7 +145,7 @@ public:
   }
 
   leveldb::Status GetTestDirectory(std::filesystem::path *path) override {
-    return fE->GetTestDirectory(path);
+    return IOError();
   }
 
   leveldb::Status NewLogger(std::filesystem::path const &fname, leveldb::Logger **result) override {

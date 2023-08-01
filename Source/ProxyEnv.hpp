@@ -11,13 +11,27 @@ class ProxyEnv : public leveldb::Env {
 
 public:
   ProxyEnv(leveldb::Env *underlyingEnv, std::filesystem::path const &protectDir, std::filesystem::path const &workingDir)
-      : fProtect(std::filesystem::canonical(protectDir)),
-        fCanonicalProtect(std::filesystem::canonical(protectDir).native()),
-        fWork(std::filesystem::canonical(workingDir)),
-        fNextFileId(1) {
+      : fNextFileId(1) {
     namespace fs = std::filesystem;
+    auto protect = FileKey(protectDir);
+    if (!protect) {
+      return;
+    }
+    auto work = FileKey(workingDir);
+    if (!work) {
+      return;
+    }
+    if (work->starts_with(*protect)) {
+      return;
+    }
+    if (protect->starts_with(*work)) {
+      return;
+    }
+    fCanonicalProtect = *protect;
+    fWork = *work;
+
     std::error_code ec;
-    fs::recursive_directory_iterator iterator(fProtect, ec);
+    fs::recursive_directory_iterator iterator(protectDir, ec);
     if (ec) {
       return;
     }
@@ -75,14 +89,11 @@ public:
     if (!fE) {
       return false;
     }
-    if (auto protect = shouldProtect(fname); protect) {
-      if (*protect) {
-        if (auto key = FileKey(fname); key) {
-          std::lock_guard<std::mutex> lock(fMut);
-          return fFiles.count(*key) > 0;
-        } else {
-          return false;
-        }
+    if (auto ret = shouldProtect(fname); ret) {
+      auto [protect, key] = *ret;
+      if (protect) {
+        std::lock_guard<std::mutex> lock(fMut);
+        return fFiles.count(key) > 0;
       } else {
         return fE->FileExists(fname);
       }
@@ -96,18 +107,14 @@ public:
     if (!fE) {
       return IOError();
     }
-    auto protect = shouldProtect(dir);
-    if (!protect) {
+    auto ret = shouldProtect(dir);
+    if (!ret) {
       return IOError();
     }
-    if (!*protect) {
+    auto [protect, prefix] = *ret;
+    if (!protect) {
       return fE->GetChildren(dir, result);
     }
-    auto key = FileKey(dir);
-    if (!key) {
-      return IOError();
-    }
-    Str prefix = *key;
     if (!prefix.ends_with(fs::path::preferred_separator)) {
       prefix.push_back(fs::path::preferred_separator);
     }
@@ -129,19 +136,16 @@ public:
     if (!fE) {
       return IOError();
     }
-    auto protect = shouldProtect(fname);
-    if (!protect) {
+    auto ret = shouldProtect(fname);
+    if (!ret) {
       return IOError();
     }
-    if (!*protect) {
+    auto [protect, key] = *ret;
+    if (!protect) {
       return fE->RemoveFile(fname);
     }
-    auto key = FileKey(fname);
-    if (!key) {
-      return IOError();
-    }
     std::lock_guard<std::mutex> lock(fMut);
-    auto found = fFiles.find(*key);
+    auto found = fFiles.find(key);
     if (found == fFiles.end()) {
       return leveldb::Status::NotFound({});
     }
@@ -158,11 +162,12 @@ public:
     if (!fE) {
       return IOError();
     }
-    auto protect = shouldProtect(dirname);
-    if (!protect) {
+    auto ret = shouldProtect(dirname);
+    if (!ret) {
       return IOError();
     }
-    if (!*protect) {
+    auto [protect, _] = *ret;
+    if (!protect) {
       return fE->CreateDir(dirname);
     }
     return leveldb::Status::OK();
@@ -173,18 +178,14 @@ public:
     if (!fE) {
       return IOError();
     }
-    auto protect = shouldProtect(dirname);
-    if (!protect) {
+    auto ret = shouldProtect(dirname);
+    if (!ret) {
       return IOError();
     }
-    if (!*protect) {
+    auto [protect, prefix] = *ret;
+    if (!protect) {
       return fE->RemoveDir(dirname);
     }
-    auto key = FileKey(dirname);
-    if (!key) {
-      return IOError();
-    }
-    Str prefix = *key;
     if (!prefix.ends_with(fs::path::preferred_separator)) {
       prefix.push_back(fs::path::preferred_separator);
     }
@@ -212,24 +213,18 @@ public:
     if (!fE) {
       return IOError();
     }
-    auto protectSrc = shouldProtect(src);
-    if (!protectSrc) {
+    auto retSrc = shouldProtect(src);
+    if (!retSrc) {
       return IOError();
     }
-    auto protectDest = shouldProtect(target);
-    if (!protectDest) {
+    auto retDest = shouldProtect(target);
+    if (!retDest) {
       return IOError();
     }
-    if (!*protectSrc && !*protectDest) {
+    auto [protectSrc, keySrc] = *retSrc;
+    auto [protectDest, keyDest] = *retDest;
+    if (!protectSrc && !protectDest) {
       return fE->RenameFile(src, target);
-    }
-    auto keySrc = FileKey(src);
-    if (!keySrc) {
-      return IOError();
-    }
-    auto keyDest = FileKey(target);
-    if (!keyDest) {
-      return IOError();
     }
     auto actualSrc = prepareForRead(src);
     if (!actualSrc) {
@@ -253,9 +248,9 @@ public:
       return IOError();
     }
     fileSrc.close();
-    if (*protectSrc) {
+    if (protectSrc) {
       std::lock_guard<std::mutex> lock(fMut);
-      fFiles.erase(*keySrc);
+      fFiles.erase(keySrc);
     } else {
       if (auto st = fE->RemoveFile(src); !st.ok()) {
         return st;
@@ -330,24 +325,16 @@ private:
     return leveldb::Status::IOError({});
   }
 
-  static std::optional<std::filesystem::path> Canonical(std::filesystem::path const &p) {
+  static std::optional<Str> FileKey(std::filesystem::path const &p) {
     namespace fs = std::filesystem;
+    auto path = p;
+    path.make_preferred();
     std::error_code ec;
-    auto ret = fs::weakly_canonical(p, ec);
+    auto canonical = fs::weakly_canonical(path, ec);
     if (ec) {
       return std::nullopt;
     }
-    return ret;
-  }
-
-  static std::optional<Str> FileKey(std::filesystem::path const &p) {
-    auto path = p;
-    path.make_preferred();
-    if (auto canonical = Canonical(path); canonical) {
-      return canonical->native();
-    } else {
-      return std::nullopt;
-    }
+    return canonical.native();
   }
 
   std::optional<std::filesystem::path> prepareForRead(std::filesystem::path const &p) {
@@ -356,16 +343,13 @@ private:
   }
 
   std::optional<std::filesystem::path> unsafePrepareForRead(std::filesystem::path const &p) {
-    auto key = FileKey(p);
-    if (!key) {
-      return std::nullopt;
-    }
-    auto protect = shouldProtect(p);
+    auto ret = shouldProtect(p);
+    auto [protect, key] = *ret;
     if (!protect) {
       return std::nullopt;
     }
-    if (*protect) {
-      if (auto found = fFiles.find(*key); found != fFiles.end()) {
+    if (protect) {
+      if (auto found = fFiles.find(key); found != fFiles.end()) {
         if (found->second.fActual) {
           return found->second.fActual;
         } else {
@@ -386,23 +370,20 @@ private:
 
   std::optional<std::filesystem::path> unsafePrepareForWrite(std::filesystem::path const &p) {
     namespace fs = std::filesystem;
-    auto key = FileKey(p);
-    if (!key) {
+    auto ret = shouldProtect(p);
+    if (!ret) {
       return std::nullopt;
     }
-    auto protect = shouldProtect(p);
+    auto [protect, key] = *ret;
     if (!protect) {
-      return std::nullopt;
-    }
-    if (!*protect) {
       return p;
     }
-    auto found = fFiles.find(*key);
+    auto found = fFiles.find(key);
     if (found == fFiles.end()) {
       auto path = nextProxyPath(p);
       File f;
       f.fActual = path;
-      fFiles[*key] = f;
+      fFiles[key] = f;
       return path;
     }
     File f = found->second;
@@ -428,17 +409,18 @@ private:
         }
       }
       f.fActual = path;
-      fFiles[*key] = f;
+      fFiles[key] = f;
       return path;
     }
   }
 
-  std::optional<bool> shouldProtect(std::filesystem::path const &p) const {
+  std::optional<std::pair<bool, Str>> shouldProtect(std::filesystem::path const &p) const {
     auto key = FileKey(p);
     if (!key) {
       return std::nullopt;
     }
-    return key->starts_with(fCanonicalProtect);
+    bool protect = key->starts_with(fCanonicalProtect);
+    return std::make_pair(protect, *key);
   }
 
   static void RemoveSilent(std::filesystem::path const &p) {
@@ -466,9 +448,8 @@ private:
 private:
   std::map<Str, File> fFiles;
   leveldb::Env *fE = nullptr;
-  std::filesystem::path const fProtect;
-  Str const fCanonicalProtect;
-  std::filesystem::path const fWork;
+  Str fCanonicalProtect;
+  std::filesystem::path fWork;
   std::atomic_uint64_t fNextFileId;
   std::mutex fMut;
 };
