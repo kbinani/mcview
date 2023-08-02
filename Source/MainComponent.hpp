@@ -28,7 +28,7 @@ public:
 
     addAndMakeVisible(fMapViewComponent.get());
 
-    fBrowser.reset(new BrowserComponent());
+    fBrowser.reset(new LeftPanel());
 #if !JUCE_MAC
     Directory java;
     java.fDirectory = DefaultJavaSaveDirectory();
@@ -106,7 +106,7 @@ public:
   }
 
   void handleAsyncUpdate() override {
-    fBrowser->browse();
+    fBrowser->browseDefaultJavaSaves();
   }
 
   void paint(juce::Graphics &g) override {
@@ -202,7 +202,7 @@ private:
     mapWidth = std::max(MapViewComponent::kMinimumWidth, width - browserWidth - settingsWidth);
     int widthOverflow = mapWidth + browserWidth + settingsWidth - width;
     if (widthOverflow > 0) {
-      browserWidth = std::max(BrowserComponent::kMinimumWidth, browserWidth - widthOverflow / 2);
+      browserWidth = std::max(LeftPanel::kMinimumWidth, browserWidth - widthOverflow / 2);
       settingsWidth = std::max(0, width - mapWidth - browserWidth);
     }
     if (fBrowserOpened) {
@@ -233,7 +233,7 @@ private:
 
 private:
   std::unique_ptr<MapViewComponent> fMapViewComponent;
-  std::unique_ptr<BrowserComponent> fBrowser;
+  std::unique_ptr<LeftPanel> fBrowser;
   bool fBrowserOpened;
   std::unique_ptr<SettingsComponent> fSettingsComponent;
   bool fSettingsOpened;

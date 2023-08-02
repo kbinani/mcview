@@ -72,10 +72,10 @@ juce_add_gui_app(mcview
 
 set(mcview_files
   Source/AboutComponent.hpp
-  Source/BrowserComponent.hpp
+  Source/LeftPanel.hpp
   Source/defer.hpp
   Source/Dimension.hpp
-  Source/DirectoryBrowserComponent.hpp
+  Source/GameDirectoryBrowser.hpp
   Source/LocalizationHelper.cpp
   Source/LocalizationHelper.hpp
   Source/LookAndFeel.hpp
@@ -105,7 +105,7 @@ set(mcview_files
   Source/GLVertex.hpp
   Source/GLAttributes.hpp
   Source/GLBuffer.hpp
-  Source/DirectoryBrowserModel.hpp
+  Source/GameDirectoryBrowserModel.hpp
   Source/NotoSansTypeface.hpp
   Resource/Shader/tile.vert
   Resource/Shader/color.frag
@@ -132,6 +132,8 @@ set(mcview_files
   Source/DirectoryCleanupThread.hpp
   Source/WorldScanThread.hpp
   Source/ImageButton.hpp
+  Source/LeftPanelHeader.hpp
+  Source/CustomDirectoryBrowser.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

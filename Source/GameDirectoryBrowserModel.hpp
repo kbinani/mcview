@@ -10,8 +10,8 @@ public:
     virtual void directoryBrowserModelDidSelectDirectory(juce::File directory) = 0;
   };
 
-  DirectoryBrowserModel(Delegate *delegate, juce::File directory, juce::LookAndFeel const &laf)
-      : fDirectory(directory), fDelegate(delegate) {
+  DirectoryBrowserModel(Delegate *delegate, juce::File directory, juce::Colour dotMarkerColor, juce::LookAndFeel const &laf)
+      : fDirectory(directory), fDelegate(delegate), fDotMarkerColor(dotMarkerColor) {
 
     for (auto const &it : juce::RangedDirectoryIterator(fDirectory, false, "*", juce::File::findDirectories)) {
       juce::File file = it.getFile();
@@ -38,10 +38,17 @@ public:
     int margin = 10;
     g.setColour(rowIsSelected ? fBackgroundColorOn : fBackgroundColorOff);
     g.fillRect(0, 0, width, height);
-    g.setColour(rowIsSelected ? fTextColorOn : fTextColorOff);
+
+    int radius = (height - 2 * margin) / 2;
+    float cx = margin + radius;
+    float cy = height * 0.5f;
+    int actualRadius = height * 0.5f / 2;
+    g.setColour(fDotMarkerColor);
+    g.fillEllipse(cx - actualRadius, cy - actualRadius, actualRadius * 2, actualRadius * 2);
 
     juce::String const name = fItems[rowNumber].getFileName();
-    g.drawFittedText(name, margin, 0, width - 2 * margin, height, juce::Justification::centredLeft, 1);
+    g.setColour(rowIsSelected ? fTextColorOn : fTextColorOff);
+    g.drawFittedText(name, margin + radius * 2 + margin, 0, width - 3 * margin - radius * 2, height, juce::Justification::centredLeft, 1);
   }
 
   void applyLookAndFeel(juce::LookAndFeel const &laf) {
@@ -64,6 +71,7 @@ private:
   juce::Colour fBackgroundColorOff;
   juce::Colour fBackgroundColorOn;
   Delegate *const fDelegate;
+  juce::Colour fDotMarkerColor;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DirectoryBrowserModel)
 };

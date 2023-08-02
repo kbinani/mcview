@@ -63,8 +63,8 @@ public:
         juce::String path;
         Edition edition = Edition::Java;
         if (dir.is_string()) {
-          auto s = dir.get<std::string>();
-          path = juce::String::fromUTF8(s.c_str(), s.size());
+          // legacy
+          continue;
         } else if (dir.is_object()) {
           if (auto p = dir.find("path"); p != dir.end() && p->is_string()) {
             auto s = p->get<std::string>();
