@@ -2,7 +2,11 @@
 
 namespace mcview {
 
-class MainComponent : public juce::Component, private juce::AsyncUpdater, public MapViewComponent::Delegate, public juce::Timer {
+class MainComponent : public juce::Component,
+                      private juce::AsyncUpdater,
+                      public MapViewComponent::Delegate,
+                      public juce::Timer,
+                      public juce::FileDragAndDropTarget {
 public:
   struct Delegate {
     virtual ~Delegate() = default;
@@ -50,9 +54,7 @@ public:
     }
 #endif
     fBrowser->onSelect = [this](Directory d) {
-      fMapViewComponent->setWorldDirectory(d.fDirectory, Dimension::Overworld, d.fEdition);
-      getTopLevelComponent()->setName(d.fDirectory.getFileName());
-      setBrowserOpened(false);
+      onSelect(d);
     };
     fBrowser->onAdd = [this](Directory d) {
       fSettings->addDirectory(d);
@@ -194,7 +196,39 @@ public:
     fDelegate->mainComponentDidClose();
   }
 
+  bool isInterestedInFileDrag(juce::StringArray const &files) override {
+    for (auto const &file : files) {
+      if (auto d = Directory::Make(file); d) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void filesDropped(juce::StringArray const &files, int x, int y) override {
+    std::optional<Directory> open;
+    int num = 0;
+    for (auto const &file : files) {
+      if (auto d = Directory::Make(file); d) {
+        fBrowser->addDirectory(*d);
+        if (!open) {
+          open = *d;
+          num++;
+        }
+      }
+    }
+    if (num == 1 && open) {
+      onSelect(*open);
+    }
+  }
+
 private:
+  void onSelect(Directory d) {
+    fMapViewComponent->setWorldDirectory(d.fDirectory, Dimension::Overworld, d.fEdition);
+    getTopLevelComponent()->setName(d.fDirectory.getFileName());
+    setBrowserOpened(false);
+  }
+
   void decideWidths(int &browserWidth, int &mapWidth, int &settingsWidth, int &actualBrowserWidth, int &actualSettingsWidth) {
     int const width = getWidth();
     browserWidth = fBrowserOpened ? fBrowser->getWidth() : 0;

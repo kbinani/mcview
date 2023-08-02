@@ -67,6 +67,11 @@ public:
   }
 
   void addDirectory(Directory d) {
+    for (auto const &i : fItems) {
+      if (d == i) {
+        return;
+      }
+    }
     fItems.push_back(d);
     updateContent();
   }
