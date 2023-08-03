@@ -1,6 +1,7 @@
 Version 4.0.0
 ・You can now load the Bedrock edition worlds
 ・Terrain can now be drawn in the same color as the in-game map
+・Worlds can now be loaded directly by dragging and dropping a folder onto the mcview window
 ・Improved performance when viewing huge worlds
 ・Improved performance when viewing worlds of Minecraft 1.12 and earlier
 
