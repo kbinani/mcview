@@ -100,7 +100,6 @@ set(mcview_files
   Source/SavePNGProgressWindow.hpp
   Source/LookAt.hpp
   Source/TextInputDialog.hpp
-  Source/RegionUpdateChecker.hpp
   Source/GLUniforms.hpp
   Source/GLVertex.hpp
   Source/GLAttributes.hpp

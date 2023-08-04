@@ -57,7 +57,6 @@
 #include "TexturePackThreadPool.hpp"
 #include "JavaTexturePackThreadPool.hpp"
 #include "BedrockTexturePackThreadPool.hpp"
-#include "RegionUpdateChecker.hpp"
 #include "GLUniforms.hpp"
 #include "GLVertex.hpp"
 #include "GLAttributes.hpp"

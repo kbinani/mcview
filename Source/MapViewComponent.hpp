@@ -10,7 +10,6 @@ class MapViewComponent
       public juce::ChangeListener,
       public TexturePackThreadPool::Delegate,
       public SavePNGProgressWindow::Delegate,
-      public RegionUpdateChecker::Delegate,
       public TextInputDialog<PinEdit>::Delegate,
       public JavaWorldScanThread::Delegate,
       public BedrockWorldScanThread::Delegate {
@@ -36,22 +35,12 @@ class MapViewComponent
       return fMessage == other.fMessage;
     }
   };
-  struct AsyncUpdateQueueEnqueueTextureLoading {
-    juce::File fWorldDirectory;
-    std::vector<juce::File> fFiles;
-    Dimension fDimension;
-    AsyncUpdateQueueEnqueueTextureLoading(juce::File const &worldDirectory, std::vector<juce::File> const &files, Dimension d) : fWorldDirectory(worldDirectory), fFiles(files), fDimension(d) {}
-    bool operator==(AsyncUpdateQueueEnqueueTextureLoading const &) const {
-      return false;
-    }
-  };
 
   using AsyncUpdateQueue = std::variant<
       AsyncUpdateQueueReleaseGarbageThreadPool,
       AsyncUpdateQueueTriggerRepaint,
       AsyncUpdateQueueUpdateCaptureButtonStatus,
-      AsyncUpdateQueueShowShaderCompileErrorMessage,
-      AsyncUpdateQueueEnqueueTextureLoading>;
+      AsyncUpdateQueueShowShaderCompileErrorMessage>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -180,9 +169,6 @@ public:
     fTooltipWindow.reset(new TooltipWindow());
     addAndMakeVisible(*fTooltipWindow);
 
-    fRegionUpdateChecker.reset(new RegionUpdateChecker(this));
-    fRegionUpdateChecker->startThread();
-
     Desktop::getInstance().getAnimator().addChangeListener(this);
 
     fCloseWatchDogTimer.reset(new TimerInstance);
@@ -209,7 +195,6 @@ public:
   ~MapViewComponent() override {
     startClosing();
 
-    fRegionUpdateChecker->waitForThreadToExit(-1);
     if (fWorldScanThread) {
       fWorldScanThread->waitForThreadToExit(-1);
       fWorldScanThread.reset();
@@ -237,7 +222,6 @@ public:
 
     juce::Desktop::getInstance().getAnimator().removeChangeListener(this);
 
-    fRegionUpdateChecker->signalThreadShouldExit();
     if (fWorldScanThread) {
       fWorldScanThread->signalThreadShouldExit();
     }
@@ -540,11 +524,6 @@ public:
     unsafeEnqueueAsyncUpdate(q);
   }
 
-  void regionUpdateCheckerDidDetectRegionFileUpdate(juce::File worldDirectory, std::vector<juce::File> files, Dimension dimension) override {
-    AsyncUpdateQueueEnqueueTextureLoading q(worldDirectory, files, dimension);
-    enqueueAsyncUpdate(q);
-  }
-
   void setWorldDirectory(juce::File directory, Dimension dim, Edition edition) {
     using namespace juce;
     if (fWorldDirectory.getFullPathName() == directory.getFullPathName() && fDimension == dim) {
@@ -555,8 +534,6 @@ public:
     }
 
     std::lock_guard<std::mutex> lock(fMut);
-
-    fRegionUpdateChecker->setDirectory(File(), Dimension::Overworld);
 
     fOverworld->setEnabled(dim != Dimension::Overworld);
     fNether->setEnabled(dim != Dimension::TheNether);
@@ -737,11 +714,6 @@ public:
   }
 
   void javaWorldScanThreadDidFinish(juce::File worldDirectory, Dimension dimension) override {
-    std::lock_guard<std::mutex> lock(fMut);
-    if (fWorldDirectory != worldDirectory || fDimension != dimension) {
-      return;
-    }
-    fRegionUpdateChecker->setDirectory(worldDirectory, dimension);
   }
 
   void bedrockWorldScanThreadDidFoundRegion(juce::File worldDirectory, Dimension dimension, Region region) override {
@@ -1060,7 +1032,6 @@ public:
       queue.push_back(q);
     }
     juce::StringArray shaderCompileErrorMessages;
-    std::set<juce::File> updatedRegionFiles;
     for (auto const &q : queue) {
       if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
         for (int i = (int)fPoolTrashBin.size() - 1; i >= 0; i--) {
@@ -1075,13 +1046,6 @@ public:
       } else if (std::holds_alternative<AsyncUpdateQueueShowShaderCompileErrorMessage>(q)) {
         auto p = std::get<AsyncUpdateQueueShowShaderCompileErrorMessage>(q);
         shaderCompileErrorMessages.add(p.fMessage);
-      } else if (std::holds_alternative<AsyncUpdateQueueEnqueueTextureLoading>(q)) {
-        auto p = std::get<AsyncUpdateQueueEnqueueTextureLoading>(q);
-        if (p.fWorldDirectory == fWorldDirectory && p.fDimension == fDimension) {
-          for (auto const &file : p.fFiles) {
-            updatedRegionFiles.insert(file);
-          }
-        }
       }
     }
     if (!shaderCompileErrorMessages.isEmpty()) {
@@ -1093,13 +1057,6 @@ public:
                      .withTitle(TRANS("Error"))
                      .withMessage(shaderCompileErrorMessages.joinIntoString("\n"));
       juce::AlertWindow::showAsync(opt, nullptr);
-    }
-    if (!updatedRegionFiles.empty()) {
-      std::vector<juce::File> files;
-      for (auto const &file : updatedRegionFiles) {
-        files.push_back(file);
-      }
-      enqueueTextureLoadingJava(files, fDimension, false);
     }
   }
 
@@ -1238,9 +1195,6 @@ private:
 
   void closeWatchDogTimerDidTick(TimerInstance &timer) {
     triggerRepaint();
-    if (fRegionUpdateChecker->isThreadRunning()) {
-      return;
-    }
     if (fWorldScanThread) {
       if (fWorldScanThread->isThreadRunning()) {
         return;
@@ -2004,9 +1958,6 @@ private:
   juce::Atomic<int> fBiomeBlend;
   juce::Atomic<PaletteType> fPaletteType;
   juce::Atomic<LightingType> fLightingType;
-
-  std::unique_ptr<RegionUpdateChecker> fRegionUpdateChecker;
-
   std::unique_ptr<juce::FileChooser> fFileChooser;
   std::deque<AsyncUpdateQueue> fAsyncUpdateQueue;
   std::unique_ptr<WorldScanThread> fWorldScanThread;
