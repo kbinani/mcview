@@ -5,6 +5,7 @@
 
 #include "Edition.hpp"
 
+#include "File.hpp"
 #include "Directory.hpp"
 #include "LightingType.hpp"
 #include "PaletteType.hpp"
