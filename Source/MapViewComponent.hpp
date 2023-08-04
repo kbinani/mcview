@@ -36,12 +36,22 @@ class MapViewComponent
       return fMessage == other.fMessage;
     }
   };
+  struct AsyncUpdateQueueEnqueueTextureLoading {
+    juce::File fWorldDirectory;
+    std::vector<juce::File> fFiles;
+    Dimension fDimension;
+    AsyncUpdateQueueEnqueueTextureLoading(juce::File const &worldDirectory, std::vector<juce::File> const &files, Dimension d) : fWorldDirectory(worldDirectory), fFiles(files), fDimension(d) {}
+    bool operator==(AsyncUpdateQueueEnqueueTextureLoading const &) const {
+      return false;
+    }
+  };
 
   using AsyncUpdateQueue = std::variant<
       AsyncUpdateQueueReleaseGarbageThreadPool,
       AsyncUpdateQueueTriggerRepaint,
       AsyncUpdateQueueUpdateCaptureButtonStatus,
-      AsyncUpdateQueueShowShaderCompileErrorMessage>;
+      AsyncUpdateQueueShowShaderCompileErrorMessage,
+      AsyncUpdateQueueEnqueueTextureLoading>;
 
   static float constexpr kMaxScale = 10;
   static float constexpr kMinScale = 1.0f / 32.0f;
@@ -530,8 +540,9 @@ public:
     unsafeEnqueueAsyncUpdate(q);
   }
 
-  void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) override {
-    enqueueTextureLoadingJava(files, dimension, false);
+  void regionUpdateCheckerDidDetectRegionFileUpdate(juce::File worldDirectory, std::vector<juce::File> files, Dimension dimension) override {
+    AsyncUpdateQueueEnqueueTextureLoading q(worldDirectory, files, dimension);
+    enqueueAsyncUpdate(q);
   }
 
   void setWorldDirectory(juce::File directory, Dimension dim, Edition edition) {
@@ -1049,6 +1060,7 @@ public:
       queue.push_back(q);
     }
     juce::StringArray shaderCompileErrorMessages;
+    std::set<juce::File> updatedRegionFiles;
     for (auto const &q : queue) {
       if (std::holds_alternative<AsyncUpdateQueueReleaseGarbageThreadPool>(q)) {
         for (int i = (int)fPoolTrashBin.size() - 1; i >= 0; i--) {
@@ -1063,6 +1075,13 @@ public:
       } else if (std::holds_alternative<AsyncUpdateQueueShowShaderCompileErrorMessage>(q)) {
         auto p = std::get<AsyncUpdateQueueShowShaderCompileErrorMessage>(q);
         shaderCompileErrorMessages.add(p.fMessage);
+      } else if (std::holds_alternative<AsyncUpdateQueueEnqueueTextureLoading>(q)) {
+        auto p = std::get<AsyncUpdateQueueEnqueueTextureLoading>(q);
+        if (p.fWorldDirectory == fWorldDirectory && p.fDimension == fDimension) {
+          for (auto const &file : p.fFiles) {
+            updatedRegionFiles.insert(file);
+          }
+        }
       }
     }
     if (!shaderCompileErrorMessages.isEmpty()) {
@@ -1074,6 +1093,13 @@ public:
                      .withTitle(TRANS("Error"))
                      .withMessage(shaderCompileErrorMessages.joinIntoString("\n"));
       juce::AlertWindow::showAsync(opt, nullptr);
+    }
+    if (!updatedRegionFiles.empty()) {
+      std::vector<juce::File> files;
+      for (auto const &file : updatedRegionFiles) {
+        files.push_back(file);
+      }
+      enqueueTextureLoadingJava(files, fDimension, false);
     }
   }
 

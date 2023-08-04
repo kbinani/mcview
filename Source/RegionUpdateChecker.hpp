@@ -7,7 +7,7 @@ public:
   class Delegate {
   public:
     virtual ~Delegate() = default;
-    virtual void regionUpdateCheckerDidDetectRegionFileUpdate(std::vector<juce::File> files, Dimension dimension) = 0;
+    virtual void regionUpdateCheckerDidDetectRegionFileUpdate(juce::File worldDirectory, std::vector<juce::File> files, Dimension dimension) = 0;
   };
 
   explicit RegionUpdateChecker(Delegate *delegate)
@@ -89,7 +89,7 @@ private:
     copy.swap(updated);
 
     if (!files.empty()) {
-      fDelegate->regionUpdateCheckerDidDetectRegionFileUpdate(files, dim);
+      fDelegate->regionUpdateCheckerDidDetectRegionFileUpdate(fDirectory, files, dim);
     }
   }
 
