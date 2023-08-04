@@ -152,7 +152,7 @@ target_compile_definitions(mcview
     JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:mcview,JUCE_VERSION>"
     JUCE_DISPLAY_SPLASH_SCREEN=0
 )
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+if (MSVC)
   target_compile_definitions(mcview
     PRIVATE
       NOMINMAX
@@ -161,6 +161,10 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   )
   target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
+elseif(APPLE)
+  # JUCE_CHECK_OPENGL_ERROR cause runtime assertion error by Main Thread checker
+  target_compile_definitions(mcview PRIVATE JUCE_CHECK_OPENGL_ERROR)
+  target_compile_options(mcview PRIVATE -Wno-macro-redefined)
 endif()
 
 juce_add_binary_data(binary-data
