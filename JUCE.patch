@@ -1,18 +1,5 @@
-diff --git a/modules/juce_gui_basics/native/juce_mac_FileChooser.mm b/modules/juce_gui_basics/native/juce_mac_FileChooser.mm
-index f89921f229edf5d9a57609c30415d116e659c9d5..1555fed80bcb5174787327da2b26fbc597a5a010 100644
---- a/modules/juce_gui_basics/native/juce_mac_FileChooser.mm
-+++ b/modules/juce_gui_basics/native/juce_mac_FileChooser.mm
-@@ -90,6 +90,8 @@ public:
-         [panel setAllowedFileTypes: createAllowedTypesArray (filters)];
-         JUCE_END_IGNORE_WARNINGS_GCC_LIKE
- 
-+        panel.showsHiddenFiles = ((flags & FileBrowserComponent::showsHiddenFiles) != 0);
-+
-         if (! isSave)
-         {
-             auto* openPanel = static_cast<NSOpenPanel*> (panel);
 diff --git a/modules/juce_gui_basics/filebrowser/juce_FileBrowserComponent.h b/modules/juce_gui_basics/filebrowser/juce_FileBrowserComponent.h
-index f6f3f3b60304fe7033901057a894087e9661d253..88112276e6e2c7d3ae45661359a98e5923009e4b 100644
+index dc4409a75..3a263dba6 100644
 --- a/modules/juce_gui_basics/filebrowser/juce_FileBrowserComponent.h
 +++ b/modules/juce_gui_basics/filebrowser/juce_FileBrowserComponent.h
 @@ -63,7 +63,8 @@ public:
@@ -21,7 +8,20 @@ index f6f3f3b60304fe7033901057a894087e9661d253..88112276e6e2c7d3ae45661359a98e59
          warnAboutOverwriting            = 128,  /**< specifies that the dialog should warn about overwriting existing files (if possible). */
 -        doNotClearFileNameOnRootChange  = 256   /**< specifies that the file name should not be cleared upon root change. */
 +        doNotClearFileNameOnRootChange  = 256,  /**< specifies that the file name should not be cleared upon root change. */
-+        showsHiddenFiles                = 512
++        showsHiddenFiles                = 512,
      };
  
      //==============================================================================
+diff --git a/modules/juce_gui_basics/native/juce_FileChooser_mac.mm b/modules/juce_gui_basics/native/juce_FileChooser_mac.mm
+index 5dc5c941f..5a8a320ec 100644
+--- a/modules/juce_gui_basics/native/juce_FileChooser_mac.mm
++++ b/modules/juce_gui_basics/native/juce_FileChooser_mac.mm
+@@ -98,6 +98,8 @@ public:
+         [panel setAllowedFileTypes: createAllowedTypesArray (filters)];
+         JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+ 
++        panel.showsHiddenFiles = ((flags & FileBrowserComponent::showsHiddenFiles) != 0);
++
+         if (! isSave)
+         {
+             auto* openPanel = static_cast<NSOpenPanel*> (panel);
