@@ -144,28 +144,6 @@ endif()
 
 target_sources(mcview PRIVATE ${mcview_files})
 
-target_compile_definitions(mcview
-  PRIVATE
-    JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
-    JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:mcview,JUCE_PRODUCT_NAME>"
-    JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:mcview,JUCE_VERSION>"
-    JUCE_DISPLAY_SPLASH_SCREEN=0
-)
-if (MSVC)
-  target_compile_definitions(mcview
-    PRIVATE
-      NOMINMAX
-      WIN32_LEAN_AND_MEAN
-      $<$<CONFIG:RelWithDebInfo>:JUCE_DEBUG=1>
-  )
-  target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
-  target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
-elseif(APPLE)
-  # JUCE_CHECK_OPENGL_ERROR cause runtime assertion error by Main Thread checker
-  target_compile_definitions(mcview PRIVATE JUCE_CHECK_OPENGL_ERROR=;)
-endif()
-
 juce_add_binary_data(binary-data
   NAMESPACE mcview::BinaryData
   HEADER_NAME BinaryData.hpp
@@ -199,7 +177,25 @@ juce_add_binary_data(font-data
     Resource/NotoSansTC-Regular.otf
     Resource/NotoSansTC-Bold.otf)
 
-if (APPLE)
+target_compile_definitions(mcview
+  PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:mcview,JUCE_PRODUCT_NAME>"
+    JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:mcview,JUCE_VERSION>"
+    JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+if (MSVC)
+  target_compile_definitions(mcview
+    PRIVATE
+      NOMINMAX
+      WIN32_LEAN_AND_MEAN
+      $<$<CONFIG:RelWithDebInfo>:JUCE_DEBUG=1>
+  )
+  target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
+  target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
+elseif(APPLE)
   foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip font-data binary-data)
     set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,YES,NO>)
   endforeach()

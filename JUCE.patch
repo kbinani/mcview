@@ -26,10 +26,22 @@ index 5dc5c941f..5a8a320ec 100644
          {
              auto* openPanel = static_cast<NSOpenPanel*> (panel);
 diff --git a/modules/juce_opengl/juce_opengl.cpp b/modules/juce_opengl/juce_opengl.cpp
-index db2003617..2a07c9f5d 100644
+index db2003617..abe30e284 100644
 --- a/modules/juce_opengl/juce_opengl.cpp
 +++ b/modules/juce_opengl/juce_opengl.cpp
-@@ -208,7 +208,9 @@ static void checkGLError (const char* file, const int line)
+@@ -197,9 +197,11 @@ static void checkGLError (const char* file, const int line)
+         if (e == GL_NO_ERROR)
+             break;
+ 
++#if 0 // Avoid runtime assertion by Main Thread Checker
+         // if the peer is not valid then ignore errors
+         if (! checkPeerIsValid (OpenGLContext::getCurrentContext()))
+             continue;
++#endif
+ 
+         DBG ("***** " << getGLErrorMessage (e) << "  at " << file << " : " << line);
+         jassertfalse;
+@@ -208,7 +210,9 @@ static void checkGLError (const char* file, const int line)
  
   #define JUCE_CHECK_OPENGL_ERROR checkGLError (__FILE__, __LINE__);
  #else
