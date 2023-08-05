@@ -64,6 +64,12 @@ class ConcertinaPanel : public juce::Component {
       repaint();
     }
 
+    void mouseDoubleClick(juce::MouseEvent const &e) override {
+      if (fOnDoubleClick) {
+        fOnDoubleClick(this);
+      }
+    }
+
     void setHeaderComponent(juce::Component *component, bool takeOwnership) {
       if (fHeader) {
         removeChildComponent(fHeader);
@@ -81,6 +87,7 @@ class ConcertinaPanel : public juce::Component {
   public:
     std::function<void(PanelHeader *header, juce::MouseEvent const &e, juce::Point<int> mouseDownLocalOffset)> fOnDrag;
     std::function<void()> fOnUp;
+    std::function<void(PanelHeader *header)> fOnDoubleClick;
 
   private:
     juce::Component *fHeader = nullptr;
@@ -103,6 +110,11 @@ class ConcertinaPanel : public juce::Component {
       fHeader->fOnUp = [this]() {
         if (fOnUp) {
           fOnUp();
+        }
+      };
+      fHeader->fOnDoubleClick = [this](PanelHeader *header) {
+        if (fOnDoubleClick) {
+          fOnDoubleClick(header);
         }
       };
       addAndMakeVisible(*fHeader);
@@ -128,6 +140,7 @@ class ConcertinaPanel : public juce::Component {
     int fBodyHeight = 0;
     std::function<void(PanelHeader *header, juce::MouseEvent const &e, juce::Point<int> mouseDownLocalOffset)> fOnDrag;
     std::function<void()> fOnUp;
+    std::function<void(PanelHeader *header)> fOnDoubleClick;
 
   private:
     std::unique_ptr<juce::Component> fOwnership;
@@ -147,6 +160,9 @@ public:
     };
     panel->fOnUp = [this]() {
       fHeightShareOnDragStart.clear();
+    };
+    panel->fOnDoubleClick = [this](PanelHeader *header) {
+      onDoubleClickHeader(header);
     };
     fPanels.insert(fPanels.begin() + insertIndex, panel);
     addAndMakeVisible(*panel);
@@ -223,7 +239,49 @@ public:
     resized();
   }
 
+  bool expandPanelFully(juce::Component *panelComponent, bool animate) {
+    int index = -1;
+    for (int i = 0; i < (int)fPanels.size(); i++) {
+      if (fPanels[i]->fContent == panelComponent) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      return false;
+    }
+    int availableHeight = getHeight();
+    for (int i = 0; i < (int)fPanels.size(); i++) {
+      if (i != index) {
+        availableHeight -= fPanels[i]->fHeaderHeight;
+      }
+    }
+    for (int i = 0; i < (int)fPanels.size(); i++) {
+      if (i == index) {
+        fPanels[i]->fBodyHeight = std::max(availableHeight - fPanels[i]->fHeaderHeight, 0);
+      } else {
+        fPanels[i]->fBodyHeight = 0;
+      }
+    }
+    updatePanelSizes(index);
+    return true;
+  }
+
 private:
+  void onDoubleClickHeader(PanelHeader *header) {
+    int index = -1;
+    for (int i = 0; i < (int)fPanels.size(); i++) {
+      if (fPanels[i]->fHeader.get() == header) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      return;
+    }
+    expandPanelFully(fPanels[index]->fContent, true);
+  }
+
   void onDragPanelHeader(PanelHeader *header, juce::MouseEvent const &e, juce::Point<int> mouseDownLocalOffset) {
     int index = -1;
     for (int i = 0; i < (int)fPanels.size(); i++) {
