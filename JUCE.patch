@@ -25,3 +25,18 @@ index 5dc5c941f..5a8a320ec 100644
          if (! isSave)
          {
              auto* openPanel = static_cast<NSOpenPanel*> (panel);
+diff --git a/modules/juce_opengl/juce_opengl.cpp b/modules/juce_opengl/juce_opengl.cpp
+index db2003617..2a07c9f5d 100644
+--- a/modules/juce_opengl/juce_opengl.cpp
++++ b/modules/juce_opengl/juce_opengl.cpp
+@@ -208,7 +208,9 @@ static void checkGLError (const char* file, const int line)
+ 
+  #define JUCE_CHECK_OPENGL_ERROR checkGLError (__FILE__, __LINE__);
+ #else
+- #define JUCE_CHECK_OPENGL_ERROR ;
++ #if ! defined (JUCE_CHECK_OPENGL_ERROR)
++  #define JUCE_CHECK_OPENGL_ERROR ;
++ #endif
+ #endif
+ 
+ static void clearGLError() noexcept

@@ -163,8 +163,7 @@ if (MSVC)
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
 elseif(APPLE)
   # JUCE_CHECK_OPENGL_ERROR cause runtime assertion error by Main Thread checker
-  target_compile_definitions(mcview PRIVATE JUCE_CHECK_OPENGL_ERROR)
-  target_compile_options(mcview PRIVATE -Wno-macro-redefined)
+  target_compile_definitions(mcview PRIVATE JUCE_CHECK_OPENGL_ERROR=;)
 endif()
 
 juce_add_binary_data(binary-data
