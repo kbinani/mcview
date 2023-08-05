@@ -1161,6 +1161,9 @@ private:
     if (fGLShaderCompileAlreadyFailed) {
       return false;
     }
+    if (fTextures.empty()) {
+      return false;
+    }
     int minRx, minRz, maxRx, maxRz;
     viewportRegions(&minRx, &minRz, &maxRx, &maxRz);
     int count = 0;
