@@ -161,40 +161,40 @@ private:
     int numItems = 0;
     if (fJava) {
       numPanels++;
-      if (fJava->getModel()->getNumRows() > 0) {
+      if (fJava->getListBoxModel()->getNumRows() > 0) {
         numItems++;
       }
     }
     if (fBedrock) {
       numPanels++;
-      if (fBedrock->getModel()->getNumRows() > 0) {
+      if (fBedrock->getListBoxModel()->getNumRows() > 0) {
         numItems++;
       }
     }
     if (fCustom) {
       numPanels++;
-      if (fCustom->getModel()->getNumRows() > 0) {
+      if (fCustom->getListBoxModel()->getNumRows() > 0) {
         numItems++;
       }
     }
     if (numItems > 0) {
       int availableHeight = fPanel->getHeight();
       if (fJava) {
-        if (fJava->getModel()->getNumRows() > 0) {
+        if (fJava->getListBoxModel()->getNumRows() > 0) {
           fPanel->setPanelSize(fJava.get(), availableHeight / numItems, false);
         } else {
           fPanel->setPanelSize(fJava.get(), 0, false);
         }
       }
       if (fBedrock) {
-        if (fBedrock->getModel()->getNumRows() > 0) {
+        if (fBedrock->getListBoxModel()->getNumRows() > 0) {
           fPanel->setPanelSize(fBedrock.get(), availableHeight / numItems, false);
         } else {
           fPanel->setPanelSize(fBedrock.get(), 0, false);
         }
       }
       if (fCustom) {
-        if (fCustom->getModel()->getNumRows() > 0) {
+        if (fCustom->getListBoxModel()->getNumRows() > 0) {
           fPanel->setPanelSize(fCustom.get(), availableHeight / numItems, false);
         } else {
           fPanel->setPanelSize(fCustom.get(), 0, false);
