@@ -869,7 +869,7 @@ public:
 
       if (fGLUniforms->fade.get() != nullptr) {
         if (!capturing) {
-          int const ms = (int)Clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
+          int const ms = (int)std::clamp(now.toMilliseconds() - cache->fLoadTime.toMilliseconds(), 0LL, (int64)kFadeDurationMS);
           GLfloat const a = ms > kFadeDurationMS ? 1.0f : CubicEaseInOut((float)ms / (float)kFadeDurationMS, 0.0f, 1.0f, 1.0f);
           fGLUniforms->fade->set(a);
         } else {
@@ -1602,7 +1602,7 @@ private:
         auto cache = std::make_unique<RegionTextureCache>(j->fWorldDirectory, j->fDimension, j->fRegion);
         cache->load(j->fPixels.get());
         if (before != fTextures.end()) {
-          cache->fLoadTime = before->second->fLoadTime;
+          cache->fLoadTime = juce::Time::getCurrentTime();
         }
         cache->fSuccessful = true;
         fTextures[j->fRegion] = std::move(cache);
@@ -1868,17 +1868,6 @@ private:
     float const dx = regionCenterX - lookAt.fX;
     float const dz = regionCenterZ - lookAt.fZ;
     return dx * dx + dz * dz;
-  }
-
-  template <typename T>
-  static T Clamp(T v, T min, T max) {
-    if (v < min) {
-      return min;
-    } else if (max < v) {
-      return max;
-    } else {
-      return v;
-    }
   }
 
   static float CubicEaseInOut(float t, float start, float end, float duration) {
