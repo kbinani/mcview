@@ -12,7 +12,7 @@ set(mcview_apple_development_team_id "XM695N4A7T")
 
 include(cmake/CPM.cmake)
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+if (MSVC)
   add_definitions(
     /DUNICODE
     /D_UNICODE
@@ -27,7 +27,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     $<$<CONFIG:MinSizeRel>:/MT>
     /MP
   )
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+elseif(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "${mcview_macos_deployment_target}")
   set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${mcview_apple_development_team_id}")
   set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
@@ -135,7 +135,7 @@ set(mcview_files
   Source/CustomDirectoryBrowser.hpp
   Source/ConcertinaPanel.hpp
 )
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+if (APPLE)
   list(APPEND mcview_files
     Source/LocalizationHelper.mm
     Source/Settings.mm
@@ -199,6 +199,12 @@ juce_add_binary_data(font-data
     Resource/NotoSansTC-Regular.otf
     Resource/NotoSansTC-Bold.otf)
 
+if (APPLE)
+  foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip font-data binary-data)
+    set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,YES,NO>)
+  endforeach()
+endif()
+
 target_link_libraries(mcview
   PRIVATE
     binary-data
@@ -218,13 +224,13 @@ target_include_directories(mcview
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mcview_files})
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+if (APPLE)
   execute_process(
     COMMAND patch -p1 -N --input ../../JUCE.patch
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ext/JUCE)
 endif()
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+if (MSVC)
   include_external_msproject(Package "${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.wapproj"
     TYPE C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5
     GUID 33553e30-3cf6-4634-ad63-aa90ca486a7f)
