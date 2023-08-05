@@ -8,6 +8,10 @@ class LeftPanel : public juce::Component, private juce::Timer, public BrowserDel
     MenuIdBedrock = 2,
   };
 
+  enum {
+    kPanelHeaderHeight = 32,
+  };
+
 public:
   LeftPanel() {
     fConstrainer.reset(new juce::ComponentBoundsConstrainer());
@@ -15,7 +19,7 @@ public:
     fResizer.reset(new juce::ResizableEdgeComponent(this, fConstrainer.get(), juce::ResizableEdgeComponent::Edge::rightEdge));
     addAndMakeVisible(*fResizer);
 
-    fPanel.reset(new juce::ConcertinaPanel());
+    fPanel.reset(new ConcertinaPanel());
     addAndMakeVisible(*fPanel);
 
     fCustom.reset(new CustomDirectoryBrowser(this));
@@ -77,6 +81,7 @@ public:
     } else {
       fCustom->addDirectory(directory);
     }
+    updatePanelSizes();
     if (onAdd) {
       onAdd(directory);
     }
@@ -151,12 +156,58 @@ private:
     }
   }
 
+  void updatePanelSizes() {
+    int numPanels = 0;
+    int numItems = 0;
+    if (fJava) {
+      numPanels++;
+      if (fJava->getModel()->getNumRows() > 0) {
+        numItems++;
+      }
+    }
+    if (fBedrock) {
+      numPanels++;
+      if (fBedrock->getModel()->getNumRows() > 0) {
+        numItems++;
+      }
+    }
+    if (fCustom) {
+      numPanels++;
+      if (fCustom->getModel()->getNumRows() > 0) {
+        numItems++;
+      }
+    }
+    if (numItems > 0) {
+      int availableHeight = fPanel->getHeight();
+      if (fJava) {
+        if (fJava->getModel()->getNumRows() > 0) {
+          fPanel->setPanelSize(fJava.get(), availableHeight / numItems, false);
+        } else {
+          fPanel->setPanelSize(fJava.get(), 0, false);
+        }
+      }
+      if (fBedrock) {
+        if (fBedrock->getModel()->getNumRows() > 0) {
+          fPanel->setPanelSize(fBedrock.get(), availableHeight / numItems, false);
+        } else {
+          fPanel->setPanelSize(fBedrock.get(), 0, false);
+        }
+      }
+      if (fCustom) {
+        if (fCustom->getModel()->getNumRows() > 0) {
+          fPanel->setPanelSize(fCustom.get(), availableHeight / numItems, false);
+        } else {
+          fPanel->setPanelSize(fCustom.get(), 0, false);
+        }
+      }
+    }
+  }
+
   void addPanel(juce::Component *panel, juce::String const &headerTitle) {
-    LeftPanelHeader *header = new LeftPanelHeader(fPanel.get(), headerTitle);
+    LeftPanelHeader *header = new LeftPanelHeader(headerTitle);
     fPanel->addPanel(fPanel->getNumPanels(), panel, false);
     fPanel->setCustomPanelHeader(panel, header, true);
-    fPanel->setPanelHeaderSize(panel, 32);
-    fPanel->expandPanelFully(panel, true);
+    fPanel->setPanelHeaderSize(panel, kPanelHeaderHeight);
   }
 
   void browseJavaWorld() {
@@ -215,7 +266,7 @@ private:
 private:
   std::unique_ptr<juce::ResizableEdgeComponent> fResizer;
   std::unique_ptr<juce::ComponentBoundsConstrainer> fConstrainer;
-  std::unique_ptr<juce::ConcertinaPanel> fPanel;
+  std::unique_ptr<ConcertinaPanel> fPanel;
   std::unique_ptr<ImageButton> fAddButton;
   std::unique_ptr<juce::Drawable> fAddButtonImage;
   std::unique_ptr<juce::FileChooser> fFileChooser;

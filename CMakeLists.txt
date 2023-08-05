@@ -133,6 +133,7 @@ set(mcview_files
   Source/ImageButton.hpp
   Source/LeftPanelHeader.hpp
   Source/CustomDirectoryBrowser.hpp
+  Source/ConcertinaPanel.hpp
 )
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   list(APPEND mcview_files

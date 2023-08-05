@@ -4,9 +4,8 @@ namespace mcview {
 
 class LeftPanelHeader : public juce::Component {
 public:
-  LeftPanelHeader(juce::ConcertinaPanel *parent, juce::String const &title)
-      : fMouseDown(false), fMouseOver(false), fParent(parent), fTitle(title) {
-    setMouseCursor(juce::MouseCursor::PointingHandCursor);
+  explicit LeftPanelHeader(juce::String const &title)
+      : fMouseDown(false), fMouseOver(false), fTitle(title) {
   }
 
   void mouseDown(juce::MouseEvent const &e) override {
@@ -35,7 +34,7 @@ public:
       defer {
         g.restoreState();
       };
-      getLookAndFeel().drawConcertinaPanelHeader(g, getBounds(), fMouseOver, fMouseDown, *fParent, *this);
+      getLookAndFeel().drawConcertinaPanelHeader(g, getBounds(), fMouseOver, fMouseDown, fDummy, *this);
     }
     {
       g.saveState();
@@ -53,7 +52,7 @@ private:
 
   bool fMouseDown;
   bool fMouseOver;
-  juce::ConcertinaPanel *const fParent;
+  juce::ConcertinaPanel fDummy;
   juce::String fTitle;
 };
 

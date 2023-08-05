@@ -44,6 +44,7 @@
 #include "GameDirectoryBrowserModel.hpp"
 #include "GameDirectoryBrowser.hpp"
 #include "CustomDirectoryBrowser.hpp"
+#include "ConcertinaPanel.hpp"
 #include "LeftPanelHeader.hpp"
 #include "LeftPanel.hpp"
 #include "TextInputDialog.hpp"
