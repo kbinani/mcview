@@ -70,16 +70,14 @@ juce_add_gui_app(mcview
   COMPANY_COPYRIGHT "Copyright © 2019, 2022, 2023 kbinani"
 )
 
-set(mcview_files
+list(APPEND mcview_files
   Source/AboutComponent.hpp
   Source/LeftPanel.hpp
   Source/defer.hpp
   Source/Dimension.hpp
   Source/GameDirectoryBrowser.hpp
-  Source/LocalizationHelper.cpp
   Source/LocalizationHelper.hpp
   Source/LookAndFeel.hpp
-  Source/Application.cpp
   Source/MainComponent.hpp
   Source/MapViewComponent.hpp
   Source/OverScroller.hpp
@@ -136,10 +134,9 @@ set(mcview_files
   Source/ConcertinaPanel.hpp
 )
 if (APPLE)
-  list(APPEND mcview_files
-    Source/LocalizationHelper.mm
-    Source/Settings.mm
-  )
+  list(APPEND mcview_files Source/Application.mm)
+else()
+  list(APPEND mcview_files Source/Application.cpp)
 endif()
 
 target_sources(mcview PRIVATE ${mcview_files})

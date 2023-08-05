@@ -188,7 +188,7 @@ public:
       }
     };
 
-    fSize = Point<int>(600, 400);
+    fSize = juce::Point<int>(600, 400);
     setSize(600, 400);
   }
 
@@ -260,24 +260,24 @@ public:
         int const bx = x * 512;
         int const minBz = minRz * 512;
         int const maxBz = maxRz * 512;
-        Point<float> const top = getViewCoordinateFromMap(Point<float>(bx, minBz), lookAt);
-        Point<float> const bottom = getViewCoordinateFromMap(Point<float>(bx, maxBz), lookAt);
+        juce::Point<float> const top = getViewCoordinateFromMap(juce::Point<float>(bx, minBz), lookAt);
+        juce::Point<float> const bottom = getViewCoordinateFromMap(juce::Point<float>(bx, maxBz), lookAt);
         g.drawLine(top.x, top.y, bottom.x, bottom.y, thickness);
       }
       for (int z = minRz; z <= maxRz; z++) {
         int const bz = z * 512;
         int const minBx = minRx * 512;
         int const maxBx = maxRx * 512;
-        Point<float> const left = getViewCoordinateFromMap(Point<float>(minBx, bz), lookAt);
-        Point<float> const right = getViewCoordinateFromMap(Point<float>(maxBx, bz), lookAt);
+        juce::Point<float> const left = getViewCoordinateFromMap(juce::Point<float>(minBx, bz), lookAt);
+        juce::Point<float> const right = getViewCoordinateFromMap(juce::Point<float>(maxBx, bz), lookAt);
         g.drawLine(left.x, left.y, right.x, right.y, thickness);
       }
       if (numRegionsOnDisplay < 64) {
         g.setFont(20);
         for (int x = minRx; x <= maxRx; x++) {
           for (int z = minRz; z <= maxRz; z++) {
-            Point<float> const tl = getViewCoordinateFromMap(Point<float>(x * 512, z * 512), lookAt);
-            Point<float> const br = getViewCoordinateFromMap(Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
+            juce::Point<float> const tl = getViewCoordinateFromMap(juce::Point<float>(x * 512, z * 512), lookAt);
+            juce::Point<float> const br = getViewCoordinateFromMap(juce::Point<float>((x + 1) * 512, (z + 1) * 512), lookAt);
             g.drawFittedText(String::formatted("r.%d.%d.mca", x, z),
                              tl.x, tl.y,
                              br.x - tl.x, br.y - tl.y,
@@ -292,7 +292,7 @@ public:
     g.fillRoundedRectangle(border, 6.0f);
     g.setColour(Colours::lightgrey);
     g.drawRoundedRectangle(border, 6.0f, 1.0f);
-    Point<float> block = getMapCoordinateFromView(fMouse);
+    juce::Point<float> block = getMapCoordinateFromView(fMouse);
     int y = kMargin;
     g.setColour(Colours::black);
     Font bold(14, Font::bold);
@@ -632,8 +632,8 @@ public:
           }
         }
         std::sort(regions.begin(), regions.end(), [](Region const &a, Region const &b) {
-          float distanceA = Point<float>(a.first * 512 + 256, a.second * 512 + 256).getDistanceFromOrigin();
-          float distanceB = Point<float>(b.first * 512 + 256, b.second * 512 + 256).getDistanceFromOrigin();
+          float distanceA = juce::Point<float>(a.first * 512 + 256, a.second * 512 + 256).getDistanceFromOrigin();
+          float distanceB = juce::Point<float>(b.first * 512 + 256, b.second * 512 + 256).getDistanceFromOrigin();
           return distanceA < distanceB;
         });
         for (Region region : regions) {
@@ -679,8 +679,8 @@ public:
         }
       }
       std::sort(files.begin(), files.end(), [](auto const &a, auto const &b) {
-        float distanceA = Point<float>(a.first.first * 512 + 256, a.first.second * 512 + 256).getDistanceFromOrigin();
-        float distanceB = Point<float>(b.first.first * 512 + 256, b.first.second * 512 + 256).getDistanceFromOrigin();
+        float distanceA = juce::Point<float>(a.first.first * 512 + 256, a.first.second * 512 + 256).getDistanceFromOrigin();
+        float distanceB = juce::Point<float>(b.first.first * 512 + 256, b.first.second * 512 + 256).getDistanceFromOrigin();
         return distanceA < distanceB;
       });
       std::vector<File> sorted;
@@ -1373,7 +1373,7 @@ private:
 
   void unsafeDrawBackground() {
     using namespace juce;
-    Point<int> size = fSize.load();
+    juce::Point<int> size = fSize.load();
     const int width = size.x;
     const int height = size.y;
     const float desktopScale = (float)fGLContext.getRenderingScale();
@@ -1391,7 +1391,7 @@ private:
     Graphics g(*glRenderer);
     g.addTransform(AffineTransform::scale(desktopScale, desktopScale));
 
-    Point<float> mapOriginPx = getViewCoordinateFromMap({0.0f, 0.0f}, current);
+    juce::Point<float> mapOriginPx = getViewCoordinateFromMap({0.0f, 0.0f}, current);
     int const xoffset = int(floor(mapOriginPx.x)) % (2 * kCheckeredPatternSize);
     int const yoffset = int(floor(mapOriginPx.y)) % (2 * kCheckeredPatternSize);
 
@@ -1420,7 +1420,7 @@ private:
     for (Region region : fLoadingRegions) {
       int const x = region.first * 512;
       int const z = region.second * 512;
-      Point<float> topLeft = getViewCoordinateFromMap(Point<float>(x, z), current);
+      juce::Point<float> topLeft = getViewCoordinateFromMap(juce::Point<float>(x, z), current);
       float const regionSize = 512.0f / current.fBlocksPerPixel;
       g.fillRect(topLeft.x, topLeft.y, regionSize, regionSize);
     }
@@ -1697,12 +1697,12 @@ private:
 
     PopupMenu menu;
     menu.addItem(1, TRANS("Put a pin here"));
-    Point<int> pos = e.getScreenPosition();
+    juce::Point<int> pos = e.getScreenPosition();
     menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(juce::Rectangle<int>(pos, pos)), [this, e, dim, current](int menuId) {
       if (menuId != 1) {
         return;
       }
-      Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
+      juce::Point<float> pinPos = getMapCoordinateFromView(e.getPosition().toFloat(), current);
       PinEdit edit;
       edit.fNew = true;
       auto pin = std::make_shared<Pin>();
@@ -1738,13 +1738,13 @@ private:
     using namespace juce;
     PinComponent *pinComponent = new PinComponent(pin);
     pinComponent->updatePinPosition(getViewCoordinateFromMap(pinComponent->getMapCoordinate()));
-    pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    pinComponent->onRightClick = [this](std::shared_ptr<Pin> pin, juce::Point<int> screenPos) {
       handlePinRightClicked(pin, screenPos);
     };
-    pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    pinComponent->onDoubleClick = [this](std::shared_ptr<Pin> pin, juce::Point<int> screenPos) {
       handlePinDoubleClicked(pin, screenPos);
     };
-    pinComponent->onDrag = [this](std::shared_ptr<Pin> pin, Point<int> screenPos) {
+    pinComponent->onDrag = [this](std::shared_ptr<Pin> pin, juce::Point<int> screenPos) {
       handlePinDrag(pin, screenPos);
     };
     pinComponent->onDragEnd = [this](std::shared_ptr<Pin> pin) {
@@ -1767,17 +1767,17 @@ private:
     using namespace juce;
     LookAt const lookAt = clampedLookAt();
     for (auto const &pin : fPinComponents) {
-      Point<float> pos = pin->getMapCoordinate();
+      juce::Point<float> pos = pin->getMapCoordinate();
       if (fDimension == Dimension::TheNether) {
         if (pin->getDimension() != Dimension::TheNether) {
-          pos = Point<float>(pos.x / 8, pos.y / 8);
+          pos = juce::Point<float>(pos.x / 8, pos.y / 8);
           pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
         } else {
           pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
         }
       } else if (fDimension == Dimension::Overworld) {
         if (pin->getDimension() != Dimension::Overworld) {
-          pos = Point<float>(pos.x * 8, pos.y * 8);
+          pos = juce::Point<float>(pos.x * 8, pos.y * 8);
           pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
         } else {
           pin->updatePinPosition(getViewCoordinateFromMap(pos, lookAt));
@@ -1828,10 +1828,10 @@ private:
 
   void handlePinDrag(std::shared_ptr<Pin> const &pin, juce::Point<int> screenPos) {
     using namespace juce;
-    Point<int> p = getScreenPosition();
+    juce::Point<int> p = getScreenPosition();
     LookAt lookAt = fLookAt.load();
-    Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
-    Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
+    juce::Point<float> viewPos(screenPos.x - p.x, screenPos.y - p.y);
+    juce::Point<float> mapPos = getMapCoordinateFromView(viewPos, lookAt);
     pin->fX = floor(mapPos.x);
     pin->fZ = floor(mapPos.y) + 1;
     for (auto const &comp : fPinComponents) {
