@@ -148,7 +148,7 @@ class ConcertinaPanel : public juce::Component {
 
 public:
   void resized() override {
-    updatePanelSizes(-1);
+    updatePanelSizes(-1, false);
   }
 
   void addPanel(int insertIndex, juce::Component *component, bool takeOwnership) {
@@ -199,7 +199,7 @@ public:
     }
     int prev = fPanels[index]->fBodyHeight;
     fPanels[index]->fBodyHeight = std::max(newHeightIncludingHeaderHeight - fPanels[index]->fHeaderHeight, 0);
-    updatePanelSizes(index);
+    updatePanelSizes(index, animate);
     return prev != fPanels[index]->fBodyHeight;
   }
 
@@ -215,7 +215,7 @@ public:
       return;
     }
     fPanels[index]->fHeaderHeight = std::max(headerSize, 0);
-    updatePanelSizes(index);
+    updatePanelSizes(index, false);
   }
 
   void setCustomPanelHeader(juce::Component *panelComponent, juce::Component *customHeaderComponent, bool takeOwnership) {
@@ -263,7 +263,7 @@ public:
         fPanels[i]->fBodyHeight = 0;
       }
     }
-    updatePanelSizes(index);
+    updatePanelSizes(index, animate);
     return true;
   }
 
@@ -341,10 +341,10 @@ private:
         remainingBottom -= newHeight + headerHeight;
       }
     }
-    updatePanelSizes(-1);
+    updatePanelSizes(-1, false);
   }
 
-  void updatePanelSizes(int priorityPanelIndex) {
+  void updatePanelSizes(int priorityPanelIndex, bool animate) {
     auto bounds = getLocalBounds();
     int availableHeight = bounds.getHeight();
 
@@ -360,17 +360,36 @@ private:
     }
     int remainingHeight = availableHeight - priorityPanelHeight;
 
+    auto &animator = juce::Desktop::getInstance().getAnimator();
+    int duration = 150;
+    double startSpeed = 1;
+    double endSpeed = 1;
+
     for (int i = 0; i < (int)fPanels.size(); i++) {
       int headerHeight = fPanels[i]->fHeaderHeight;
       if (i == (int)fPanels.size() - 1) {
-        fPanels[i]->setBounds(bounds);
+        if (animate) {
+          animator.animateComponent(fPanels[i].get(), bounds, 1, duration, false, startSpeed, endSpeed);
+        } else {
+          fPanels[i]->setBounds(bounds);
+        }
         fPanels[i]->fBodyHeight = std::max(bounds.getHeight() - headerHeight, 0);
       } else if (i == priorityPanelIndex) {
-        fPanels[i]->setBounds(bounds.removeFromTop(priorityPanelHeight));
+        auto b = bounds.removeFromTop(priorityPanelHeight);
+        if (animate) {
+          animator.animateComponent(fPanels[i].get(), b, 1, duration, false, startSpeed, endSpeed);
+        } else {
+          fPanels[i]->setBounds(b);
+        }
         fPanels[i]->fBodyHeight = std::max(priorityPanelHeight - headerHeight, 0);
       } else {
         int newHeight = std::max((int)round((fPanels[i]->fBodyHeight + headerHeight) / (double)availableHeightExcludingPriorityPanel * remainingHeight), 0);
-        fPanels[i]->setBounds(bounds.removeFromTop(newHeight));
+        auto b = bounds.removeFromTop(newHeight);
+        if (animate) {
+          animator.animateComponent(fPanels[i].get(), b, 1, duration, false, startSpeed, endSpeed);
+        } else {
+          fPanels[i]->setBounds(b);
+        }
         fPanels[i]->fBodyHeight = std::max(newHeight - headerHeight, 0);
       }
     }
