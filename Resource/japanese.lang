@@ -37,3 +37,5 @@ language: Japanese
 "Error" = "エラー"
 "Failed compiling shader" = "シェーダーのコンパイルに失敗しました"
 "The selected world could not be opened" = "ワールドを読み込めませんでした"
+"Java" = "Java 版"
+"Bedrock" = "統合版"

@@ -146,13 +146,13 @@ private:
       fPanel->removePanel(fPanel->getPanel(0));
     }
     if (fJava) {
-      addPanel(fJava.get(), "Java");
+      addPanel(fJava.get(), TRANS("Java"));
     }
     if (fBedrock) {
-      addPanel(fBedrock.get(), "Bedrock");
+      addPanel(fBedrock.get(), TRANS("Bedrock"));
     }
     if (fCustom) {
-      addPanel(fCustom.get(), "Custom");
+      addPanel(fCustom.get(), TRANS("Other"));
     }
   }
 
