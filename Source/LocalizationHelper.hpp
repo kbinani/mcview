@@ -25,7 +25,7 @@ public:
   static std::vector<juce::String> PreferredLanguages() {
 #if JUCE_WINDOWS
     using namespace std;
-    vector<String> ret;
+    vector<juce::String> ret;
 
     ULONG num = 0;
     ULONG size = 0;
