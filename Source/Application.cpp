@@ -10,6 +10,8 @@
 #include <latch>
 #include <variant>
 
+#include "db/_readonly-db.hpp"
+
 // clang-format off
 #include "defer.hpp"
 
@@ -35,8 +37,6 @@
 #include "TimerInstance.hpp"
 #include "ThreadPool.hpp"
 #include "VisibleRegions.hpp"
-#include "FirewallEnv.hpp"
-#include "ProxyEnv.hpp"
 
 #include "ImageButton.hpp"
 #include "AboutComponent.hpp"

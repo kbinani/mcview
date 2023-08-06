@@ -75,9 +75,6 @@ public:
         fCapturingToImage(false) {
     using namespace juce;
 
-    WorkingDirectory().createDirectory();
-    fFirewallEnv.reset(new FirewallEnv(PathFromFile(WorkingDirectory())));
-
     if (auto *peer = getPeer()) {
       peer->setCurrentRenderingEngine(0);
     }
@@ -207,7 +204,6 @@ public:
       pool->abandon(-1);
       pool.reset();
     }
-    fFirewallEnv.reset();
 
     fGLContext.detach();
   }
@@ -543,34 +539,33 @@ public:
     WorldData data = WorldData::Load(worldDataFile);
 
     std::shared_ptr<leveldb::DB> db;
-    std::shared_ptr<ProxyEnv> env;
+    std::shared_ptr<je2be::ReadonlyDb::Closer> dbAttachment;
     std::optional<int64_t> lastPlayed;
     if (fPool) {
       fPool->abandon(0);
       if (auto pool = dynamic_cast<BedrockTexturePackThreadPool *>(fPool.get()); pool && pool->fWorldDirectory == directory && edition == Edition::Bedrock) {
         db = pool->fDb;
-        env = pool->fEnv;
+        dbAttachment = pool->fDbAttachment;
         lastPlayed = pool->fLastPlayed;
       }
       fPoolTrashBin.push_back(std::move(fPool));
     }
     if (edition == Edition::Bedrock) {
-      if (!db || !env) {
+      if (!db || !dbAttachment) {
         juce::String workDirName = juce::String("proxy-") + juce::Uuid().toDashedString();
         juce::File work = WorkingDirectory().getChildFile(workDirName);
         if (work.deleteRecursively() && work.createDirectory()) {
           auto path = PathFromFile(directory);
-          env = std::make_shared<ProxyEnv>(fFirewallEnv.get(), path, PathFromFile(work));
-          leveldb::Options options;
-          options.env = env.get();
           leveldb::DB *ptr = nullptr;
-          if (auto st = leveldb::DB::Open(options, path / "db", &ptr); st.ok()) {
+          auto closer = std::move(je2be::ReadonlyDb::Open(path / "db", &ptr, PathFromFile(work)));
+          if (closer && ptr) {
+            dbAttachment.reset(closer.release());
             db.reset(ptr);
           }
           lastPlayed = ReadLastPlayedTimestamp(path / "level.dat");
         }
       }
-      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, lastPlayed, db, env, this));
+      fPool.reset(new BedrockTexturePackThreadPool(directory, dim, lastPlayed, db, dbAttachment, this));
     } else {
       fPool.reset(new JavaTexturePackThreadPool(directory, dim, this));
     }
@@ -1959,7 +1954,6 @@ private:
   juce::Atomic<bool> fCapturingToImage;
   std::unique_ptr<SavePNGProgressWindow> fSavePngWindow;
   std::unique_ptr<TimerInstance> fCaptureButtonEnableTimer;
-  std::unique_ptr<FirewallEnv> fFirewallEnv;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MapViewComponent)
 };

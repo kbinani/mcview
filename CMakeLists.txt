@@ -124,8 +124,6 @@ list(APPEND mcview_files
   Source/JavaWorldScanThread.hpp
   Source/BedrockWorldScanThread.hpp
   Source/ColorMat.hpp
-  Source/FirewallEnv.hpp
-  Source/ProxyEnv.hpp
   Source/DirectoryCleanupThread.hpp
   Source/WorldScanThread.hpp
   Source/ImageButton.hpp
