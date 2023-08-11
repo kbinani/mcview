@@ -1,3 +1,7 @@
+Version 4.0.1
+・Fixed the fade-in effect disappearing when the region finished loading
+・Fixed missing translations
+
 Version 4.0.0
 ・You can now load the Bedrock edition worlds
 ・Terrain can now be drawn in the same color as the in-game map
