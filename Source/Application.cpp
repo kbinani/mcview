@@ -10,6 +10,9 @@
 #include <latch>
 #include <variant>
 
+#include <je2be/integers.hpp>
+#include <je2be/strings.hpp>
+
 #include "db/_readonly-db.hpp"
 
 // clang-format off
