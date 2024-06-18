@@ -103,7 +103,6 @@ list(APPEND mcview_files
   Source/GLAttributes.hpp
   Source/GLBuffer.hpp
   Source/GameDirectoryBrowserModel.hpp
-  Source/NotoSansTypeface.hpp
   Resource/Shader/tile.vert
   Resource/Shader/color.frag
   Source/PinEdit.hpp
@@ -159,18 +158,6 @@ juce_add_binary_data(binary-data
     Resource/japanese.lang
     Resource/shader/tile.vert
     Resource/shader/color.frag)
-juce_add_binary_data(font-data
-  NAMESPACE mcview::FontData
-  HEADER_NAME FontData.hpp
-  SOURCES
-    Resource/NotoSans-Regular.ttf
-    Resource/NotoSans-Bold.ttf
-    Resource/NotoSansJP-Regular.ttf
-    Resource/NotoSansJP-Bold.ttf
-    Resource/NotoSansSC-Regular.otf
-    Resource/NotoSansSC-Bold.otf
-    Resource/NotoSansTC-Regular.otf
-    Resource/NotoSansTC-Bold.otf)
 
 target_compile_definitions(mcview
   PRIVATE
@@ -191,7 +178,7 @@ if (MSVC)
   target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
 elseif(APPLE)
-  foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip font-data binary-data)
+  foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip binary-data)
     set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,YES,NO>)
   endforeach()
 endif()
@@ -199,7 +186,6 @@ endif()
 target_link_libraries(mcview
   PRIVATE
     binary-data
-    font-data
     je2be
     juce::juce_gui_extra
     juce::juce_opengl

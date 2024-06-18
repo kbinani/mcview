@@ -8,7 +8,7 @@ class AboutComponent : public juce::Component {
     Content() {
       fLines = {
           CreateLabel(juce::String("Version: ") + juce::String::fromUTF8(JUCE_APPLICATION_VERSION_STRING)),
-          CreateLabel("Copyright (C) 2019, 2022, 2023 kbinani"),
+          CreateLabel("Copyright (C) 2019, 2022, 2023, 2024 kbinani"),
           CreateLabel(""),
           CreateLabel("Acknowledgement"),
           CreateLabel(""),
@@ -32,22 +32,6 @@ class AboutComponent : public juce::Component {
 
           CreateLabel("Android SDK Sources"),
           CreateLink("https://github.com/AndroidSDKSources/android-sdk-sources-for-api-level-28"),
-          CreateLabel(""),
-
-          CreateLabel("Noto Sans"),
-          CreateLink("https://fonts.google.com/noto/specimen/Noto+Sans"),
-          CreateLabel(""),
-
-          CreateLabel("Noto Sans JP"),
-          CreateLink("https://fonts.google.com/noto/specimen/Noto+Sans+JP"),
-          CreateLabel(""),
-
-          CreateLabel("Noto Sans TC"),
-          CreateLink("https://fonts.google.com/noto/specimen/Noto+Sans+TC"),
-          CreateLabel(""),
-
-          CreateLabel("Noto Sans SC"),
-          CreateLink("https://fonts.google.com/noto/specimen/Noto+Sans+SC"),
           CreateLabel(""),
       };
       for (auto const &line : fLines) {

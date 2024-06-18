@@ -1,7 +1,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <minecraft-file.hpp>
 
-#include "toje/_block-data.hpp"
+#include "bedrock/_block-data.hpp"
 
 #include "Dimension.hpp"
 #include "Palette.hpp"
@@ -170,7 +170,7 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, Dimensi
       if (job.shouldExit()) {
         return nullptr;
       }
-      auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), &db, mcfile::Endian::Little, {});
+      auto chunk = mcfile::be::Chunk::Load(cx, cz, DimensionFromDimension(dim), &db, mcfile::Encoding::LittleEndian, {});
       if (!chunk) {
         continue;
       }
@@ -199,7 +199,7 @@ PixelARGB *RegionToTexture::LoadBedrock(leveldb::DB &db, int rx, int rz, Dimensi
           }
           auto info = PillarPixelInfo(dim, x, z, chunk->maxBlockY(), [&chunk](int x, int y, int z) -> mcfile::blocks::BlockId {
             if (auto blockB = chunk->blockAt(x, y, z); blockB) {
-              if (auto blockJ = je2be::toje::BlockData::From(*blockB); blockJ) {
+              if (auto blockJ = je2be::bedrock::BlockData::From(*blockB, mcfile::je::Chunk::kDataVersion); blockJ) {
                 return blockJ->fId;
               }
             }

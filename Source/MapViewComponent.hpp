@@ -557,8 +557,8 @@ public:
         if (work.deleteRecursively() && work.createDirectory()) {
           auto path = PathFromFile(directory);
           leveldb::DB *ptr = nullptr;
-          auto closer = std::move(je2be::ReadonlyDb::Open(path / "db", &ptr, PathFromFile(work)));
-          if (closer && ptr) {
+          std::unique_ptr<je2be::ReadonlyDb::Closer> closer;
+          if (auto st = je2be::ReadonlyDb::Open(path / "db", &ptr, PathFromFile(work), closer); st.ok() && closer && ptr) {
             dbAttachment.reset(closer.release());
             db.reset(ptr);
           }
@@ -1122,7 +1122,7 @@ private:
     if (!fs->valid()) {
       return std::nullopt;
     }
-    mcfile::stream::InputStreamReader reader(fs, mcfile::Endian::Little);
+    mcfile::stream::InputStreamReader reader(fs, mcfile::Encoding::LittleEndian);
     uint32_t version;
     if (!reader.read(&version)) {
       return std::nullopt;
@@ -1137,7 +1137,7 @@ private:
       return std::nullopt;
     }
     fs.reset();
-    auto comp = mcfile::nbt::CompoundTag::Read(buffer, mcfile::Endian::Little);
+    auto comp = mcfile::nbt::CompoundTag::Read(buffer, mcfile::Encoding::LittleEndian);
     if (!comp) {
       return std::nullopt;
     }

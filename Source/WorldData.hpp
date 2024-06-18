@@ -18,7 +18,7 @@ public:
     juce::FileOutputStream stream(path);
     stream.truncate();
     stream.setPosition(0);
-    obj->writeAsJSON(stream, 4, false, 16);
+    obj->writeAsJSON(stream, juce::JSON::FormatOptions().withSpacing(juce::JSON::Spacing::singleLine).withIndentLevel(4).withMaxDecimalPlaces(16));
   }
 
   static WorldData Load(juce::File path) {

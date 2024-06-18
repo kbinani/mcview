@@ -12,6 +12,7 @@
 
 #include <je2be/integers.hpp>
 #include <je2be/strings.hpp>
+#include <je2be/status.hpp>
 
 #include "db/_readonly-db.hpp"
 
@@ -19,9 +20,7 @@
 #include "defer.hpp"
 
 #include "BinaryData.hpp"
-#include "FontData.hpp"
 #include "LocalizationHelper.hpp"
-#include "NotoSansTypeface.hpp"
 #include "LookAndFeel.hpp"
 #include "PaletteType.hpp"
 #include "LightingType.hpp"
