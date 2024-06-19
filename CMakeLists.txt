@@ -172,7 +172,6 @@ if (MSVC)
     PRIVATE
       NOMINMAX
       WIN32_LEAN_AND_MEAN
-      $<$<CONFIG:RelWithDebInfo>:JUCE_DEBUG=1>
   )
   target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
