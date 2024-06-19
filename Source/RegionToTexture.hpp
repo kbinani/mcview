@@ -236,21 +236,28 @@ public:
 private:
   static juce::PixelARGB PackPixelInfoToARGB(uint32_t height, uint8_t waterDepth, uint8_t biome, uint32_t block, uint8_t biomeRadius) {
     using namespace juce;
-    // [v3 pixel info]
-    // h:            9bit
-    // waterDepth:   7bit
-    // biome:        3bit
-    // block:       10bit
-    // biomeRadius:  3bit
     static_assert((int)Biome::max_Biome <= 1 << 3, "");
-    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 10, "");
+    static_assert(mcfile::blocks::minecraft::minecraft_max_block_id <= 1 << 16, "");
+
+    // [v4 pixel info]
+    // h:                      9bit
+    // block/waterDepth flag:  1bit => 1: block, 0: waterDepth
+    // block or waterDepth:   16bit
+    // biome:                  3bit
+    // biomeRadius:            3bit
+    /*
+     AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
+     hhhhhhhhhfwwwwwwwwwwwwwwwwbbbrrr : v4
+     hhhhhhhhhwwwwwwwbbboooooooooorrr : v3
+     hhhhhhhhwwwwwwwbbbboooooooooorrr : v2
+     */
 
     uint32_t depth = std::min(std::max((uint32_t)(waterDepth / double(0xFF) * double(0x7F)), (uint32_t)0), (uint32_t)0x7F);
     if (waterDepth > 0 && depth == 0) {
       depth = 1;
     }
 
-    uint32_t const num = (0xFF800000 & (height << 23)) | (0x7F0000 & (uint32_t(depth) << 16)) | (0xE000 & (uint32_t(biome) << 13)) | (0x1FF8 & (uint32_t(block) << 3)) | (0x7 & (uint32_t)biomeRadius);
+    uint32_t const num = (0xff800000 & (height << 23)) | (waterDepth > 0 ? 0 : 0x400000) | (0x3fffc0 & ((waterDepth > 0 ? depth : block) << 6)) | (0x38 & (uint32_t(biome) << 3)) | (0x7 & uint32_t(biomeRadius));
     PixelARGB p;
     p.setARGB(0xFF & (num >> 24), 0xFF & (num >> 16), 0xFF & (num >> 8), 0xFF & num);
     return p;

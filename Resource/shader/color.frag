@@ -45,16 +45,16 @@ float altitudeFromColor(vec4 color) {
 }
 
 BlockInfo pixelInfo(vec4 color) {
-    // h:            9bit
-    // waterDepth:   7bit
-    // biome:        3bit
-    // block:       10bit
-    // biomeRadius:  3bit
+    // [v4 pixel info]
+    // h:                      9bit
+    // block/waterDepth flag:  1bit => 1: block, 0: waterDepth
+    // block or waterDepth:   16bit
+    // biome:                  3bit
+    // biomeRadius:            3bit
 
     /*
      AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
-     hhhhhhhhhwwwwwwwbbboooooooooorrr : v3
-     hhhhhhhhwwwwwwwbbbboooooooooorrr : v2
+     hhhhhhhhhfwwwwwwwwwwwwwwwwbbbrrr : v4
      */
 
     int a = int(color.a * 255.0);
@@ -63,10 +63,21 @@ BlockInfo pixelInfo(vec4 color) {
     int b = int(color.b * 255.0);
 
     float h = altitudeFromColor(color);
-    int depth = 0x7f & r;
-    int biome = g >> 5;
-    int block = ((0x1f & g) << 5) + ((0xf8 & b) >> 3);
-    int biomeRadius = 0x7 & b;
+
+    int block;
+    int depth;
+    int blockOrDepth = ((0x3f & r) << 10) + (g << 2) + ((0xc0 & b) >> 6);
+    if ((0x1 & (r >> 6)) == 0x1) {
+      // block
+      depth = 0;
+      block = blockOrDepth;
+    } else {
+      // waterDepth
+      depth = blockOrDepth;
+      block = waterBlockId;
+    }
+    int biome = (b >> 3) & 0x7;
+    int biomeRadius = b & 0x7;
     BlockInfo info;
     info.height = h;
     info.waterDepth = float(depth) / 127.0 * 255.0;
