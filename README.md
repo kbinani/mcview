@@ -23,4 +23,3 @@ Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.
 - je2be-core: https://github.com/kbinani/je2be-core
 - libminecraft-file: https://github.com/kbinani/libminecraft-file
 - Android SDK Sources: https://github.com/AndroidSDKSources/android-sdk-sources-for-api-level-28
-- Google Noto Font: https://fonts.google.com/noto/fonts
