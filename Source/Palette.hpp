@@ -17,7 +17,11 @@ public:
 
   static uint32_t const kDefaultOceanColor = 0xff3359a2;
 
-  // static void ResearchJava(std::filesystem::path);
+#if MCVIEW_ENABLE_PALETTE_PREP
+  static void ResearchJava(std::string const &name);
+  static void ResearchBedrock(std::string const &name, int64_t mapId);
+  static void ValidatePalette(std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const &, std::string const &);
+#endif
 };
 
 } // namespace mcview
