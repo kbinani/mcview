@@ -134,7 +134,7 @@ public:
     int const width = 512;
     int const height = 512;
 
-    std::vector<PixelInfo> pixelInfo(width * height, PixelInfo{-1, 0, 0});
+    std::vector<PixelInfo> pixelInfo(width * height, PixelInfo{0, 0, 0});
     std::vector<Biome> biomes(width * height, Biome::Other);
 
     int const minX = region.minBlockX();
