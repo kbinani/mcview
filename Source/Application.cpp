@@ -5,6 +5,7 @@
 #include <minecraft-file.hpp>
 #include <nlohmann/json.hpp>
 
+#include <deque>
 #include <filesystem>
 #include <iostream>
 #include <latch>

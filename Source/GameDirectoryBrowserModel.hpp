@@ -10,6 +10,11 @@ public:
     virtual void directoryBrowserModelDidSelectDirectory(juce::File directory) = 0;
   };
 
+  struct Item {
+    juce::File fDirectory;
+    juce::String fLevelName;
+  };
+
   DirectoryBrowserModel(Delegate *delegate, juce::File directory, juce::Colour dotMarkerColor, juce::LookAndFeel const &laf)
       : fDirectory(directory), fDelegate(delegate), fDotMarkerColor(dotMarkerColor) {
 
@@ -18,9 +23,32 @@ public:
       if (!file.isDirectory()) {
         continue;
       }
-      fItems.add(file);
+      Item item;
+      item.fDirectory = file;
+      item.fLevelName = file.getFileName();
+      auto levelnametxt = file.getChildFile("levelname.txt");
+      auto leveldat = file.getChildFile("level.dat");
+      if (levelnametxt.existsAsFile()) {
+        juce::FileInputStream stream(levelnametxt);
+        if (stream.openedOk()) {
+          item.fLevelName = stream.readEntireStreamAsString().trim();
+        }
+      } else if (leveldat.existsAsFile()) {
+        if (auto stream = std::make_shared<mcfile::stream::GzFileInputStream>(PathFromFile(leveldat)); stream && stream->valid()) {
+          if (auto dat = mcfile::nbt::CompoundTag::Read(stream, mcfile::Encoding::Java); dat) {
+            if (auto data = dat->compoundTag(u8"Data"); data) {
+              if (auto name = data->string(u8"LevelName"); name) {
+                item.fLevelName = juce::String::fromUTF8(name->c_str());
+              }
+            }
+          }
+        }
+      }
+      fItems.push_back(item);
     }
-    fItems.sort();
+    std::sort(fItems.begin(), fItems.end(), [](Item const &left, Item const &right) {
+      return left.fDirectory.getFileName().compare(right.fDirectory.getFileName()) < 0;
+    });
 
     applyLookAndFeel(laf);
   }
@@ -46,7 +74,17 @@ public:
     g.setColour(fDotMarkerColor);
     g.fillEllipse(cx - actualRadius, cy - actualRadius, actualRadius * 2, actualRadius * 2);
 
-    juce::String const name = fItems[rowNumber].getFileName();
+    juce::String name;
+    auto const &item = fItems[rowNumber];
+    if (item.fLevelName.isNotEmpty()) {
+      if (item.fLevelName == item.fDirectory.getFileName()) {
+        name = item.fLevelName;
+      } else {
+        name = item.fLevelName + juce::String::fromUTF8(u8"　[") + item.fDirectory.getFileName() + "]";
+      }
+    } else {
+      name = item.fDirectory.getFileName();
+    }
     g.setColour(rowIsSelected ? fTextColorOn : fTextColorOff);
     g.drawFittedText(name, margin + radius * 2 + margin, 0, width - 3 * margin - radius * 2, height, juce::Justification::centredLeft, 1);
   }
@@ -59,13 +97,13 @@ public:
   }
 
   void listBoxItemDoubleClicked(int row, juce::MouseEvent const &) override {
-    juce::File dir = fItems[row];
-    fDelegate->directoryBrowserModelDidSelectDirectory(dir);
+    auto item = fItems[row];
+    fDelegate->directoryBrowserModelDidSelectDirectory(item.fDirectory);
   }
 
 private:
   juce::File const fDirectory;
-  juce::Array<juce::File> fItems;
+  std::deque<Item> fItems;
   juce::Colour fTextColorOff;
   juce::Colour fTextColorOn;
   juce::Colour fBackgroundColorOff;
