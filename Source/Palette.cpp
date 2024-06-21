@@ -77,6 +77,7 @@ static Colour const kColorSculk(5, 41, 49);
 static Colour const kColorBookshelf(192, 155, 97);
 static Colour const kColorTorchflower(243, 183, 39);
 static Colour const kColorPitcher(188, 154, 252);
+static Colour const kColorTuff(98, 106, 107);
 
 static Colour const kColorGravel = kColorStone;
 
@@ -996,6 +997,65 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   K(pitcher_plant, kColorPitcher)
   C(sniffer_egg, 186, 77, 57)
   K(suspicious_gravel, kColorGravel)
+
+  // 1.21
+  K(tuff_stairs, kColorTuff)
+  K(tuff_slab, kColorTuff)
+  K(tuff_wall, kColorTuff)
+  K(chiseled_tuff, kColorTuff)
+  K(polished_tuff, kColorTuff)
+  K(polished_tuff_stairs, kColorTuff)
+  K(polished_tuff_slab, kColorTuff)
+  K(polished_tuff_wall, kColorTuff)
+  K(tuff_bricks, kColorTuff)
+  K(tuff_brick_stairs, kColorTuff)
+  K(tuff_brick_slab, kColorTuff)
+  K(tuff_brick_wall, kColorTuff)
+  K(chiseled_tuff_bricks, kColorTuff)
+  C(trial_spawner, 24, 43, 56)
+  C(crafter, 159, 159, 159)
+  K(chiseled_copper, kColorCopper)
+  K(exposed_chiseled_copper, kColorExposedCopper)
+  K(weathered_chiseled_copper, kColorWeatheredCopper)
+  K(oxidized_chiseled_copper, kColorOxidizedCopper)
+  K(waxed_chiseled_copper, kColorCopper)
+  K(waxed_exposed_chiseled_copper, kColorExposedCopper)
+  K(waxed_weathered_chiseled_copper, kColorWeatheredCopper)
+  K(waxed_oxidized_chiseled_copper, kColorOxidizedCopper)
+  K(copper_grate, kColorCopper)
+  K(exposed_copper_grate, kColorExposedCopper)
+  K(weathered_copper_grate, kColorWeatheredCopper)
+  K(oxidized_copper_grate, kColorOxidizedCopper)
+  K(waxed_copper_grate, kColorCopper)
+  K(waxed_exposed_copper_grate, kColorExposedCopper)
+  K(waxed_weathered_copper_grate, kColorWeatheredCopper)
+  K(waxed_oxidized_copper_grate, kColorOxidizedCopper)
+  K(copper_door, kColorCopper)
+  K(exposed_copper_door, kColorExposedCopper)
+  K(weathered_copper_door, kColorWeatheredCopper)
+  K(oxidized_copper_door, kColorOxidizedCopper)
+  K(waxed_copper_door, kColorCopper)
+  K(waxed_exposed_copper_door, kColorExposedCopper)
+  K(waxed_weathered_copper_door, kColorWeatheredCopper)
+  K(waxed_oxidized_copper_door, kColorOxidizedCopper)
+  K(copper_trapdoor, kColorCopper)
+  K(exposed_copper_trapdoor, kColorExposedCopper)
+  K(weathered_copper_trapdoor, kColorWeatheredCopper)
+  K(oxidized_copper_trapdoor, kColorOxidizedCopper)
+  K(waxed_copper_trapdoor, kColorCopper)
+  K(waxed_exposed_copper_trapdoor, kColorExposedCopper)
+  K(waxed_weathered_copper_trapdoor, kColorWeatheredCopper)
+  K(waxed_oxidized_copper_trapdoor, kColorOxidizedCopper)
+  K(copper_bulb, kColorCopper)
+  K(exposed_copper_bulb, kColorExposedCopper)
+  K(weathered_copper_bulb, kColorWeatheredCopper)
+  K(oxidized_copper_bulb, kColorOxidizedCopper)
+  K(waxed_copper_bulb, kColorCopper)
+  K(waxed_exposed_copper_bulb, kColorExposedCopper)
+  K(waxed_weathered_copper_bulb, kColorWeatheredCopper)
+  K(waxed_oxidized_copper_bulb, kColorOxidizedCopper)
+  C(vault, 24, 43, 56)
+  C(heavy_core, 144, 151, 169)
 #undef C
 #undef K
 
