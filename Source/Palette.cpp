@@ -3,10 +3,16 @@
 #include <minecraft-file.hpp>
 
 #include "bedrock/_block-data.hpp"
+
 #include <je2be.hpp>
 
+// clang-format off
+#include "Dimension.hpp"
 #include "File.hpp"
 #include "Palette.hpp"
+#include "ThreadPool.hpp"
+#include "RegionToTexture.hpp"
+// clang-format on
 
 using namespace juce;
 using namespace mcfile::blocks::minecraft;
@@ -2157,8 +2163,8 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(andesite_stairs, 96, 96, 96)
   C(andesite_wall, 96, 96, 96)
   C(anvil, 144, 144, 144)
-  // unexpected block: expected=minecraft:attached_melon_stem, actual=minecraft:melon_stem, r=0, g=106, b=0
-  // unexpected block: expected=minecraft:attached_pumpkin_stem, actual=minecraft:pumpkin_stem, r=0, g=106, b=0
+  C(attached_melon_stem, 0, 106, 0)
+  C(attached_pumpkin_stem, 0, 106, 0)
   C(azure_bluet, 0, 106, 0)
   C(bamboo, 0, 106, 0)
   C(bamboo_sapling, 123, 102, 62)
@@ -2184,7 +2190,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(birch_wall_sign, 213, 201, 140)
   C(birch_wood, 213, 201, 140)
   C(black_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:black_bed, actual=minecraft:white_bed, r=21, g=21, b=21
+  C(black_bed, 21, 21, 21)
   C(black_carpet, 21, 21, 21)
   C(black_concrete, 21, 21, 21)
   C(black_concrete_powder, 21, 21, 21)
@@ -2193,7 +2199,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(black_stained_glass, 21, 21, 21)
   C(black_stained_glass_pane, 79, 79, 79)
   C(black_terracotta, 31, 18, 13)
-  // unexpected block: expected=minecraft:black_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(black_wall_banner, 123, 102, 62)
   C(black_wool, 21, 21, 21)
   C(blast_furnace, 96, 96, 96)
   C(coal_block, 21, 21, 21)
@@ -2204,7 +2210,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(quartz_block, 220, 217, 211)
   C(redstone_block, 220, 0, 0)
   C(blue_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:blue_bed, actual=minecraft:white_bed, r=44, g=65, b=153
+  C(blue_bed, 44, 65, 153)
   C(blue_carpet, 44, 65, 153)
   C(blue_concrete, 44, 65, 153)
   C(blue_concrete_powder, 44, 65, 153)
@@ -2215,7 +2221,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(blue_stained_glass, 44, 65, 153)
   C(blue_stained_glass_pane, 79, 79, 79)
   C(blue_terracotta, 65, 53, 79)
-  // unexpected block: expected=minecraft:blue_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(blue_wall_banner, 123, 102, 62)
   C(blue_wool, 44, 65, 153)
   C(bone_block, 213, 201, 140)
   C(bookshelf, 123, 102, 62)
@@ -2229,7 +2235,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(brick_wall, 132, 44, 44)
   C(bricks, 132, 44, 44)
   C(brown_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:brown_bed, actual=minecraft:white_bed, r=88, g=65, b=44
+  C(brown_bed, 88, 65, 44)
   C(brown_carpet, 88, 65, 44)
   C(brown_concrete, 88, 65, 44)
   C(brown_concrete_powder, 88, 65, 44)
@@ -2240,7 +2246,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(brown_stained_glass, 88, 65, 44)
   C(brown_stained_glass_pane, 79, 79, 79)
   C(brown_terracotta, 65, 43, 30)
-  // unexpected block: expected=minecraft:brown_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(brown_wall_banner, 123, 102, 62)
   C(brown_wool, 88, 65, 44)
   C(bubble_column, 55, 55, 220)
   C(bubble_coral, 125, 162, 75)
@@ -2279,14 +2285,14 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(cornflower, 0, 106, 0)
   C(cracked_stone_bricks, 96, 96, 96)
   C(crafting_table, 123, 102, 62)
-  // unexpected block: expected=minecraft:creeper_head, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:creeper_wall_head, actual=minecraft:skull, r=79, g=79, b=79
+  C(creeper_head, 79, 79, 79)
+  C(creeper_wall_head, 79, 79, 79)
   C(cut_red_sandstone, 186, 109, 44)
   C(cut_red_sandstone_slab, 186, 109, 44)
   C(cut_sandstone, 213, 201, 140)
   C(cut_sandstone_slab, 213, 201, 140)
   C(cyan_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:cyan_bed, actual=minecraft:white_bed, r=65, g=109, b=132
+  C(cyan_bed, 65, 109, 132)
   C(cyan_carpet, 65, 109, 132)
   C(cyan_concrete, 65, 109, 132)
   C(cyan_concrete_powder, 65, 109, 132)
@@ -2295,7 +2301,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(cyan_stained_glass, 65, 109, 132)
   C(cyan_stained_glass_pane, 79, 79, 79)
   C(cyan_terracotta, 75, 79, 79)
-  // unexpected block: expected=minecraft:cyan_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(cyan_wall_banner, 123, 102, 62)
   C(cyan_wool, 65, 109, 132)
   C(damaged_anvil, 144, 144, 144)
   C(dandelion, 0, 106, 0)
@@ -2348,8 +2354,8 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(dirt, 130, 94, 66)
   C(dispenser, 96, 96, 96)
   C(dragon_egg, 21, 21, 21)
-  // unexpected block: expected=minecraft:dragon_head, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:dragon_wall_head, actual=minecraft:skull, r=79, g=79, b=79
+  C(dragon_head, 79, 79, 79)
+  C(dragon_wall_head, 79, 79, 79)
   C(dried_kelp_block, 88, 109, 44)
   C(dropper, 96, 96, 96)
   C(emerald_ore, 96, 96, 96)
@@ -2386,7 +2392,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(grass_block, 125, 162, 75)
   C(gravel, 96, 96, 96)
   C(gray_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:gray_bed, actual=minecraft:white_bed, r=65, g=65, b=65
+  C(gray_bed, 65, 65, 65)
   C(gray_carpet, 65, 65, 65)
   C(gray_concrete, 65, 65, 65)
   C(gray_concrete_powder, 65, 65, 65)
@@ -2395,10 +2401,10 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(gray_stained_glass, 65, 65, 65)
   C(gray_stained_glass_pane, 79, 79, 79)
   C(gray_terracotta, 49, 35, 30)
-  // unexpected block: expected=minecraft:gray_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(gray_wall_banner, 123, 102, 62)
   C(gray_wool, 65, 65, 65)
   C(green_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:green_bed, actual=minecraft:white_bed, r=88, g=109, b=44
+  C(green_bed, 88, 109, 44)
   C(green_carpet, 88, 109, 44)
   C(green_concrete, 88, 109, 44)
   C(green_concrete_powder, 88, 109, 44)
@@ -2407,7 +2413,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(green_stained_glass, 88, 109, 44)
   C(green_stained_glass_pane, 79, 79, 79)
   C(green_terracotta, 65, 70, 36)
-  // unexpected block: expected=minecraft:green_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(green_wall_banner, 123, 102, 62)
   C(green_wool, 88, 109, 44)
   C(grindstone, 144, 144, 144)
   C(hay_block, 197, 197, 44)
@@ -2457,7 +2463,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(lectern, 123, 102, 62)
   C(lever, 79, 79, 79)
   C(light_blue_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:light_blue_bed, actual=minecraft:white_bed, r=88, g=132, b=186
+  C(light_blue_bed, 88, 132, 186)
   C(light_blue_carpet, 88, 132, 186)
   C(light_blue_concrete, 88, 132, 186)
   C(light_blue_concrete_powder, 88, 132, 186)
@@ -2466,10 +2472,10 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(light_blue_stained_glass, 88, 132, 186)
   C(light_blue_stained_glass_pane, 79, 79, 79)
   C(light_blue_terracotta, 96, 93, 119)
-  // unexpected block: expected=minecraft:light_blue_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(light_blue_wall_banner, 123, 102, 62)
   C(light_blue_wool, 88, 132, 186)
   C(light_gray_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:light_gray_bed, actual=minecraft:white_bed, r=132, g=132, b=132
+  C(light_gray_bed, 132, 132, 132)
   C(light_gray_carpet, 132, 132, 132)
   C(light_gray_concrete, 132, 132, 132)
   C(light_gray_concrete_powder, 132, 132, 132)
@@ -2478,14 +2484,14 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(light_gray_stained_glass, 132, 132, 132)
   C(light_gray_stained_glass_pane, 79, 79, 79)
   C(light_gray_terracotta, 116, 92, 84)
-  // unexpected block: expected=minecraft:light_gray_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(light_gray_wall_banner, 123, 102, 62)
   C(light_gray_wool, 132, 132, 132)
   C(light_weighted_pressure_plate, 215, 205, 66)
   C(lilac, 0, 106, 0)
   C(lily_of_the_valley, 0, 106, 0)
   C(lily_pad, 0, 106, 0)
   C(lime_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:lime_bed, actual=minecraft:white_bed, r=109, g=176, b=21
+  C(lime_bed, 109, 176, 21)
   C(lime_carpet, 109, 176, 21)
   C(lime_concrete, 109, 176, 21)
   C(lime_concrete_powder, 109, 176, 21)
@@ -2494,11 +2500,11 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(lime_stained_glass, 109, 176, 21)
   C(lime_stained_glass_pane, 79, 79, 79)
   C(lime_terracotta, 88, 100, 45)
-  // unexpected block: expected=minecraft:lime_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(lime_wall_banner, 123, 102, 62)
   C(lime_wool, 109, 176, 21)
   C(loom, 123, 102, 62)
   C(magenta_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:magenta_bed, actual=minecraft:white_bed, r=153, g=65, b=186
+  C(magenta_bed, 153, 65, 186)
   C(magenta_carpet, 153, 65, 186)
   C(magenta_concrete, 153, 65, 186)
   C(magenta_concrete_powder, 153, 65, 186)
@@ -2507,7 +2513,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(magenta_stained_glass, 153, 65, 186)
   C(magenta_stained_glass_pane, 79, 79, 79)
   C(magenta_terracotta, 128, 75, 93)
-  // unexpected block: expected=minecraft:magenta_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(magenta_wall_banner, 123, 102, 62)
   C(magenta_wool, 153, 65, 186)
   C(magma_block, 96, 1, 0)
   C(melon, 109, 176, 21)
@@ -2552,7 +2558,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(observer, 96, 96, 96)
   C(obsidian, 21, 21, 21)
   C(orange_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:orange_bed, actual=minecraft:white_bed, r=186, g=109, b=44
+  C(orange_bed, 186, 109, 44)
   C(orange_carpet, 186, 109, 44)
   C(orange_concrete, 186, 109, 44)
   C(orange_concrete_powder, 186, 109, 44)
@@ -2562,14 +2568,14 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(orange_stained_glass_pane, 79, 79, 79)
   C(orange_terracotta, 137, 70, 31)
   C(orange_tulip, 0, 106, 0)
-  // unexpected block: expected=minecraft:orange_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(orange_wall_banner, 123, 102, 62)
   C(orange_wool, 186, 109, 44)
   C(oxeye_daisy, 0, 106, 0)
   C(packed_ice, 138, 138, 220)
   C(peony, 0, 106, 0)
   // unexpected block: expected=minecraft:petrified_oak_slab, actual=minecraft:oak_slab, r=123, g=102, b=62
   C(pink_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:pink_bed, actual=minecraft:white_bed, r=208, g=109, b=142
+  C(pink_bed, 208, 109, 142)
   C(pink_carpet, 208, 109, 142)
   C(pink_concrete, 208, 109, 142)
   C(pink_concrete_powder, 208, 109, 142)
@@ -2579,12 +2585,12 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(pink_stained_glass_pane, 79, 79, 79)
   C(pink_terracotta, 138, 66, 67)
   C(pink_tulip, 0, 106, 0)
-  // unexpected block: expected=minecraft:pink_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(pink_wall_banner, 123, 102, 62)
   C(pink_wool, 208, 109, 142)
   C(piston, 96, 96, 96)
   C(piston_head, 96, 96, 96)
-  // unexpected block: expected=minecraft:player_head, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:player_wall_head, actual=minecraft:skull, r=79, g=79, b=79
+  C(player_head, 79, 79, 79)
+  C(player_wall_head, 79, 79, 79)
   C(podzol, 111, 74, 42)
   C(polished_andesite, 96, 96, 96)
   C(polished_andesite_slab, 96, 96, 96)
@@ -2633,7 +2639,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(pumpkin, 186, 109, 44)
   C(pumpkin_stem, 0, 106, 0)
   C(purple_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:purple_bed, actual=minecraft:white_bed, r=132, g=77, b=176
+  C(purple_bed, 132, 77, 176)
   C(purple_carpet, 132, 77, 176)
   C(purple_concrete, 132, 77, 176)
   C(purple_concrete_powder, 132, 77, 176)
@@ -2642,7 +2648,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(purple_stained_glass, 132, 77, 176)
   C(purple_stained_glass_pane, 79, 79, 79)
   C(purple_terracotta, 105, 62, 75)
-  // unexpected block: expected=minecraft:purple_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(purple_wall_banner, 123, 102, 62)
   C(purple_wool, 132, 77, 176)
   C(purpur_block, 153, 65, 186)
   C(purpur_pillar, 153, 65, 186)
@@ -2653,7 +2659,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(quartz_stairs, 220, 217, 211)
   C(rail, 79, 79, 79)
   C(red_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:red_bed, actual=minecraft:white_bed, r=132, g=44, b=44
+  C(red_bed, 132, 44, 44)
   C(red_carpet, 132, 44, 44)
   C(red_concrete, 132, 44, 44)
   C(red_concrete_powder, 132, 44, 44)
@@ -2674,7 +2680,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(red_stained_glass_pane, 79, 79, 79)
   C(red_terracotta, 122, 51, 39)
   C(red_tulip, 0, 106, 0)
-  // unexpected block: expected=minecraft:red_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(red_wall_banner, 123, 102, 62)
   C(red_wool, 132, 44, 44)
   C(comparator, 79, 79, 79)
   C(redstone_wire, 79, 79, 79)
@@ -2695,8 +2701,8 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(sea_pickle, 88, 109, 44)
   C(seagrass, 55, 55, 220)
   C(shulker_box, 132, 77, 176)
-  // unexpected block: expected=minecraft:skeleton_skull, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:skeleton_wall_skull, actual=minecraft:skull, r=79, g=79, b=79
+  C(skeleton_skull, 79, 79, 79)
+  C(skeleton_wall_skull, 79, 79, 79)
   C(slime_block, 109, 153, 48)
   C(smithing_table, 123, 102, 62)
   C(smoker, 96, 96, 96)
@@ -2789,13 +2795,13 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(white_stained_glass_pane, 79, 79, 79)
   C(white_terracotta, 180, 152, 138)
   C(white_tulip, 0, 106, 0)
-  // unexpected block: expected=minecraft:white_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(white_wall_banner, 123, 102, 62)
   C(white_wool, 220, 220, 220)
   C(wither_rose, 0, 106, 0)
-  // unexpected block: expected=minecraft:wither_skeleton_skull, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:wither_skeleton_wall_skull, actual=minecraft:skull, r=79, g=79, b=79
+  C(wither_skeleton_skull, 79, 79, 79)
+  C(wither_skeleton_wall_skull, 79, 79, 79)
   C(yellow_banner, 123, 102, 62)
-  // unexpected block: expected=minecraft:yellow_bed, actual=minecraft:white_bed, r=197, g=197, b=44
+  C(yellow_bed, 197, 197, 44)
   C(yellow_carpet, 197, 197, 44)
   C(yellow_concrete, 197, 197, 44)
   C(yellow_concrete_powder, 197, 197, 44)
@@ -2804,10 +2810,10 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(yellow_stained_glass, 197, 197, 44)
   C(yellow_stained_glass_pane, 79, 79, 79)
   C(yellow_terracotta, 160, 114, 31)
-  // unexpected block: expected=minecraft:yellow_wall_banner, actual=minecraft:wall_banner, r=123, g=102, b=62
+  C(yellow_wall_banner, 123, 102, 62)
   C(yellow_wool, 197, 197, 44)
-  // unexpected block: expected=minecraft:zombie_head, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:zombie_wall_head, actual=minecraft:skull, r=79, g=79, b=79
+  C(zombie_head, 79, 79, 79)
+  C(zombie_wall_head, 79, 79, 79)
   C(bee_nest, 197, 197, 44)
   C(beehive, 123, 102, 62)
   C(honey_block, 186, 109, 44)
@@ -2877,8 +2883,8 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(crimson_door, 127, 54, 83)
   C(warped_door, 50, 122, 120)
   C(target, 220, 220, 220)
-  // unexpected block: expected=minecraft:twisting_vines_plant, actual=minecraft:twisting_vines, r=65, g=109, b=132
-  // unexpected block: expected=minecraft:weeping_vines_plant, actual=minecraft:weeping_vines, r=96, g=1, b=0
+  C(twisting_vines_plant, 65, 109, 132)
+  C(weeping_vines_plant, 96, 1, 0)
   C(warped_wart_block, 17, 155, 114)
   C(quartz_bricks, 220, 217, 211)
   C(stripped_crimson_hyphae, 79, 21, 25)
@@ -2945,9 +2951,9 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(potted_azalea_bush, 79, 79, 79)
   C(potted_flowering_azalea_bush, 79, 79, 79)
   C(powder_snow, 220, 220, 220)
-  // unexpected block: expected=minecraft:water_cauldron, actual=minecraft:cauldron, r=96, g=96, b=96
+  C(water_cauldron, 96, 96, 96)
   C(lava_cauldron, 96, 96, 96)
-  // unexpected block: expected=minecraft:powder_snow_cauldron, actual=minecraft:cauldron, r=96, g=96, b=96
+  C(powder_snow_cauldron, 96, 96, 96)
   C(dirt_path, 130, 94, 66)
   C(rooted_dirt, 130, 94, 66)
   C(flowering_azalea_leaves, 0, 106, 0)
@@ -3024,7 +3030,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(pointed_dripstone, 79, 79, 79)
   C(light, 79, 79, 79)
   C(cave_vines, 0, 106, 0)
-  // unexpected block: expected=minecraft:cave_vines_plant, actual=minecraft:cave_vines, r=0, g=106, b=0
+  C(cave_vines_plant, 0, 106, 0)
   C(glow_lichen, 109, 144, 129)
   C(potted_crimson_fungus, 79, 79, 79)
   C(potted_warped_fungus, 79, 79, 79)
@@ -3098,8 +3104,8 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   C(mangrove_wall_hanging_sign, 132, 44, 44)
   C(oak_hanging_sign, 123, 102, 62)
   C(oak_wall_hanging_sign, 123, 102, 62)
-  // unexpected block: expected=minecraft:piglin_head, actual=minecraft:skull, r=79, g=79, b=79
-  // unexpected block: expected=minecraft:piglin_wall_head, actual=minecraft:skull, r=79, g=79, b=79
+  C(piglin_head, 79, 79, 79)
+  C(piglin_wall_head, 79, 79, 79)
   C(spruce_hanging_sign, 111, 74, 42)
   C(spruce_wall_hanging_sign, 111, 74, 42)
   C(stripped_bamboo_block, 197, 197, 44)
@@ -3249,6 +3255,15 @@ std::optional<juce::Colour> Palette::BedrockColorFromId(mcfile::blocks::BlockId 
 #if MCVIEW_ENABLE_PALETTE_PREP
 void Palette::ValidatePalette(std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const &p, std::string const &title) {
   for (mcfile::blocks::BlockId id = 1; id < mcfile::blocks::minecraft::minecraft_max_block_id; id++) {
+    if (IsWater(id)) {
+      continue;
+    }
+    if (RegionToTexture::kTransparentBlocks.count(id) > 0) {
+      continue;
+    }
+    if (RegionToTexture::kPlantBlocks.count(id) > 0) {
+      continue;
+    }
     if (auto found = p.find(id); found == p.end()) {
       auto name = mcfile::blocks::Name(id, 9999);
       juce::Logger::outputDebugString(juce::String("[") + title + "] " + juce::String::fromUTF8(name.c_str()) + " not found");
@@ -3346,6 +3361,7 @@ void Palette::ResearchJava(std::string const &name) {
 
 void Palette::ResearchBedrock(std::string const &name, int64_t mapId) {
   using namespace std;
+  using namespace mcfile::blocks;
   std::filesystem::path dir = PathFromFile(DefaultBedrockSaveDirectory()) / name / "db";
   leveldb::DB *ptr = nullptr;
   leveldb::DB::Open({}, dir, &ptr);
@@ -3372,6 +3388,7 @@ void Palette::ResearchBedrock(std::string const &name, int64_t mapId) {
     }
     auto blockB = chunk->blockAt(x, y, z);
     auto blockJ = je2be::bedrock::BlockData::From(*blockB, 9999);
+
     int colorIndex = 4 * ((x - x0) + 128 * (z - z0));
     x += 2;
     if (x >= x0 + 128) {
@@ -3383,31 +3400,77 @@ void Palette::ResearchBedrock(std::string const &name, int64_t mapId) {
     uint8_t g = colors->fValue[colorIndex + 1];
     uint8_t b = colors->fValue[colorIndex + 2];
     uint8_t a = colors->fValue[colorIndex + 3];
-    ostringstream oss;
+    optional<juce::Colour> color = juce::Colour(r, g, b);
     defer {
-      auto s = oss.str();
-      if (!s.empty()) {
+      if (color) {
+        ostringstream oss;
+        oss << "C(" << shortName << ", " << (int)color->getRed() << ", " << (int)color->getGreen() << ", " << (int)color->getBlue() << ")";
         juce::Logger::outputDebugString(juce::String(oss.str()));
       }
     };
 
     if (blockJ->fName == name) {
-      oss << "C(" << (char const *)name.substr(10).c_str() << ", " << (int)r << ", " << (int)g << ", " << (int)b << ")";
+      // nop
     } else if (blockJ->fName == u8"minecraft:flower_pot") {
       // potted_* has same color as flower_pot
-      oss << "C(" << shortName << ", 79, 79, 79)";
+      color = {79, 79, 79};
     } else if (blockB->fName == u8"minecraft:standing_banner") {
       // all colored standing banner has same color
-      oss << "C(" << shortName << ", 123, 102, 62)";
+      color = {123, 102, 62};
+    } else if (blockB->fName == u8"minecraft:wall_banner") {
+      color = {123, 102, 62};
     } else if (blockB->fName == u8"minecraft:cauldron") {
       // all cauldron has same color
-      oss << "C(" << shortName << ", 96, 96, 96)";
-    } else if (id == mcfile::blocks::minecraft::attached_melon_stem) {
-      oss << "C(" << shortName << ", 0, 106, 0)";
-    } else if (id == mcfile::blocks::minecraft::attached_pumpkin_stem) {
-      oss << "C(" << shortName << ", 0, 106, 0)";
+      color = {96, 96, 96};
+    } else if (id == minecraft::attached_melon_stem) {
+      color = {0, 106, 0};
+    } else if (id == minecraft::attached_pumpkin_stem) {
+      color = {0, 106, 0};
+    } else if (blockB->fName == u8"minecraft:skull") {
+      color = {79, 79, 79};
+    } else if (id == minecraft::cave_vines_plant) {
+      color = {0, 106, 0};
+    } else if (id == minecraft::twisting_vines) {
+      color = {65, 109, 132};
+    } else if (id == minecraft::weeping_vines_plant) {
+      color = {96, 1, 0};
+    } else if (id == minecraft::twisting_vines_plant) {
+      color = {65, 109, 132};
+    } else if (id == minecraft::black_bed) {
+      color = {21, 21, 21};
+    } else if (id == minecraft::blue_bed) {
+      color = {44, 65, 153};
+    } else if (id == minecraft::brown_bed) {
+      color = {88, 65, 44};
+    } else if (id == minecraft::cyan_bed) {
+      color = {65, 109, 132};
+    } else if (id == minecraft::gray_bed) {
+      color = {65, 65, 65};
+    } else if (id == minecraft::green_bed) {
+      color = {88, 109, 44};
+    } else if (id == minecraft::light_blue_bed) {
+      color = {88, 132, 186};
+    } else if (id == minecraft::light_gray_bed) {
+      color = {132, 132, 132};
+    } else if (id == minecraft::lime_bed) {
+      color = {109, 176, 21};
+    } else if (id == minecraft::magenta_bed) {
+      color = {153, 65, 186};
+    } else if (id == minecraft::orange_bed) {
+      color = {186, 109, 44};
+    } else if (id == minecraft::pink_bed) {
+      color = {208, 109, 142};
+    } else if (id == minecraft::purple_bed) {
+      color = {132, 77, 176};
+    } else if (id == minecraft::red_bed) {
+      color = {132, 44, 44};
+    } else if (id == minecraft::yellow_bed) {
+      color = {197, 197, 44};
     } else {
-      oss << "// unexpected block: expected=" << (char const *)name.c_str() << ", actual=" << (char const *)std::u8string(blockJ->fName).c_str() << ", r=" << (int)r << ", g=" << (int)g << ", b=" << (int)b;
+      color = std::nullopt;
+      ostringstream ss;
+      ss << "// unexpected block: expected=" << (char const *)name.c_str() << ", actual=" << (char const *)std::u8string(blockJ->fName).c_str() << ", r=" << (int)r << ", g=" << (int)g << ", b=" << (int)b;
+      juce::Logger::outputDebugString(juce::String(ss.str()));
     }
   }
 }

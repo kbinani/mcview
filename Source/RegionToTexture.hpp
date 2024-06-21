@@ -140,45 +140,6 @@ public:
     int const minX = region.minBlockX();
     int const minZ = region.minBlockZ();
 
-#if 0
-  static std::atomic_bool init = true;
-  if (init.exchange(false)) {
-    std::set<mcfile::blocks::BlockId> ids;
-    for (auto it : kBlockToColor) {
-      ids.insert(it.first);
-    }
-    for (auto id : plantBlocks) {
-      ids.insert(id);
-    }
-    for (auto id : transparentBlocks) {
-      ids.insert(id);
-    }
-    int count = 0;
-    for (mcfile::blocks::BlockId id = 1; id < minecraft_max_block_id; id++) {
-      auto const it = ids.find(id);
-      if (IsWater(id)) {
-        continue;
-      }
-      if (it == ids.end()) {
-        std::u8string u8name = mcfile::blocks::Name(id);
-        auto name = String::fromUTF8((char const *)u8name.c_str(), u8name.size());
-        count++;
-        String n = name.replace(":", "::");
-        std::cout << "setblock " << count << " -60 0 " << name.toStdString() << std::endl;
-        if (n.startsWith("minecraft::")) {
-          n = n.substring(11);
-        }
-        juce::Logger::outputDebugString("{" + n.toStdString() + ", Colour()},");
-
-        /*
-         saves/world/datapacks/pack_name/data/directory_for_namespace/functions/name.mcfunction
-         /function directory_for_namespace:name
-         */
-      }
-    }
-  }
-#endif
-
     bool didset = false;
     bool completed = region.loadAllChunks(
         [&pixelInfo, &biomes, minX, minZ, width, height, &job, dim, &didset](mcfile::je::Chunk const &chunk) {
