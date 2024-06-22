@@ -1,3 +1,7 @@
+Version 4.1.0
+・Added support for Minecraft 1.21
+・Renewed the world list on the left side of the window
+
 Version 4.0.1
 ・Fixed the fade-in effect disappearing when the region finished loading
 ・Fixed missing translations
