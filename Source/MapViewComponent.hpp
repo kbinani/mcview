@@ -291,8 +291,8 @@ public:
     juce::Point<float> block = getMapCoordinateFromView(fMouse);
     int y = kMargin;
     g.setColour(Colours::black);
-    Font bold(14, Font::bold);
-    Font regular(14);
+    juce::Font bold(juce::FontOptions(14, juce::Font::bold));
+    juce::Font regular(juce::FontOptions(14));
     juce::Rectangle<int> line1(border.getX() + kMargin, y, border.getWidth() - 2 * kMargin, lineHeight);
     g.setFont(regular);
     g.drawText("X: ", line1, Justification::centredLeft);
@@ -314,7 +314,7 @@ public:
       g.fillAll(juce::Colours::black.withAlpha(0.5f));
 
       juce::AttributedString s;
-      juce::Font font(64);
+      juce::Font font(juce::FontOptions(64));
       s.append(TRANS("Shutting down"), font, juce::Colours::white);
       s.append(" ", font, juce::Colours::transparentWhite);
       s.append(".", sec % 3 == 0 ? juce::Colours::white : juce::Colours::transparentWhite);

@@ -17,7 +17,7 @@ public:
       : fPin(pin) {
     int const height = stemLength + pinHeadRadius * 2;
     juce::Point<float> pos(pinHeadRadius, height);
-    juce::Font font(pinNameFontSize);
+    juce::Font font(juce::FontOptions().withHeight(pinNameFontSize));
     juce::Rectangle<float> nameBounds = PinNameBounds(*fPin, font, pos);
     int const width = nameBounds.getRight();
     setSize(width, juce::jmax(height, height - (int)nameBounds.getY()));
@@ -34,7 +34,7 @@ public:
     };
 
     juce::Point<float> pos(pinHeadRadius, getHeight());
-    juce::Font font(pinNameFontSize);
+    juce::Font font(juce::FontOptions().withHeight(pinNameFontSize));
 
     g.setColour(juce::Colours::black.withAlpha(pinHeadShadowAlpha));
     g.fillEllipse(pos.x + pinHeadShadowOffset.x - pinHeadRadius, pos.y + pinHeadShadowOffset.y - pinHeadRadius - stemLength, pinHeadRadius * 2, pinHeadRadius * 2);
@@ -97,7 +97,7 @@ public:
 
   void updateSize() {
     int const h = stemLength + pinHeadRadius * 2;
-    juce::Font font(pinNameFontSize);
+    juce::Font font(juce::FontOptions().withHeight(pinNameFontSize));
     juce::Rectangle<float> nameBounds = PinNameBounds(*fPin, font, fPos);
     int const left = fPos.x - pinHeadRadius;
     int const width = nameBounds.getRight() - left;

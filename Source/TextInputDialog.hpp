@@ -26,7 +26,7 @@ public:
 #else
         = "Hiragino Kaku Gothic Pro";
 #endif
-    Font font(name, 16, 0);
+    juce::Font font(juce::FontOptions(name, 16, 0));
     fInputLabel->setFont(font);
     fInputLabel->setColour(Label::ColourIds::backgroundColourId, Colours::white);
     fInputLabel->setColour(Label::ColourIds::textColourId, Colours::black);
