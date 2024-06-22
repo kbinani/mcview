@@ -12,7 +12,8 @@ class GameDirectoryBrowser : public juce::ListBox, public DirectoryBrowserModel:
 public:
   GameDirectoryBrowser(juce::File directory, Edition edition, BrowserDelegate *delegate)
       : fDirectory(directory), fEdition(edition), fDelegate(delegate) {
-    fModel.reset(new DirectoryBrowserModel(this, directory, edition == Edition::Java ? juce::Colours::green : juce::Colours::lightgrey, getLookAndFeel()));
+    setRowHeight(60);
+    fModel.reset(new DirectoryBrowserModel(this, directory, getLookAndFeel()));
     setModel(fModel.get());
   }
 

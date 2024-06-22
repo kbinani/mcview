@@ -39,3 +39,5 @@ language: Japanese
 "The selected world could not be opened" = "ワールドを読み込めませんでした"
 "Java" = "Java 版"
 "Bedrock" = "統合版"
+"Open in Finder" = "Finder で開く"
+"Open in Explorer" = "エクスプローラで開く"
