@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="2560"
+   height="1600"
+   viewBox="0 0 677.33333 423.33335"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   sodipodi:docname="apple_store.svg"
+   inkscape:export-filename="apple_store3.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="px"
+     showgrid="false"
+     inkscape:zoom="0.12267852"
+     inkscape:cx="346.43392"
+     inkscape:cy="1381.66"
+     inkscape:current-layer="layer4"
+     units="px"
+     width="1920px"
+     inkscape:showpageshadow="0"
+     inkscape:deskcolor="#d1d1d1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="bg"
+     style="display:none"
+     sodipodi:insensitive="true">
+    <rect
+       style="fill:#ff0000;stroke-width:2.26806;stroke-linejoin:round;stroke-dashoffset:13.9374"
+       id="rect1426"
+       width="1079.1637"
+       height="740.19562"
+       x="-203.37939"
+       y="-77.8936"
+       ry="0.54874009" />
+  </g>
+  <g
+     inkscape:label="overworld"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:none">
+    <image
+       width="1079.1637"
+       height="607.0296"
+       preserveAspectRatio="none"
+       xlink:href="apple_store1_raw.png"
+       id="image917"
+       x="-203.37936"
+       y="-77.8936"
+       inkscape:svg-dpi="1" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="nether"
+     style="display:none">
+    <image
+       width="1079.1637"
+       height="607.0296"
+       preserveAspectRatio="none"
+       xlink:href="apple_store2_raw.png"
+       id="image1545"
+       x="-203.37939"
+       y="-77.8936"
+       style="display:inline" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="end"
+     style="display:inline">
+    <image
+       width="1079.1637"
+       height="607.0296"
+       preserveAspectRatio="none"
+       xlink:href="apple_store3_raw.png"
+       id="image1579"
+       x="-203.37939"
+       y="-77.8936" />
+  </g>
+</svg>

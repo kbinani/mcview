@@ -1,6 +1,6 @@
 # mcview
 
-Minecraft: top-down 2D map viewer for Minecraft Java Edition version 1.2.1 to 1.20
+Minecraft: top-down 2D map viewer for Minecraft Java and Bedrock
 
 ![overworld](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss1.png)
 ![nether](https://raw.githubusercontent.com/kbinani/mcview/master/image/ss2.png)
