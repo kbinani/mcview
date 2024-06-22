@@ -23,7 +23,7 @@ public:
         fLightingType(LightingType::topLeft) {
   }
 
-  juce::Array<juce::File> directories() const {
+  std::vector<juce::File> directories() const {
     return fDirectories;
   }
 
@@ -33,13 +33,13 @@ public:
         return;
       }
     }
-    fDirectories.add(d);
+    fDirectories.push_back(d);
   }
 
   void removeDirectory(juce::File d) {
     for (int i = 0; i < fDirectories.size(); i++) {
       if (fDirectories[i] == d) {
-        fDirectories.remove(i);
+        fDirectories.erase(fDirectories.begin() + i);
         return;
       }
     }
@@ -78,7 +78,7 @@ public:
         juce::File f(path);
 #endif
         if (f.exists() && f.isDirectory()) {
-          fDirectories.add(f);
+          fDirectories.push_back(f);
         }
       }
     }
@@ -277,7 +277,7 @@ private:
 #endif
 
 private:
-  juce::Array<juce::File> fDirectories;
+  std::vector<juce::File> fDirectories;
 };
 
 } // namespace mcview

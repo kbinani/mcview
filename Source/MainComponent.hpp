@@ -37,7 +37,7 @@ public:
     fBrowser->addRootDirectory(DefaultJavaSaveDirectory(), Edition::Java);
     fBrowser->addRootDirectory(DefaultBedrockSaveDirectory(), Edition::Bedrock);
 #endif
-    Array<juce::File> directories = fSettings->directories();
+    std::vector<juce::File> directories = fSettings->directories();
     for (int i = 0; i < directories.size(); i++) {
       fBrowser->addDirectory(directories[i]);
     }
@@ -49,8 +49,8 @@ public:
     fBrowser->onSelect = [this](GameDirectory d) {
       onSelect(d);
     };
-    fBrowser->onAdd = [this](GameDirectory d) {
-      fSettings->addDirectory(d.fDirectory);
+    fBrowser->onAdd = [this](juce::File d) {
+      fSettings->addDirectory(d);
       fSettings->save();
     };
     fBrowser->onRemove = [this](GameDirectory d) {

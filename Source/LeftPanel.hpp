@@ -70,6 +70,9 @@ public:
       }
       fJava.reset(new GameDirectoryBrowser(directory, Edition::Java, this));
       sortPanels();
+      if (onAdd) {
+        onAdd(directory);
+      }
       break;
     case Edition::Bedrock:
       if (fBedrock) {
@@ -77,14 +80,19 @@ public:
       }
       fBedrock.reset(new GameDirectoryBrowser(directory, Edition::Bedrock, this));
       sortPanels();
+      if (onAdd) {
+        onAdd(directory);
+      }
       break;
     }
   }
 
   std::optional<GameDirectory> addDirectory(juce::File const &directory) {
     if (directory == DefaultJavaSaveDirectory()) {
+      addRootDirectory(directory, Edition::Java);
       return std::nullopt;
     } else if (directory == DefaultBedrockSaveDirectory()) {
+      addRootDirectory(directory, Edition::Bedrock);
       return std::nullopt;
     }
     auto gd = fCustom->addDirectory(directory);
@@ -93,7 +101,7 @@ public:
     }
     updatePanelSizes();
     if (onAdd) {
-      onAdd(*gd);
+      onAdd(gd->fDirectory);
     }
     fTimerStarted = juce::Time::getCurrentTime();
     startTimerHz(50);
@@ -126,7 +134,7 @@ public:
   }
 
   std::function<void(GameDirectory)> onSelect;
-  std::function<void(GameDirectory)> onAdd;
+  std::function<void(juce::File)> onAdd;
   std::function<void(GameDirectory)> onRemove;
 
   static int constexpr kDefaultWidth = 214;
