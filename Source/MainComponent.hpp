@@ -221,7 +221,7 @@ public:
 private:
   void onSelect(GameDirectory const &gd) {
     fMapViewComponent->setWorldDirectory(gd.fDirectory, Dimension::Overworld, gd.fEdition);
-    getTopLevelComponent()->setName(gd.fLevelName + "  |  " + gd.fDirectory.getFullPathName());
+    getTopLevelComponent()->setName(gd.fLevelName.getText() + "  |  " + gd.fDirectory.getFullPathName());
     setBrowserOpened(false);
   }
 

@@ -7,14 +7,14 @@ class GameDirectory {
 
 public:
   juce::File fDirectory;
-  juce::String fLevelName;
+  juce::AttributedString fLevelName;
   juce::Image fIcon;
   std::optional<juce::Time> fLastPlayed;
   Edition fEdition;
 
   static std::optional<GameDirectory> Open(juce::File directory) {
     GameDirectory gd;
-    gd.fLevelName = directory.getFileName();
+    gd.fLevelName.append(directory.getFileName(), juce::Colours::white);
     gd.fDirectory = directory;
     if (directory.getChildFile("db").exists()) {
       gd.fEdition = Edition::Bedrock;
@@ -22,7 +22,7 @@ public:
         if (auto stream = directory.getChildFile("levelname.txt").createInputStream(); stream && stream->openedOk()) {
           auto name = stream->readEntireStreamAsString().trim();
           if (name.isNotEmpty()) {
-            gd.fLevelName = name;
+            gd.fLevelName = MakeAttributedString(name);
           }
         }
       }
@@ -50,7 +50,7 @@ public:
             if (auto name = data->string(u8"LevelName"); name) {
               auto n = juce::String::fromUTF8(name->c_str());
               if (n.isNotEmpty()) {
-                gd.fLevelName = n;
+                gd.fLevelName = MakeAttributedString(n);
               }
             }
             if (auto lastPlayed = data->int64(u8"LastPlayed"); lastPlayed) {
@@ -109,18 +109,29 @@ public:
     int lineHeight = bounds.getHeight() / 3;
     auto levelNameArea = bounds.removeFromTop(lineHeight);
     g.setColour(selected ? textColorOn : textColorOff);
-    auto levelName = fLevelName;
+    juce::AttributedString levelName;
+    levelName.append(fLevelName);
     if (!omitEdition) {
       switch (fEdition) {
       case Edition::Java:
-        levelName += " (Java)";
+        levelName.append(" (Java)", juce::Colours::white);
         break;
       case Edition::Bedrock:
-        levelName += " (Bedrock)";
+        levelName.append(" (Bedrock)", juce::Colours::white);
         break;
       }
     }
-    g.drawFittedText(levelName, levelNameArea, juce::Justification::centredLeft, 1);
+    levelName.setJustification(juce::Justification::centredLeft);
+    auto text = levelName.getText();
+    float width = g.getCurrentFont().getStringWidthFloat(levelName.getText());
+    g.saveState();
+    g.addTransform(juce::AffineTransform::translation(levelNameArea.getX(), levelNameArea.getY()));
+    if (width > 0) {
+      float scale = std::min<float>(1, levelNameArea.getWidth() / width);
+      g.addTransform(juce::AffineTransform().scaled(scale, 1));
+    }
+    levelName.draw(g, juce::Rectangle<float>(0, 0, std::numeric_limits<float>::max() * 0.5f, levelNameArea.getHeight()));
+    g.restoreState();
 
     auto directoryNameArea = bounds.removeFromTop(lineHeight);
     g.setColour(juce::Colours::grey);
@@ -175,6 +186,82 @@ public:
     int hour = t.getHours();
     int minute = t.getMinutes();
     return juce::String(year) + "/" + juce::String::formatted("%02d", month) + "/" + juce::String::formatted("%02d", day) + " " + juce::String(hour) + ":" + juce::String::formatted("%02d", minute);
+  }
+
+  static juce::AttributedString MakeAttributedString(juce::String const &s) {
+    juce::AttributedString r;
+    int offset = 0;
+    juce::Colour color = juce::Colours::white;
+    while (true) {
+      int index = s.indexOf(offset, juce::String(u8"\u00a7"));
+      if (index < 0) {
+        break;
+      }
+      r.append(s.substring(offset, index), color);
+      auto op = s.substring(index + 1, index + 2);
+      offset = index + 2;
+      if (op == "0") {
+        color = juce::Colour(0x00, 0x00, 0x00);
+      } else if (op == "1") {
+        color = juce::Colour(0x00, 0x00, 0xaa);
+      } else if (op == "2") {
+        color = juce::Colour(0x00, 0xAA, 0x00);
+      } else if (op == "3") {
+        color = juce::Colour(0x00, 0xAA, 0xAA);
+      } else if (op == "4") {
+        color = juce::Colour(0xAA, 0x00, 0x00);
+      } else if (op == "5") {
+        color = juce::Colour(0xAA, 0x00, 0xAA);
+      } else if (op == "6") {
+        color = juce::Colour(0xFF, 0xAA, 0x00);
+      } else if (op == "7") {
+        color = juce::Colour(0xAA, 0xAA, 0xAA);
+      } else if (op == "8") {
+        color = juce::Colour(0x55, 0x55, 0x55);
+      } else if (op == "9") {
+        color = juce::Colour(0x55, 0x55, 0xFF);
+      } else if (op == "a") {
+        color = juce::Colour(0x55, 0xFF, 0x55);
+      } else if (op == "b") {
+        color = juce::Colour(0x55, 0xFF, 0xFF);
+      } else if (op == "c") {
+        color = juce::Colour(0xFF, 0x55, 0x55);
+      } else if (op == "d") {
+        color = juce::Colour(0xFF, 0x55, 0xFF);
+      } else if (op == "e") {
+        color = juce::Colour(0xFF, 0xFF, 0x55);
+      } else if (op == "f") {
+        color = juce::Colour(0xFF, 0xFF, 0xFF);
+      } else if (op == "g") {
+        color = juce::Colour(221, 214, 5);
+      } else if (op == "h") {
+        color = juce::Colour(227, 212, 209);
+      } else if (op == "i") {
+        color = juce::Colour(206, 202, 202);
+      } else if (op == "j") {
+        color = juce::Colour(68, 58, 59);
+      } else if (op == "m") {
+        color = juce::Colour(151, 22, 7);
+      } else if (op == "n") {
+        color = juce::Colour(180, 104, 77);
+      } else if (op == "p") {
+        color = juce::Colour(222, 177, 45);
+      } else if (op == "q") {
+        color = juce::Colour(17, 160, 54);
+      } else if (op == "s") {
+        color = juce::Colour(44, 186, 168);
+      } else if (op == "t") {
+        color = juce::Colour(33, 73, 123);
+      } else if (op == "u") {
+        color = juce::Colour(154, 92, 198);
+      } else if (op == "r") {
+        color = juce::Colours::white;
+      }
+    }
+    if (offset < s.length()) {
+      r.append(s.substring(offset), color);
+    }
+    return r;
   }
 };
 
