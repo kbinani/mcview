@@ -199,12 +199,6 @@ target_include_directories(mcview
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mcview_files})
 
-if (APPLE)
-  execute_process(
-    COMMAND patch -p1 -N --input ../../JUCE.patch
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ext/JUCE)
-endif()
-
 if (MSVC)
   include_external_msproject(Package "${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.wapproj"
     TYPE C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5
