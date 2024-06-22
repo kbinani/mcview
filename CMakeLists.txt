@@ -37,7 +37,8 @@ endif()
 CPMAddPackage(
   NAME libminecraft-file
   GITHUB_REPOSITORY kbinani/libminecraft-file
-  GIT_TAG 0eb187427e24b099908788f9ee00adc6983546d6)
+  GIT_TAG 0eb187427e24b099908788f9ee00adc6983546d6
+)
 
 add_subdirectory(ext/je2be-core)
 add_subdirectory(ext/JUCE)
@@ -67,7 +68,7 @@ juce_add_gui_app(mcview
         <string>${mcview_macos_deployment_target}</string>
       </dict>
     </plist>"
-  COMPANY_COPYRIGHT "Copyright © 2019, 2022, 2023 kbinani"
+  COMPANY_COPYRIGHT "Copyright © 2019, 2022-2024 kbinani"
 )
 
 list(APPEND mcview_files
@@ -138,7 +139,7 @@ endif()
 
 target_sources(mcview PRIVATE ${mcview_files})
 
-juce_add_binary_data(binary-data
+juce_add_binary_data(mcview-binary-data
   NAMESPACE mcview::BinaryData
   HEADER_NAME BinaryData.hpp
   SOURCES
@@ -157,7 +158,8 @@ juce_add_binary_data(binary-data
     Resource/icon_large.png
     Resource/japanese.lang
     Resource/shader/tile.vert
-    Resource/shader/color.frag)
+    Resource/shader/color.frag
+)
 
 target_compile_definitions(mcview
   PRIVATE
@@ -176,33 +178,39 @@ if (MSVC)
   target_compile_options(mcview PRIVATE $<$<CONFIG:Release>:/Zi>)
   target_link_options(mcview PRIVATE $<$<CONFIG:Release>:/DEBUG>)
 elseif(APPLE)
-  foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip binary-data)
+  foreach (target IN ITEMS mcview leveldb je2be libdeflate_static minizip mcview-binary-data)
     set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH $<IF:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>,YES,NO>)
   endforeach()
 endif()
 
 target_link_libraries(mcview
   PRIVATE
-    binary-data
+    mcview-binary-data
     je2be
     juce::juce_gui_extra
     juce::juce_opengl
   PUBLIC
     juce::juce_recommended_config_flags
-    juce::juce_recommended_lto_flags)
+    juce::juce_recommended_lto_flags
+)
 
 target_include_directories(mcview
   PRIVATE
     ext/colormap-shaders/include
     ext/JUCE/modules/juce_graphics/image_formats
-    ext/je2be-core/src)
+    ext/je2be-core/src
+)
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mcview_files})
 
 if (MSVC)
   include_external_msproject(Package "${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.wapproj"
     TYPE C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5
-    GUID 33553e30-3cf6-4634-ad63-aa90ca486a7f)
+    GUID 33553e30-3cf6-4634-ad63-aa90ca486a7f
+  )
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest.in ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest
+)

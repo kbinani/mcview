@@ -8,7 +8,7 @@ class AboutComponent : public juce::Component {
     Content() {
       fLines = {
           CreateLabel(juce::String("Version: ") + juce::String::fromUTF8(JUCE_APPLICATION_VERSION_STRING)),
-          CreateLabel("Copyright (C) 2019, 2022, 2023, 2024 kbinani"),
+          CreateLabel("Copyright (C) 2019, 2022-2024 kbinani"),
           CreateLabel(""),
           CreateLabel("Acknowledgement"),
           CreateLabel(""),
