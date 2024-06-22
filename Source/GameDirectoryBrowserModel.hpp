@@ -70,7 +70,17 @@ public:
       fItems.push_back(item);
     }
     std::sort(fItems.begin(), fItems.end(), [](Item const &left, Item const &right) {
-      return left.fDirectory.getFileName().compare(right.fDirectory.getFileName()) < 0;
+      if (left.fLastPlayed && right.fLastPlayed) {
+        if (*left.fLastPlayed == *right.fLastPlayed) {
+          return left.fDirectory.getFileName().compare(right.fDirectory.getFileName()) < 0;
+        } else {
+          return *left.fLastPlayed > *right.fLastPlayed;
+        }
+      } else if (left.fLastPlayed) {
+        return true;
+      } else {
+        return false;
+      }
     });
 
     applyLookAndFeel(laf);
