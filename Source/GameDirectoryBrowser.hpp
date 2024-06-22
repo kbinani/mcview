@@ -4,16 +4,16 @@ namespace mcview {
 
 struct BrowserDelegate {
   virtual ~BrowserDelegate() = default;
-  virtual void browserDidSelectDirectory(Directory directory) = 0;
-  virtual void browserDidClickRemoveDirectory(Directory directory) = 0;
+  virtual void browserDidSelectDirectory(GameDirectory directory) = 0;
+  virtual void browserDidClickRemoveDirectory(GameDirectory directory) = 0;
 };
 
-class GameDirectoryBrowser : public juce::ListBox, public DirectoryBrowserModel::Delegate {
+class GameDirectoryBrowser : public juce::ListBox, public GameDirectoryBrowserModel::Delegate {
 public:
   GameDirectoryBrowser(juce::File directory, Edition edition, BrowserDelegate *delegate)
       : fDirectory(directory), fEdition(edition), fDelegate(delegate) {
     setRowHeight(60);
-    fModel.reset(new DirectoryBrowserModel(this, directory, getLookAndFeel()));
+    fModel.reset(new GameDirectoryBrowserModel(this, directory, getLookAndFeel()));
     setModel(fModel.get());
   }
 
@@ -21,11 +21,7 @@ public:
     fModel->applyLookAndFeel(getLookAndFeel());
   }
 
-  void directoryBrowserModelDidSelectDirectory(juce::File directory, juce::String levelName) override {
-    Directory d;
-    d.fDirectory = directory;
-    d.fEdition = fEdition;
-    d.fLevelName = levelName;
+  void directoryBrowserModelDidSelectDirectory(GameDirectory const &d) override {
     fDelegate->browserDidSelectDirectory(d);
   }
 
@@ -34,7 +30,7 @@ public:
   Edition const fEdition;
 
 private:
-  std::unique_ptr<DirectoryBrowserModel> fModel;
+  std::unique_ptr<GameDirectoryBrowserModel> fModel;
   BrowserDelegate *const fDelegate;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GameDirectoryBrowser)

@@ -23,22 +23,22 @@ public:
         fLightingType(LightingType::topLeft) {
   }
 
-  juce::Array<Directory> directories() const {
+  juce::Array<juce::File> directories() const {
     return fDirectories;
   }
 
-  void addDirectory(Directory d) {
+  void addDirectory(juce::File d) {
     for (int i = 0; i < fDirectories.size(); i++) {
-      if (fDirectories[i].fDirectory == d.fDirectory && fDirectories[i].fEdition == d.fEdition) {
+      if (fDirectories[i] == d) {
         return;
       }
     }
     fDirectories.add(d);
   }
 
-  void removeDirectory(Directory d) {
+  void removeDirectory(juce::File d) {
     for (int i = 0; i < fDirectories.size(); i++) {
-      if (fDirectories[i].fDirectory == d.fDirectory && fDirectories[i].fEdition == d.fEdition) {
+      if (fDirectories[i] == d) {
         fDirectories.remove(i);
         return;
       }
@@ -61,7 +61,6 @@ public:
     if (auto dirs = obj.find("directories"); dirs != obj.end() && dirs->is_array()) {
       for (auto const &dir : *dirs) {
         juce::String path;
-        Edition edition = Edition::Java;
         if (dir.is_string()) {
           // legacy
           continue;
@@ -69,12 +68,6 @@ public:
           if (auto p = dir.find("path"); p != dir.end() && p->is_string()) {
             auto s = p->get<std::string>();
             path = juce::String::fromUTF8(s.c_str(), s.size());
-            if (auto e = dir.find("edition"); e != dir.end() && e->is_string()) {
-              auto es = e->get<std::string>();
-              if (es == "bedrock") {
-                edition = Edition::Bedrock;
-              }
-            }
           } else {
             continue;
           }
@@ -85,10 +78,7 @@ public:
         juce::File f(path);
 #endif
         if (f.exists() && f.isDirectory()) {
-          Directory d;
-          d.fDirectory = f;
-          d.fEdition = edition;
-          fDirectories.add(d);
+          fDirectories.add(f);
         }
       }
     }
@@ -161,7 +151,7 @@ public:
     json dirs = json::array();
     for (int i = 0; i < fDirectories.size(); i++) {
       json item;
-      Directory dir = fDirectories[i];
+      juce::File dir = fDirectories[i];
 #if JUCE_MAC
       juce::String b = Bookmark(dir.fDirectory);
       if (b.isEmpty()) {
@@ -170,16 +160,8 @@ public:
       item["path"] = UTF8StringFromJuceString(b);
 #else
       std::string path;
-      item["path"] = UTF8StringFromJuceString(dir.fDirectory.getFullPathName());
+      item["path"] = UTF8StringFromJuceString(dir.getFullPathName());
 #endif
-      switch (dir.fEdition) {
-      case Edition::Bedrock:
-        item["edition"] = "bedrock";
-        break;
-      case Edition::Java:
-        item["edition"] = "java";
-        break;
-      }
       dirs.push_back(item);
     }
     obj["directories"] = dirs;
@@ -295,7 +277,7 @@ private:
 #endif
 
 private:
-  juce::Array<Directory> fDirectories;
+  juce::Array<juce::File> fDirectories;
 };
 
 } // namespace mcview

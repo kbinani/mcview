@@ -5,6 +5,7 @@ namespace mcview {
 class CustomDirectoryBrowser : public juce::ListBox, private juce::ListBoxModel {
 public:
   explicit CustomDirectoryBrowser(BrowserDelegate *delegate) : fDelegate(delegate) {
+    setRowHeight(60);
     setModel(this);
   }
 
@@ -13,51 +14,23 @@ public:
   }
 
   void paintListBoxItem(int rowNumber, juce::Graphics &g, int width, int height, bool rowIsSelected) override {
-    g.saveState();
-    defer {
-      g.restoreState();
-    };
-
     auto const &laf = getLookAndFeel();
     auto textColorOn = laf.findColour(juce::TextButton::ColourIds::textColourOnId);
     auto textColorOff = laf.findColour(juce::TextButton::ColourIds::textColourOffId);
     auto backgroundColorOn = laf.findColour(juce::TextButton::ColourIds::buttonOnColourId);
     auto backgroundColorOff = laf.findColour(juce::TextButton::ColourIds::buttonColourId);
-
-    int margin = 10;
-    g.setColour(rowIsSelected ? backgroundColorOn : backgroundColorOff);
-    g.fillRect(0, 0, width, height);
-
-    Directory const &d = fItems[rowNumber];
-    juce::String name = d.fDirectory.getFileName();
-    switch (d.fEdition) {
-    case Edition::Java:
-      name += " (Java)";
-      g.setColour(juce::Colours::green);
-      break;
-    case Edition::Bedrock:
-      name += " (Bedrock)";
-      g.setColour(juce::Colours::lightgrey);
-      break;
-    }
-    int radius = (height - 2 * margin) / 2;
-    float cx = margin + radius;
-    float cy = height * 0.5f;
-    int actualRadius = height * 0.5f / 2;
-    g.fillEllipse(cx - actualRadius, cy - actualRadius, actualRadius * 2, actualRadius * 2);
-    g.setColour(rowIsSelected ? textColorOn : textColorOff);
-    g.drawFittedText(name, margin + radius * 2 + margin, 0, width - 3 * margin - radius * 2, height, juce::Justification::centredLeft, 1);
+    fItems[rowNumber].draw(g, juce::Rectangle<int>(0, 0, width, height), rowIsSelected, false, textColorOn, textColorOff, backgroundColorOn, backgroundColorOff);
   }
 
   void listBoxItemDoubleClicked(int row, juce::MouseEvent const &) override {
-    Directory d = fItems[row];
+    GameDirectory const &d = fItems[row];
     fDelegate->browserDidSelectDirectory(d);
   }
 
   void listBoxItemClicked(int row, juce::MouseEvent const &ev) override {
     if (ev.mods.isRightButtonDown()) {
       juce::PopupMenu menu;
-      Directory d = fItems[row];
+      GameDirectory d = fItems[row];
       menu.addItem(TRANS("Unregister"), [this, d]() {
         onRemoveMenuClicked(d);
       });
@@ -66,19 +39,24 @@ public:
     }
   }
 
-  void addDirectory(Directory d) {
+  std::optional<GameDirectory> addDirectory(juce::File d) {
     for (auto const &i : fItems) {
-      if (d == i) {
-        return;
+      if (d == i.fDirectory) {
+        return std::nullopt;
       }
     }
-    fItems.push_back(d);
-    updateContent();
+    if (auto gd = GameDirectory::Open(d); gd) {
+      fItems.push_back(*gd);
+      updateContent();
+      return gd;
+    } else {
+      return std::nullopt;
+    }
   }
 
-  void removeDirectory(Directory d) {
+  void removeDirectory(GameDirectory d) {
     for (int i = (int)fItems.size() - 1; i >= 0; i--) {
-      if (fItems[i] == d) {
+      if (fItems[i].fDirectory == d.fDirectory) {
         fItems.erase(fItems.begin() + i);
       }
     }
@@ -86,7 +64,7 @@ public:
   }
 
 private:
-  void onRemoveMenuClicked(Directory d) {
+  void onRemoveMenuClicked(GameDirectory d) {
     auto options = juce::MessageBoxOptions()
                        .withButton(TRANS("Unregister"))
                        .withButton(TRANS("Cancel"))
@@ -103,7 +81,7 @@ private:
 
 private:
   BrowserDelegate *const fDelegate;
-  std::vector<Directory> fItems;
+  std::vector<GameDirectory> fItems;
 };
 
 } // namespace mcview

@@ -111,7 +111,6 @@ list(APPEND mcview_files
   Source/PaletteType.hpp
   Source/LightingType.hpp
   Source/Edition.hpp
-  Source/Directory.hpp
   Source/ThreadPool.hpp
   Source/TexturePackThreadPool.hpp
   Source/TexturePackJob.hpp
@@ -129,6 +128,7 @@ list(APPEND mcview_files
   Source/LeftPanelHeader.hpp
   Source/CustomDirectoryBrowser.hpp
   Source/ConcertinaPanel.hpp
+  Source/GameDirectory.hpp
 )
 if (APPLE)
   list(APPEND mcview_files Source/Application.mm)

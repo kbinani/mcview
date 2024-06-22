@@ -34,17 +34,10 @@ public:
 
     fBrowser.reset(new LeftPanel());
 #if !JUCE_MAC
-    Directory java;
-    java.fDirectory = DefaultJavaSaveDirectory();
-    java.fEdition = Edition::Java;
-    fBrowser->addDirectory(java);
-
-    Directory bedrock;
-    bedrock.fDirectory = DefaultBedrockSaveDirectory();
-    bedrock.fEdition = Edition::Bedrock;
-    fBrowser->addDirectory(bedrock);
+    fBrowser->addRootDirectory(DefaultJavaSaveDirectory(), Edition::Java);
+    fBrowser->addRootDirectory(DefaultBedrockSaveDirectory(), Edition::Bedrock);
 #endif
-    Array<Directory> directories = fSettings->directories();
+    Array<juce::File> directories = fSettings->directories();
     for (int i = 0; i < directories.size(); i++) {
       fBrowser->addDirectory(directories[i]);
     }
@@ -53,15 +46,15 @@ public:
       triggerAsyncUpdate();
     }
 #endif
-    fBrowser->onSelect = [this](Directory d) {
+    fBrowser->onSelect = [this](GameDirectory d) {
       onSelect(d);
     };
-    fBrowser->onAdd = [this](Directory d) {
-      fSettings->addDirectory(d);
+    fBrowser->onAdd = [this](GameDirectory d) {
+      fSettings->addDirectory(d.fDirectory);
       fSettings->save();
     };
-    fBrowser->onRemove = [this](Directory d) {
-      fSettings->removeDirectory(d);
+    fBrowser->onRemove = [this](GameDirectory d) {
+      fSettings->removeDirectory(d.fDirectory);
       fSettings->save();
     };
     addAndMakeVisible(fBrowser.get());
@@ -198,7 +191,7 @@ public:
 
   bool isInterestedInFileDrag(juce::StringArray const &files) override {
     for (auto const &file : files) {
-      if (auto d = Directory::Make(file); d) {
+      if (GameDirectory::HasInterest(juce::File(file))) {
         return true;
       }
     }
@@ -206,26 +199,29 @@ public:
   }
 
   void filesDropped(juce::StringArray const &files, int x, int y) override {
-    std::optional<Directory> open;
-    int num = 0;
+    std::optional<GameDirectory> open;
     for (auto const &file : files) {
-      if (auto d = Directory::Make(file); d) {
-        fBrowser->addDirectory(*d);
-        if (!open) {
-          open = *d;
-          num++;
+      juce::File f(file);
+      if (!GameDirectory::HasInterest(f)) {
+        continue;
+      }
+      if (f == DefaultJavaSaveDirectory()) {
+        fBrowser->addRootDirectory(f, Edition::Java);
+      } else if (f == DefaultBedrockSaveDirectory()) {
+        fBrowser->addRootDirectory(f, Edition::Bedrock);
+      } else {
+        if (auto gd = fBrowser->addDirectory(f); gd && !open) {
+          open = gd;
+          onSelect(*gd);
         }
       }
-    }
-    if (num == 1 && open) {
-      onSelect(*open);
     }
   }
 
 private:
-  void onSelect(Directory d) {
-    fMapViewComponent->setWorldDirectory(d.fDirectory, Dimension::Overworld, d.fEdition);
-    getTopLevelComponent()->setName(d.fDirectory.getFileName() + " (" + d.fLevelName + ")");
+  void onSelect(GameDirectory const &gd) {
+    fMapViewComponent->setWorldDirectory(gd.fDirectory, Dimension::Overworld, gd.fEdition);
+    getTopLevelComponent()->setName(gd.fLevelName + "  |  " + gd.fDirectory.getFullPathName());
     setBrowserOpened(false);
   }
 

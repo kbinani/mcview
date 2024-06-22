@@ -62,38 +62,49 @@ public:
     }
   }
 
-  void addDirectory(Directory directory) {
-    bool const java = directory.fDirectory.getFullPathName() == DefaultJavaSaveDirectory().getFullPathName();
-    bool const bedrock = directory.fDirectory.getFullPathName() == DefaultBedrockSaveDirectory().getFullPathName();
-
-    if (java) {
+  void addRootDirectory(juce::File const &directory, Edition edition) {
+    switch (edition) {
+    case Edition::Java:
       if (fJava) {
         fPanel->removePanel(fJava.get());
       }
-      fJava.reset(new GameDirectoryBrowser(directory.fDirectory, directory.fEdition, this));
+      fJava.reset(new GameDirectoryBrowser(directory, Edition::Java, this));
       sortPanels();
-    } else if (bedrock) {
+      break;
+    case Edition::Bedrock:
       if (fBedrock) {
         fPanel->removePanel(fBedrock.get());
       }
-      fBedrock.reset(new GameDirectoryBrowser(directory.fDirectory, directory.fEdition, this));
+      fBedrock.reset(new GameDirectoryBrowser(directory, Edition::Bedrock, this));
       sortPanels();
-    } else {
-      fCustom->addDirectory(directory);
+      break;
+    }
+  }
+
+  std::optional<GameDirectory> addDirectory(juce::File const &directory) {
+    if (directory == DefaultJavaSaveDirectory()) {
+      return std::nullopt;
+    } else if (directory == DefaultBedrockSaveDirectory()) {
+      return std::nullopt;
+    }
+    auto gd = fCustom->addDirectory(directory);
+    if (!gd) {
+      return std::nullopt;
     }
     updatePanelSizes();
     if (onAdd) {
-      onAdd(directory);
+      onAdd(*gd);
     }
     fTimerStarted = juce::Time::getCurrentTime();
     startTimerHz(50);
+    return gd;
   }
 
-  void browserDidSelectDirectory(Directory d) override {
+  void browserDidSelectDirectory(GameDirectory d) override {
     onSelect(d);
   }
 
-  void browserDidClickRemoveDirectory(Directory d) override {
+  void browserDidClickRemoveDirectory(GameDirectory d) override {
     onRemove(d);
   }
 
@@ -110,16 +121,13 @@ public:
       if (directory == juce::File()) {
         return;
       }
-      Directory d;
-      d.fDirectory = directory;
-      d.fEdition = Edition::Java;
-      addDirectory(d);
+      addRootDirectory(directory, Edition::Java);
     });
   }
 
-  std::function<void(Directory)> onSelect;
-  std::function<void(Directory)> onAdd;
-  std::function<void(Directory)> onRemove;
+  std::function<void(GameDirectory)> onSelect;
+  std::function<void(GameDirectory)> onAdd;
+  std::function<void(GameDirectory)> onRemove;
 
   static int constexpr kDefaultWidth = 214;
   static int constexpr kMinimumWidth = 100;
@@ -219,10 +227,7 @@ private:
       if (directory == juce::File()) {
         return;
       }
-      Directory d;
-      d.fDirectory = directory;
-      d.fEdition = Edition::Java;
-      addDirectory(d);
+      addDirectory(directory);
     });
   }
 
@@ -235,14 +240,11 @@ private:
       if (directory == juce::File()) {
         return;
       }
-      Directory d;
-      d.fDirectory = directory;
-      d.fEdition = Edition::Bedrock;
-      addDirectory(d);
+      addDirectory(directory);
     });
   }
 
-  void removeDirectory(Directory d) {
+  void removeDirectory(GameDirectory d) {
     if (!fCustom) {
       return;
     }
