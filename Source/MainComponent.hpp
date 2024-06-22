@@ -225,7 +225,7 @@ public:
 private:
   void onSelect(Directory d) {
     fMapViewComponent->setWorldDirectory(d.fDirectory, Dimension::Overworld, d.fEdition);
-    getTopLevelComponent()->setName(d.fDirectory.getFileName());
+    getTopLevelComponent()->setName(d.fDirectory.getFileName() + " (" + d.fLevelName + ")");
     setBrowserOpened(false);
   }
 

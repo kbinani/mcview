@@ -7,7 +7,7 @@ public:
   class Delegate {
   public:
     virtual ~Delegate() = default;
-    virtual void directoryBrowserModelDidSelectDirectory(juce::File directory) = 0;
+    virtual void directoryBrowserModelDidSelectDirectory(juce::File directory, juce::String levelName) = 0;
   };
 
   struct Item {
@@ -133,7 +133,7 @@ public:
 
   void listBoxItemDoubleClicked(int row, juce::MouseEvent const &) override {
     auto item = fItems[row];
-    fDelegate->directoryBrowserModelDidSelectDirectory(item.fDirectory);
+    fDelegate->directoryBrowserModelDidSelectDirectory(item.fDirectory, item.fLevelName);
   }
 
   juce::String getTooltipForRow(int row) override {

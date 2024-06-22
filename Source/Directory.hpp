@@ -5,6 +5,7 @@ namespace mcview {
 struct Directory {
   juce::File fDirectory;
   Edition fEdition;
+  juce::String fLevelName;
 
   bool operator==(Directory const &other) const {
     return fDirectory == other.fDirectory && fEdition == other.fEdition;

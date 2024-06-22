@@ -21,10 +21,11 @@ public:
     fModel->applyLookAndFeel(getLookAndFeel());
   }
 
-  void directoryBrowserModelDidSelectDirectory(juce::File directory) override {
+  void directoryBrowserModelDidSelectDirectory(juce::File directory, juce::String levelName) override {
     Directory d;
     d.fDirectory = directory;
     d.fEdition = fEdition;
+    d.fLevelName = levelName;
     fDelegate->browserDidSelectDirectory(d);
   }
 
