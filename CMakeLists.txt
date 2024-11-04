@@ -16,7 +16,7 @@ if (MSVC)
   add_definitions(
     /DUNICODE
     /D_UNICODE
-    /source-charset:utf-8
+    /utf-8
     /we4828
     /wd4100 # Suppress "unreferenced formal parameter" warnings
   )
@@ -37,7 +37,7 @@ endif()
 CPMAddPackage(
   NAME libminecraft-file
   GITHUB_REPOSITORY kbinani/libminecraft-file
-  GIT_TAG 0eb187427e24b099908788f9ee00adc6983546d6
+  GIT_TAG ffc4abff495ac1af82f48739f3b25168f3a2ae08
 )
 
 add_subdirectory(ext/je2be-core)
