@@ -17,7 +17,7 @@ public:
   virtual ~ThreadPoolJob() {
     // you mustn't delete a job while it's still in a pool! Use ThreadPool::removeJob()
     // to remove it first!
-    //jassert(pool == nullptr || !pool->contains(this));
+    // jassert(pool == nullptr || !pool->contains(this));
   }
 
   //==============================================================================

@@ -2,7 +2,7 @@
 
 (
   cd "$(dirname "$0")"
-  git ls-files . | grep -e '\.cpp$' -e '\.hpp$' | xargs -P$(nproc) -n1 clang-format -i
+  git ls-files . | grep -e '\.cpp$' -e '\.hpp$' | xargs -P$(nproc) -n1 clang-format-18 -i
   (
     cd build/_deps/libminecraft-file-src && ./fmt
   )
