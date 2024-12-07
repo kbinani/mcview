@@ -21,10 +21,10 @@ if (MSVC)
     /wd4100 # Suppress "unreferenced formal parameter" warnings
   )
   add_compile_options(
-    $<$<CONFIG:Debug>:/MTd>
-    $<$<CONFIG:Release>:/MT>
-    $<$<CONFIG:RelWithDebInfo>:/MT>
-    $<$<CONFIG:MinSizeRel>:/MT>
+    $<$<CONFIG:Debug>:/MDd>
+    $<$<CONFIG:Release>:/MD>
+    $<$<CONFIG:RelWithDebInfo>:/MD>
+    $<$<CONFIG:MinSizeRel>:/MD>
     /MP
   )
 elseif(APPLE)
@@ -37,8 +37,18 @@ endif()
 CPMAddPackage(
   NAME libminecraft-file
   GITHUB_REPOSITORY kbinani/libminecraft-file
-  GIT_TAG ffc4abff495ac1af82f48739f3b25168f3a2ae08
+  GIT_TAG 7c86f4f83b23b53ac464d80fbc7f17fabb4984be
 )
+
+CPMAddPackage(
+  NAME mimalloc
+  GITHUB_REPOSITORY microsoft/mimalloc
+  VERSION 2.1.7
+  OPTIONS "MI_OVERRIDE ON"
+          "MI_BUILD_TESTS OFF"
+          "MI_BUILD_OBJECT OFF"
+          "MI_BUILD_STATIC OFF"
+          "MI_WIN_REDIRECT ON")
 
 add_subdirectory(ext/je2be-core)
 add_subdirectory(ext/JUCE)
@@ -187,6 +197,7 @@ target_link_libraries(mcview
   PRIVATE
     mcview-binary-data
     je2be
+    mimalloc
     juce::juce_gui_extra
     juce::juce_opengl
   PUBLIC
@@ -214,3 +225,10 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest.in
   ${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/Package.appxmanifest
 )
+
+foreach(target IN ITEMS mcview)
+  add_custom_command(TARGET ${target} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy "${mimalloc_BINARY_DIR}/\$(Configuration)/mimalloc.dll" "$<TARGET_FILE_DIR:${target}>/"
+    COMMAND "${CMAKE_COMMAND}" -E copy "${mimalloc_BINARY_DIR}/\$(Configuration)/mimalloc-redirect.dll" "$<TARGET_FILE_DIR:${target}>/"
+    COMMENT "Copy mimalloc dlls to output directory")
+endforeach()

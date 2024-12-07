@@ -2,6 +2,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
 #include <leveldb/env.h>
+#include <mimalloc.h>
 #include <minecraft-file.hpp>
 #include <nlohmann/json.hpp>
 
@@ -97,18 +98,20 @@ public:
   void initialise(juce::String const &) override {
     using namespace juce;
 
+    (void)mi_version();
+
 #if MCVIEW_ENABLE_PALETTE_PREP
     // 1. Execute the line below.
-    //Palette::ResearchJava("mcview-missing-block");
+    // Palette::ResearchJava("mcview-missing-block");
     // 2. Open the "mcview-missing-block" world to update the map #2
     // 3. (Re) Execute the line below.
-    //Palette::ResearchJava("mcview-missing-block");
+    // Palette::ResearchJava("mcview-missing-block");
     // 4. Copy stdout to CreateJavaTable at Palette.cpp
     // 5. Convert the "mcview-missing-block" world using je2be
     // 6. Open converted "mcview-missing-block" world to update the map at 63 -60 63
     // 7. Check the value of map_uuid by executing "./dump.exe ./mcview-missing-block/db block entity at 63 -60 63 of overworld"
     // 8. Execute the line below.
-    //Palette::ResearchBedrock("mcview-missing-block", 5277290464);
+    // Palette::ResearchBedrock("mcview-missing-block", 5277290464);
 #endif
 
     fCleanup.reset(new DirectoryCleanupThread);
