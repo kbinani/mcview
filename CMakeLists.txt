@@ -237,12 +237,12 @@ add_custom_command(TARGET mcview POST_BUILD
     "$<$<CONFIG:Release>:${CMAKE_COMMAND}>"
     "$<$<CONFIG:Release>:-E>"
     "$<$<CONFIG:Release>:copy>"
-    "$<$<CONFIG:Release>:${mimalloc_BINARY_DIR}/\$(Configuration)/mimalloc.dll>"
+    "$<$<CONFIG:Release>:${mimalloc_BINARY_DIR}/Release/mimalloc.dll>"
     "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/mcview/>"
   COMMAND
     "$<$<CONFIG:Release>:${CMAKE_COMMAND}>"
     "$<$<CONFIG:Release>:-E>"
     "$<$<CONFIG:Release>:copy>"
-    "$<$<CONFIG:Release>:${mimalloc_BINARY_DIR}/\$(Configuration)/mimalloc-redirect.dll>"
+    "$<$<CONFIG:Release>:${mimalloc_BINARY_DIR}/Release/mimalloc-redirect.dll>"
     "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/Builds/Package/mcview/>"
   COMMENT "Copy mimalloc dlls to package output directory")

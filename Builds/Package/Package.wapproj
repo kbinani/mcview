@@ -173,6 +173,8 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="mcview\mimalloc-redirect.dll" />
+    <Content Include="mcview\mimalloc.dll" />
     <None Include="Package_TemporaryKey.pfx" />
     <Content Include="Images\SplashScreen.scale-200.png" />
     <Content Include="Images\LockScreenLogo.scale-200.png" />
