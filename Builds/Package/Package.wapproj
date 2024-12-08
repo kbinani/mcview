@@ -97,7 +97,7 @@
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>71B7358879311389D3B2D7921619C84A9F358A96</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>DA08D2E73A0E4751340035CBAA17DC9C4DCC647D</PackageCertificateThumbprint>
     <AppInstallerUpdateFrequency>0</AppInstallerUpdateFrequency>
     <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
@@ -173,9 +173,9 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <None Include="DA08D2E73A0E4751340035CBAA17DC9C4DCC647D.pfx" />
     <Content Include="mcview\mimalloc-redirect.dll" />
     <Content Include="mcview\mimalloc.dll" />
-    <None Include="Package_TemporaryKey.pfx" />
     <Content Include="Images\SplashScreen.scale-200.png" />
     <Content Include="Images\LockScreenLogo.scale-200.png" />
     <Content Include="Images\Square150x150Logo.scale-200.png" />
