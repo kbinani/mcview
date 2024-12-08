@@ -123,7 +123,7 @@ public:
     }
     levelName.setJustification(juce::Justification::centredLeft);
     auto text = levelName.getText();
-    float width = g.getCurrentFont().getStringWidthFloat(levelName.getText());
+    float width = juce::GlyphArrangement::getStringWidth(g.getCurrentFont(), levelName.getText());
     g.saveState();
     g.addTransform(juce::AffineTransform::translation(levelNameArea.getX(), levelNameArea.getY()));
     if (width > 0) {

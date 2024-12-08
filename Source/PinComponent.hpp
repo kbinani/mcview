@@ -120,7 +120,7 @@ public:
 private:
   static juce::Rectangle<float> PinNameBounds(Pin pin, juce::Font font, juce::Point<float> pos) {
     int const pad = 4;
-    float stringWidth = font.getStringWidthFloat(pin.fMessage);
+    float stringWidth = juce::GlyphArrangement::getStringWidth(font, pin.fMessage);
     juce::Rectangle<float> stringBounds(pos.x + pinHeadRadius + pad, pos.y - stemLength - font.getHeight() / 2 - pad, pad + stringWidth + pad, pad + font.getHeight() + pad);
     return stringBounds;
   }
