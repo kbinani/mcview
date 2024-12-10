@@ -2,7 +2,9 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
 #include <leveldb/env.h>
+#if !defined(__APPLE__)
 #include <mimalloc.h>
+#endif
 #include <minecraft-file.hpp>
 #include <nlohmann/json.hpp>
 
@@ -98,7 +100,9 @@ public:
   void initialise(juce::String const &) override {
     using namespace juce;
 
+#if !defined(__APPLE__)
     (void)mi_version();
+#endif
 
 #if MCVIEW_ENABLE_PALETTE_PREP
     // 1. Execute the line below.

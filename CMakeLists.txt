@@ -198,13 +198,15 @@ target_link_libraries(mcview
   PRIVATE
     mcview-binary-data
     je2be
-    mimalloc
     juce::juce_gui_extra
     juce::juce_opengl
   PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
 )
+if (MSVC)
+  target_link_libraries(mcview PRIVATE mimalloc)
+endif()
 
 target_include_directories(mcview
   PRIVATE
