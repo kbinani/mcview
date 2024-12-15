@@ -518,7 +518,11 @@ public:
  */
 class OverScroller {
 private:
-  int mMode;
+  static int constexpr DEFAULT_DURATION = 250;
+  static int constexpr SCROLL_MODE = 0;
+  static int constexpr FLING_MODE = 1;
+
+  int mMode = SCROLL_MODE;
 
   SplineOverScroller mScrollerX;
   SplineOverScroller mScrollerY;
@@ -526,10 +530,6 @@ private:
   ViscousFluidInterpolator mInterpolator;
 
   bool const mFlywheel = true;
-
-  static int constexpr DEFAULT_DURATION = 250;
-  static int constexpr SCROLL_MODE = 0;
-  static int constexpr FLING_MODE = 1;
 
 public:
   /**
