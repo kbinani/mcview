@@ -9,7 +9,7 @@ public:
     virtual void texturePackThreadPoolDidFinishJob(TexturePackThreadPool *pool, std::shared_ptr<TexturePackJob::Result> result) = 0;
   };
 
-  explicit TexturePackThreadPool(Delegate *delegate) : ThreadPool((std::max)(1, (int)std::thread::hardware_concurrency() - 1)), fDelegate(delegate) {}
+  explicit TexturePackThreadPool(Delegate *delegate) : ThreadPool((std::max)(1, (int)std::thread::hardware_concurrency() - 1)), fLookAt(LookAt()), fDelegate(delegate) {}
   virtual ~TexturePackThreadPool() {}
 
   virtual void addTexturePackJob(Region region, bool useCache) {}
@@ -54,10 +54,12 @@ public:
     removeAllJobs(true, timeoutMs);
   }
 
-public:
-  std::atomic<LookAt> fLookAt;
+  void setLookAt(LookAt const &la) {
+    fLookAt.store(la);
+  }
 
 private:
+  std::atomic<LookAt> fLookAt;
   std::mutex fMut;
   Delegate *fDelegate;
 };

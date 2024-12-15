@@ -63,7 +63,7 @@ public:
   static int constexpr kMinimumHeight = 250;
 
   explicit MapViewComponent(Delegate *delegate)
-      : fLookAt({0, 0, 5}),
+      : fLookAt(LookAt()),
         fWaterOpticalDensity(Settings::kDefaultWaterOpticalDensity),
         fWaterTranslucent(true),
         fEnableBiome(true),
@@ -1477,7 +1477,7 @@ private:
     auto c = clampLookAt(next);
     fLookAt = c;
     if (fPool) {
-      fPool->fLookAt = c;
+      fPool->setLookAt(c);
     }
     updateAllPinComponentPosition();
     unsafeUpdateCaptureButtonStatus();
