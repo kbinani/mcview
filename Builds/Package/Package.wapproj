@@ -174,8 +174,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DA08D2E73A0E4751340035CBAA17DC9C4DCC647D.pfx" />
-    <Content Include="mcview\mimalloc-redirect.dll" />
-    <Content Include="mcview\mimalloc.dll" />
     <Content Include="Images\SplashScreen.scale-200.png" />
     <Content Include="Images\LockScreenLogo.scale-200.png" />
     <Content Include="Images\Square150x150Logo.scale-200.png" />
