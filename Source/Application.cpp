@@ -118,6 +118,7 @@ public:
     fLookAndFeel.reset(new mcview::LookAndFeel());
     LookAndFeel::setDefaultLookAndFeel(fLookAndFeel.get());
     mainWindow.reset(new MainWindow(getApplicationName()));
+    mainWindow->setVisible(true);
   }
 
   void shutdown() override {

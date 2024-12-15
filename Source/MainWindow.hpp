@@ -21,8 +21,6 @@ public:
                     MapViewComponent::kMinimumHeight,
                     std::numeric_limits<int>::max(),
                     std::numeric_limits<int>::max());
-
-    setVisible(true);
   }
 
   void closeButtonPressed() override {
