@@ -190,21 +190,9 @@ public:
   }
 
   ~MapViewComponent() override {
-    startClosing();
-
-    if (fWorldScanThread) {
-      fWorldScanThread->waitForThreadToExit(-1);
-      fWorldScanThread.reset();
-    }
-    if (fPool) {
-      fPool->abandon(-1);
-      fPool.reset();
-    }
-    for (auto &pool : fPoolTrashBin) {
-      pool->abandon(-1);
-      pool.reset();
-    }
-
+    jassert(!fWorldScanThread);
+    jassert(!fPool);
+    jassert(fPoolTrashBin.empty());
     fGLContext.detach();
   }
 
@@ -1235,17 +1223,20 @@ private:
       if (fWorldScanThread->isThreadRunning()) {
         return;
       }
+      fWorldScanThread.reset();
     }
     if (fPool) {
       if (fPool->getNumJobs() > 0) {
         return;
       }
+      fPool.reset();
     }
     for (auto &pool : fPoolTrashBin) {
       if (pool->getNumJobs() > 0) {
         return;
       }
     }
+    fPoolTrashBin.clear();
     fDelegate->mainViewComponentClosed();
   }
 
