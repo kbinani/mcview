@@ -75,7 +75,7 @@ public:
         fCapturingToImage(false) {
     using namespace juce;
 
-    if (auto *peer = getPeer()) {
+    if (auto *peer = getPeer(); peer) {
       peer->setCurrentRenderingEngine(0);
     }
 
@@ -305,24 +305,8 @@ public:
     g.setFont(bold);
     g.drawFittedText(String::formatted("%d", (int)floor(block.y)), line2, Justification::centredRight, 1);
     y += lineHeight;
-  }
 
-  void paintOverChildren(juce::Graphics &g) override {
-    if (fClosing.get()) {
-      auto now = juce::Time::getCurrentTime();
-      int sec = (int)floor(now.currentTimeMillis() / 1000.0);
-      g.fillAll(juce::Colours::black.withAlpha(0.5f));
-
-      juce::AttributedString s;
-      juce::Font font(juce::FontOptions(64));
-      s.append(TRANS("Shutting down"), font, juce::Colours::white);
-      s.append(" ", font, juce::Colours::transparentWhite);
-      s.append(".", sec % 3 == 0 ? juce::Colours::white : juce::Colours::transparentWhite);
-      s.append(".", sec % 3 == 1 ? juce::Colours::white : juce::Colours::transparentWhite);
-      s.append(".", sec % 3 == 2 ? juce::Colours::white : juce::Colours::transparentWhite);
-      s.setJustification(juce::Justification::centred);
-      s.draw(g, getLocalBounds().toFloat());
-    }
+    paintOverlayMessages(g);
   }
 
   void resized() override {
@@ -352,24 +336,23 @@ public:
   }
 
   void newOpenGLContextCreated() override {
-    using namespace juce::gl;
-
-    std::unique_ptr<GLBuffer> buffer(new GLBuffer());
+    using namespace juce;
+    auto buffer = std::make_unique<GLBuffer>();
 
     fGLContext.extensions.glGenBuffers(1, &buffer->vBuffer);
-    fGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, buffer->vBuffer);
+    fGLContext.extensions.glBindBuffer(gl::GL_ARRAY_BUFFER, buffer->vBuffer);
     std::vector<GLVertex> vertices = {
         {{0, 0}, {0.0, 0.0}},
         {{1, 0}, {1.0, 0.0}},
         {{1, 1}, {1.0, 1.0}},
         {{0, 1}, {0.0, 1.0}},
     };
-    fGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    fGLContext.extensions.glBufferData(gl::GL_ARRAY_BUFFER, sizeof(GLVertex) * vertices.size(), vertices.data(), gl::GL_STATIC_DRAW);
 
     fGLContext.extensions.glGenBuffers(1, &buffer->iBuffer);
-    fGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
+    fGLContext.extensions.glBindBuffer(gl::GL_ELEMENT_ARRAY_BUFFER, buffer->iBuffer);
     std::vector<uint32_t> indices = {0, 1, 2, 3};
-    fGLContext.extensions.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
+    fGLContext.extensions.glBufferData(gl::GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), gl::GL_STATIC_DRAW);
 
     fGLBuffer.reset(buffer.release());
   }
@@ -392,12 +375,15 @@ public:
     fGLPalette.reset();
     fGLPaletteJava.reset();
     fGLPaletteBedrock.reset();
-    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
-    fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
+    if (fGLBuffer) {
+      fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->vBuffer);
+      fGLContext.extensions.glDeleteBuffers(1, &fGLBuffer->iBuffer);
+      fGLBuffer.reset();
+    }
   }
 
   void savePNGProgressWindowRender(int const width, int const height, LookAt const lookAt) override {
-    return render(width, height, lookAt, true);
+    render(width, height, lookAt, true);
   }
 
   void savePNGProgressWindowDidFinishRendering() override {
@@ -406,15 +392,24 @@ public:
   }
 
   void mouseMagnify(juce::MouseEvent const &event, float scaleFactor) override {
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     magnify(event.position, scaleFactor);
   }
 
   void mouseWheelMove(juce::MouseEvent const &event, juce::MouseWheelDetails const &wheel) override {
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     float factor = 1.0f + wheel.deltaY;
     magnify(event.position, factor);
   }
 
   void mouseDrag(juce::MouseEvent const &event) override {
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     if (event.mods.isRightButtonDown()) {
       return;
     }
@@ -437,6 +432,9 @@ public:
   }
 
   void mouseDown(juce::MouseEvent const &e) override {
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     if (e.mods.isRightButtonDown()) {
       return;
     }
@@ -447,12 +445,18 @@ public:
   }
 
   void mouseMove(juce::MouseEvent const &e) override {
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     fMouse = e.position;
     triggerRepaint();
   }
 
   void mouseUp(juce::MouseEvent const &e) override {
     using namespace juce;
+    if (fClosing.get() || fGLShaderCompileAlreadyFailed.load() == true) {
+      return;
+    }
     if (e.mods.isRightButtonDown()) {
       mouseRightClicked(e);
       return;
@@ -765,13 +769,15 @@ public:
     PaletteType palette = fPaletteType.get();
     LightingType lighting = fLightingType.get();
 
-    if (fGLShaderCompileAlreadyFailed) {
+    if (fGLShaderCompileAlreadyFailed.load() == true) {
       return;
     }
     if (!fGLShader) {
       updateShader();
-      if (!fGLShader) {
-        fGLShaderCompileAlreadyFailed = true;
+      if (fGLShader) {
+        fGLShaderCompileAlreadyFailed.store(false);
+      } else {
+        fGLShaderCompileAlreadyFailed.store(true);
         return;
       }
     }
@@ -1117,6 +1123,38 @@ public:
   }
 
 private:
+  void paintOverlayMessages(juce::Graphics &g) {
+    juce::String message;
+    bool dots = false;
+    if (fClosing.get()) {
+      message = TRANS("Shutting down");
+      dots = true;
+    } else if (!fGLContext.isAttached()) {
+      message = TRANS("Loading OpenGL context");
+      dots = true;
+    } else if (fGLShaderCompileAlreadyFailed.load() == true) {
+      message = TRANS("Failed to compile OpenGL shader");
+      dots = false;
+    } else {
+      return;
+    }
+    g.fillAll(juce::Colours::black.withAlpha(0.5f));
+
+    juce::AttributedString s;
+    juce::Font font(juce::FontOptions(64));
+    s.append(message, font, juce::Colours::white);
+    if (dots) {
+      auto now = juce::Time::getCurrentTime();
+      int sec = (int)floor(now.currentTimeMillis() / 1000.0);
+      s.append(" ", font, juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 0 ? juce::Colours::white : juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 1 ? juce::Colours::white : juce::Colours::transparentWhite);
+      s.append(".", sec % 3 == 2 ? juce::Colours::white : juce::Colours::transparentWhite);
+    }
+    s.setJustification(juce::Justification::centred);
+    s.draw(g, getLocalBounds().toFloat());
+  }
+
   static std::optional<int64_t> ReadLastPlayedTimestamp(std::filesystem::path const &dat) {
     auto fs = std::make_shared<mcfile::stream::FileInputStream>(dat);
     if (!fs->valid()) {
@@ -1153,7 +1191,7 @@ private:
     if (fCapturingToImage.get()) {
       return false;
     }
-    if (fGLShaderCompileAlreadyFailed) {
+    if (fGLShaderCompileAlreadyFailed.load() == true) {
       return false;
     }
     if (fTextures.empty()) {
@@ -1896,7 +1934,7 @@ private:
   std::unique_ptr<juce::OpenGLTexture> fGLPalette;
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteJava;
   std::unique_ptr<juce::OpenGLTexture> fGLPaletteBedrock;
-  bool fGLShaderCompileAlreadyFailed = false;
+  std::atomic<std::optional<bool>> fGLShaderCompileAlreadyFailed;
 
   std::atomic<LookAt> fLookAt;
   std::atomic<VisibleRegions> fVisibleRegions;

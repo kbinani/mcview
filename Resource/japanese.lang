@@ -41,3 +41,5 @@ language: Japanese
 "Bedrock" = "統合版"
 "Open in Finder" = "Finder で開く"
 "Open in Explorer" = "エクスプローラで開く"
+"Failed to compile OpenGL shader" = "シェーダを初期化できませんでした"
+"Loading OpenGL context" = "OpenGL を初期化中"
