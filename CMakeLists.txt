@@ -45,7 +45,7 @@ add_subdirectory(ext/JUCE)
 
 # Developer accidentally uploaded an app binary to the appstoreconnect with wrong version number.
 # The appstoreconnect doesn't allow version numbers to go down, so we apply a higher value than CFBundleShortVersionString.
-math(EXPR mcview_bundle_version_major "${PROJECT_VERSION_MAJOR} + 1")
+math(EXPR mcview_bundle_version_major "${PROJECT_VERSION_MAJOR} + 2")
 juce_add_gui_app(mcview
   ICON_BIG "Resource/icon_512x512@2x.png"
   ICON_SMALL "Resource/icon_512x512.png"
