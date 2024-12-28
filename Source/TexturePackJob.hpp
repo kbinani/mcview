@@ -38,7 +38,7 @@ protected:
     if (ungzip.read(&cachedModificationTime, sizeof(cachedModificationTime)) != sizeof(cachedModificationTime)) {
       return false;
     }
-    if (!timestamp || (timestamp && cachedModificationTime >= *timestamp)) {
+    if (!timestamp || cachedModificationTime >= *timestamp) {
       pixels.reset(new juce::PixelARGB[512 * 512]);
       int expectedBytes = sizeof(juce::PixelARGB) * 512 * 512;
       if (ungzip.read(pixels.get(), expectedBytes) != expectedBytes) {
