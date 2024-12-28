@@ -1,3 +1,6 @@
+Version 4.2.2
+・Fixed an issue where chunks containing the pale_garden biome were not displaying correctly
+
 Version 4.2.0, 4.2.1
 ・Added support for Minecraft 1.21.4
 
