@@ -57,7 +57,7 @@ public:
           lookAt.fBlocksPerPixel = 1;
           fDelegate->savePNGProgressWindowRender(width, height, lookAt);
 
-          buffer->readPixels((PixelARGB *)data.data, juce::Rectangle<int>(0, 0, width, height));
+          buffer->readPixels((PixelARGB *)data.data, juce::Rectangle<int>(0, 0, width, height), OpenGLFrameBuffer::RowOrder::fromBottomUp);
           buffer->releaseAsRenderingTarget();
 
           buffer->release();
