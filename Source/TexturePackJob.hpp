@@ -24,7 +24,7 @@ public:
   ~TexturePackJob() override = default;
 
   static juce::String CacheDirPrefix() {
-    return juce::String("v6.");
+    return juce::String("v7.");
   }
 
 protected:

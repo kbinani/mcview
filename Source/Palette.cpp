@@ -27,7 +27,7 @@ static Colour const kColorPlanksJungle(149, 108, 76);
 static Colour const kColorPlanksSpruce(122, 89, 51);
 static Colour const kColorPlanksCrimson(125, 57, 85);
 static Colour const kColorPlanksWarped(56, 129, 128);
-static Colour const kColorPlanksManvrove(137, 76, 57);
+static Colour const kColorPlanksMangrove(137, 76, 57);
 static Colour const kColorPlanksAcacia(184, 98, 55);
 static Colour const kColorPlanksBamboo(224, 202, 105);
 static Colour const kColorPlanksCherry(228, 200, 195);
@@ -82,6 +82,10 @@ static Colour const kColorTorchflower(243, 183, 39);
 static Colour const kColorPitcher(188, 154, 252);
 static Colour const kColorTuff(98, 106, 107);
 static Colour const kColorResin(236, 133, 54);
+static Colour const kColorLightCopper(157, 242, 157);
+static Colour const kColorGrass(109, 141, 35);
+static Colour const kColorDeadBush(146, 99, 40);
+static Colour const kColorYellowFlower(245, 238, 50);
 
 static Colour const kColorGravel = kColorStone;
 
@@ -598,7 +602,7 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   C(jukebox, 122, 79, 56)
   C(jungle_sapling, 41, 73, 12)
   C(jungle_wood, 88, 69, 26)
-  C(lantern, 72, 79, 100)
+  C(lantern, 242, 195, 99)
   C(lapis_block, 24, 59, 115)
   C(light_blue_concrete, 37, 136, 198)
   C(light_gray_concrete, 125, 125, 115)
@@ -661,21 +665,21 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   C(wheat, 0, 123, 0)
   C(melon, 125, 202, 25)
   C(pumpkin, 213, 125, 50)
-  C(short_grass, 109, 141, 35)
-  C(tall_grass, 109, 141, 35)
-  C(dandelion, 245, 238, 50)
+  K(short_grass, kColorGrass)
+  K(tall_grass, kColorGrass)
+  K(dandelion, kColorYellowFlower)
   C(poppy, 229, 31, 29)
   C(peony, 232, 143, 213)
   C(pink_tulip, 234, 182, 209)
   C(orange_tulip, 242, 118, 33)
   C(lilac, 212, 119, 197)
-  C(sunflower, 245, 238, 50)
+  K(sunflower, kColorYellowFlower)
   C(allium, 200, 109, 241)
   C(red_tulip, 229, 31, 29)
   C(white_tulip, 255, 255, 255)
   C(rose_bush, 136, 40, 27)
   C(blue_orchid, 47, 181, 199)
-  C(oxeye_daisy, 236, 246, 247)
+  K(oxeye_daisy, kColorYellowFlower)
   C(sugar_cane, 165, 214, 90)
   C(chorus_plant, 90, 51, 90)
   C(chorus_flower, 159, 119, 159)
@@ -684,7 +688,7 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   C(mushroom_stem, 203, 196, 187)
   C(brown_mushroom_block, 149, 113, 80)
   C(acacia_leaves, 63, 89, 25)
-  C(dead_bush, 146, 99, 40)
+  K(dead_bush, kColorDeadBush)
   C(cactus, 90, 138, 42)
   C(sweet_berry_bush, 40, 97, 63)
   C(cornflower, 69, 105, 232)
@@ -900,31 +904,31 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   K(sculk, kColorSculk)
   K(sculk_catalyst, kColorSculk)
   K(sculk_shrieker, kColorSculk)
-  K(mangrove_planks, kColorPlanksManvrove)
+  K(mangrove_planks, kColorPlanksMangrove)
   C(mangrove_roots, 89, 71, 43)
   C(muddy_mangrove_roots, 57, 55, 60)
   C(mangrove_log, 89, 71, 43)
-  K(stripped_mangrove_log, kColorPlanksManvrove)
-  K(stripped_mangrove_wood, kColorPlanksManvrove)
+  K(stripped_mangrove_log, kColorPlanksMangrove)
+  K(stripped_mangrove_wood, kColorPlanksMangrove)
   C(mangrove_wood, 89, 71, 43)
-  K(mangrove_slab, kColorPlanksManvrove)
+  K(mangrove_slab, kColorPlanksMangrove)
   K(mud_brick_slab, kColorMudBrick)
   K(packed_mud, kColorMudBrick)
   K(mud_bricks, kColorMudBrick)
-  K(mangrove_fence, kColorPlanksManvrove)
-  K(mangrove_stairs, kColorPlanksManvrove)
-  K(mangrove_fence_gate, kColorPlanksManvrove)
+  K(mangrove_fence, kColorPlanksMangrove)
+  K(mangrove_stairs, kColorPlanksMangrove)
+  K(mangrove_fence_gate, kColorPlanksMangrove)
   K(mud_brick_wall, kColorMudBrick)
-  K(mangrove_sign, kColorPlanksManvrove)
-  K(mangrove_wall_sign, kColorPlanksManvrove)
+  K(mangrove_sign, kColorPlanksMangrove)
+  K(mangrove_wall_sign, kColorPlanksMangrove)
   C(ochre_froglight, 252, 249, 242)
   C(verdant_froglight, 252, 249, 242)
   C(pearlescent_froglight, 252, 249, 242)
   C(mangrove_leaves, 59, 73, 16)
-  K(mangrove_button, kColorPlanksManvrove)
-  K(mangrove_pressure_plate, kColorPlanksManvrove)
-  K(mangrove_door, kColorPlanksManvrove)
-  K(mangrove_trapdoor, kColorPlanksManvrove)
+  K(mangrove_button, kColorPlanksMangrove)
+  K(mangrove_pressure_plate, kColorPlanksMangrove)
+  K(mangrove_door, kColorPlanksMangrove)
+  K(mangrove_trapdoor, kColorPlanksMangrove)
   K(potted_mangrove_propagule, kColorPotter)
   C(mud, 57, 55, 60)
 
@@ -958,8 +962,8 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   K(dark_oak_wall_hanging_sign, kColorPlanksDarkOak)
   K(jungle_hanging_sign, kColorPlanksJungle)
   K(jungle_wall_hanging_sign, kColorPlanksJungle)
-  K(mangrove_hanging_sign, kColorPlanksManvrove)
-  K(mangrove_wall_hanging_sign, kColorPlanksManvrove)
+  K(mangrove_hanging_sign, kColorPlanksMangrove)
+  K(mangrove_wall_hanging_sign, kColorPlanksMangrove)
   K(oak_hanging_sign, kColorPlanksOak)
   K(oak_wall_hanging_sign, kColorPlanksOak)
   K(piglin_head, kColorPiglinHead)
@@ -1096,6 +1100,87 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateTable() {
   K(resin_brick_slab, kColorResin);
   K(resin_brick_wall, kColorResin);
   K(chiseled_resin_bricks, kColorResin);
+
+  // ~1.21.10
+  K(copper_bars, kColorCopper);
+  K(exposed_copper_bars, kColorExposedCopper);
+  K(weathered_copper_bars, kColorWeatheredCopper);
+  K(oxidized_copper_bars, kColorOxidizedCopper);
+  K(waxed_copper_bars, kColorCopper);
+  K(waxed_exposed_copper_bars, kColorExposedCopper);
+  K(waxed_weathered_copper_bars, kColorWeatheredCopper);
+  K(waxed_oxidized_copper_bars, kColorOxidizedCopper);
+
+  K(copper_chest, kColorCopper);
+  K(exposed_copper_chest, kColorExposedCopper);
+  K(weathered_copper_chest, kColorWeatheredCopper);
+  K(oxidized_copper_chest, kColorOxidizedCopper);
+  K(waxed_copper_chest, kColorCopper);
+  K(waxed_exposed_copper_chest, kColorExposedCopper);
+  K(waxed_weathered_copper_chest, kColorWeatheredCopper);
+  K(waxed_oxidized_copper_chest, kColorOxidizedCopper);
+
+  K(copper_golem_statue, kColorCopper);
+  K(exposed_copper_golem_statue, kColorExposedCopper);
+  K(weathered_copper_golem_statue, kColorWeatheredCopper);
+  K(oxidized_copper_golem_statue, kColorOxidizedCopper);
+  K(waxed_copper_golem_statue, kColorCopper);
+  K(waxed_exposed_copper_golem_statue, kColorExposedCopper);
+  K(waxed_weathered_copper_golem_statue, kColorWeatheredCopper);
+  K(waxed_oxidized_copper_golem_statue, kColorOxidizedCopper);
+
+  K(lightning_rod, kColorCopper);
+  K(exposed_lightning_rod, kColorExposedCopper);
+  K(weathered_lightning_rod, kColorWeatheredCopper);
+  K(oxidized_lightning_rod, kColorOxidizedCopper);
+  K(waxed_lightning_rod, kColorCopper);
+  K(waxed_exposed_lightning_rod, kColorExposedCopper);
+  K(waxed_weathered_lightning_rod, kColorWeatheredCopper);
+  K(waxed_oxidized_lightning_rod, kColorOxidizedCopper);
+
+  K(oak_shelf, kColorPlanksOak);
+  K(spruce_shelf, kColorPlanksSpruce);
+  K(birch_shelf, kColorPlanksBirch);
+  K(jungle_shelf, kColorPlanksJungle);
+  K(acacia_shelf, kColorPlanksAcacia);
+  K(dark_oak_shelf, kColorPlanksDarkOak);
+  K(mangrove_shelf, kColorPlanksMangrove);
+  K(cherry_shelf, kColorPlanksCherry);
+  K(pale_oak_shelf, kColorPlanksPaleOak);
+  K(bamboo_shelf, kColorPlanksBamboo);
+  K(crimson_shelf, kColorPlanksCrimson);
+  K(warped_shelf, kColorPlanksWarped);
+
+  K(copper_torch, kColorLightCopper);
+  K(copper_wall_torch, kColorLightCopper);
+  K(copper_lantern, kColorLightCopper);
+  K(exposed_copper_lantern, kColorLightCopper);
+  K(weathered_copper_lantern, kColorLightCopper);
+  K(oxidized_copper_lantern, kColorLightCopper);
+  K(waxed_copper_lantern, kColorLightCopper);
+  K(waxed_exposed_copper_lantern, kColorLightCopper);
+  K(waxed_weathered_copper_lantern, kColorLightCopper);
+  K(waxed_oxidized_copper_lantern, kColorLightCopper);
+
+  K(copper_chain, kColorCopper);
+  K(exposed_copper_chain, kColorExposedCopper);
+  K(weathered_copper_chain, kColorWeatheredCopper);
+  K(oxidized_copper_chain, kColorOxidizedCopper);
+  K(waxed_copper_chain, kColorCopper);
+  K(waxed_exposed_copper_chain, kColorExposedCopper);
+  K(waxed_weathered_copper_chain, kColorWeatheredCopper);
+  K(waxed_oxidized_copper_chain, kColorOxidizedCopper);
+
+  K(bush, kColorGrass);
+  K(firefly_bush, kColorGrass);
+  K(cactus_flower, kColorLeavesCherry);
+  K(short_dry_grass, kColorDeadBush);
+  K(tall_dry_grass, kColorDeadBush);
+  K(leaf_litter, kColorDeadBush);
+  K(wildflowers, kColorYellowFlower);
+  C(dried_ghast, 165, 148, 148);
+  C(test_block, 178, 129, 73);
+  C(test_instance_block, 97, 89, 88);
 #undef C
 #undef K
 
@@ -1422,7 +1507,6 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(granite_slab, 10)
   J(granite_stairs, 10)
   J(granite_wall, 10)
-  J(short_grass, 7)
   J(grass_block, 1)
   J(gravel, 11)
   J(gray_banner, 13)
@@ -1892,7 +1976,6 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(crimson_fence, 53)
   J(warped_fence, 56)
   J(soul_torch, 0)
-  J(iron_chain, 0)
   J(blackstone_wall, 29)
   J(polished_blackstone_wall, 29)
   J(polished_blackstone_brick_wall, 29)
@@ -2186,6 +2269,7 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(chiseled_tuff_bricks, 43)
   J(trial_spawner, 11)
   J(crafter, 11)
+  J(short_grass, 7)
   J(chiseled_copper, 15)
   J(exposed_chiseled_copper, 44)
   J(weathered_chiseled_copper, 56)
@@ -2230,13 +2314,13 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(heavy_core, 6)
   J(creaking_heart, 15)
   J(open_eyeblossom, 15)
-  J(closed_eyeblossom, 49)
+  J(closed_eyeblossom, 6)
   J(potted_open_eyeblossom, 0)
   J(potted_closed_eyeblossom, 0)
   J(pale_hanging_moss, 22)
   J(pale_moss_block, 22)
   J(pale_moss_carpet, 22)
-  J(pale_oak_leaves, 49)
+  J(pale_oak_leaves, 6)
   J(pale_oak_log, 14)
   J(pale_oak_wood, 11)
   J(stripped_pale_oak_log, 14)
@@ -2254,7 +2338,7 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(pale_oak_wall_sign, 14)
   J(pale_oak_hanging_sign, 14)
   J(pale_oak_wall_hanging_sign, 14)
-  J(pale_oak_sapling, 14)
+  J(pale_oak_sapling, 6)
   J(potted_pale_oak_sapling, 0)
   J(resin_clump, 37)
   J(resin_block, 37)
@@ -2263,6 +2347,78 @@ std::unordered_map<mcfile::blocks::BlockId, juce::Colour> *CreateJavaTable() {
   J(resin_brick_slab, 37)
   J(resin_brick_wall, 37)
   J(chiseled_resin_bricks, 37)
+  J(wildflowers, 7)
+  J(leaf_litter, 26)
+  J(bush, 7)
+  J(firefly_bush, 7)
+  J(short_dry_grass, 18)
+  J(tall_dry_grass, 18)
+  J(cactus_flower, 20)
+  J(test_block, 22)
+  J(test_instance_block, 0)
+  J(dried_ghast, 21)
+  J(oak_shelf, 13)
+  J(spruce_shelf, 13)
+  J(birch_shelf, 13)
+  J(jungle_shelf, 13)
+  J(acacia_shelf, 13)
+  J(dark_oak_shelf, 13)
+  J(mangrove_shelf, 13)
+  J(cherry_shelf, 13)
+  J(pale_oak_shelf, 13)
+  J(bamboo_shelf, 13)
+  J(crimson_shelf, 13)
+  J(warped_shelf, 13)
+  J(copper_bars, 0)
+  J(exposed_copper_bars, 0)
+  J(weathered_copper_bars, 0)
+  J(oxidized_copper_bars, 0)
+  J(waxed_copper_bars, 0)
+  J(waxed_exposed_copper_bars, 0)
+  J(waxed_weathered_copper_bars, 0)
+  J(waxed_oxidized_copper_bars, 0)
+  J(copper_chest, 15)
+  J(exposed_copper_chest, 44)
+  J(weathered_copper_chest, 56)
+  J(oxidized_copper_chest, 55)
+  J(waxed_copper_chest, 15)
+  J(waxed_exposed_copper_chest, 44)
+  J(waxed_weathered_copper_chest, 56)
+  J(waxed_oxidized_copper_chest, 55)
+  J(copper_golem_statue, 15)
+  J(exposed_copper_golem_statue, 44)
+  J(weathered_copper_golem_statue, 56)
+  J(oxidized_copper_golem_statue, 55)
+  J(waxed_copper_golem_statue, 15)
+  J(waxed_exposed_copper_golem_statue, 44)
+  J(waxed_weathered_copper_golem_statue, 56)
+  J(waxed_oxidized_copper_golem_statue, 55)
+  J(exposed_lightning_rod, 44)
+  J(weathered_lightning_rod, 56)
+  J(oxidized_lightning_rod, 55)
+  J(waxed_lightning_rod, 15)
+  J(waxed_exposed_lightning_rod, 44)
+  J(waxed_weathered_lightning_rod, 56)
+  J(waxed_oxidized_lightning_rod, 55)
+  J(copper_torch, 0)
+  J(copper_wall_torch, 0)
+  J(copper_lantern, 6)
+  J(exposed_copper_lantern, 6)
+  J(weathered_copper_lantern, 6)
+  J(oxidized_copper_lantern, 6)
+  J(waxed_copper_lantern, 6)
+  J(waxed_exposed_copper_lantern, 6)
+  J(waxed_weathered_copper_lantern, 6)
+  J(waxed_oxidized_copper_lantern, 6)
+  J(iron_chain, 0)
+  J(copper_chain, 0)
+  J(exposed_copper_chain, 0)
+  J(weathered_copper_chain, 0)
+  J(oxidized_copper_chain, 0)
+  J(waxed_copper_chain, 0)
+  J(waxed_exposed_copper_chain, 0)
+  J(waxed_weathered_copper_chain, 0)
+  J(waxed_oxidized_copper_chain, 0)
 #undef J
 
 #if MCVIEW_ENABLE_PALETTE_PREP
@@ -2420,7 +2576,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(cracked_stone_bricks, 96, 96, 96)
   B(crafting_table, 123, 102, 62)
   B(creeper_head, 79, 79, 79)
-  B(creeper_wall_head, 79, 79, 79)
+  // unexpected block: expected=minecraft:creeper_wall_head, actual=minecraft:creeper_head, r=79, g=79, b=79, x=102, z=68
   B(cut_red_sandstone, 186, 109, 44)
   B(cut_red_sandstone_slab, 186, 109, 44)
   B(cut_sandstone, 213, 201, 140)
@@ -2489,7 +2645,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(dispenser, 96, 96, 96)
   B(dragon_egg, 21, 21, 21)
   B(dragon_head, 79, 79, 79)
-  B(dragon_wall_head, 79, 79, 79)
+  // unexpected block: expected=minecraft:dragon_wall_head, actual=minecraft:dragon_head, r=79, g=79, b=79, x=112, z=70
   B(dried_kelp_block, 88, 109, 44)
   B(dropper, 96, 96, 96)
   B(emerald_ore, 96, 96, 96)
@@ -2724,7 +2880,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(piston, 96, 96, 96)
   B(piston_head, 96, 96, 96)
   B(player_head, 79, 79, 79)
-  B(player_wall_head, 79, 79, 79)
+  // unexpected block: expected=minecraft:player_wall_head, actual=minecraft:player_head, r=79, g=79, b=79, x=70, z=78
   B(podzol, 111, 74, 42)
   B(polished_andesite, 96, 96, 96)
   B(polished_andesite_slab, 96, 96, 96)
@@ -2836,7 +2992,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(seagrass, 55, 55, 220)
   B(shulker_box, 132, 77, 176)
   B(skeleton_skull, 79, 79, 79)
-  B(skeleton_wall_skull, 79, 79, 79)
+  // unexpected block: expected=minecraft:skeleton_wall_skull, actual=minecraft:skeleton_skull, r=79, g=79, b=79, x=166, z=80
   B(slime_block, 109, 153, 48)
   B(smithing_table, 123, 102, 62)
   B(smoker, 96, 96, 96)
@@ -2917,7 +3073,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(wall_torch, 79, 79, 79)
   B(water, 30, 90, 245)
   B(wet_sponge, 197, 197, 44)
-  B(wheat, 0, 106, 0)
+  B(wheat, 197, 197, 44)
   B(white_banner, 123, 102, 62)
   B(white_bed, 214, 220, 219)
   B(white_carpet, 220, 220, 220)
@@ -2933,7 +3089,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(white_wool, 220, 220, 220)
   B(wither_rose, 0, 106, 0)
   B(wither_skeleton_skull, 79, 79, 79)
-  B(wither_skeleton_wall_skull, 79, 79, 79)
+  // unexpected block: expected=minecraft:wither_skeleton_wall_skull, actual=minecraft:wither_skeleton_skull, r=79, g=79, b=79, x=104, z=84
   B(yellow_banner, 123, 102, 62)
   B(yellow_bed, 197, 197, 44)
   B(yellow_carpet, 197, 197, 44)
@@ -2947,7 +3103,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(yellow_wall_banner, 123, 102, 62)
   B(yellow_wool, 197, 197, 44)
   B(zombie_head, 79, 79, 79)
-  B(zombie_wall_head, 79, 79, 79)
+  // unexpected block: expected=minecraft:zombie_wall_head, actual=minecraft:zombie_head, r=79, g=79, b=79, x=132, z=84
   B(bee_nest, 197, 197, 44)
   B(beehive, 123, 102, 62)
   B(honey_block, 186, 109, 44)
@@ -2997,7 +3153,6 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(crimson_fence, 96, 1, 0)
   B(warped_fence, 65, 109, 132)
   B(soul_torch, 79, 79, 79)
-  B(iron_chain, 79, 79, 79)
   B(blackstone_wall, 21, 21, 21)
   B(polished_blackstone_wall, 21, 21, 21)
   B(polished_blackstone_brick_wall, 21, 21, 21)
@@ -3239,7 +3394,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(oak_hanging_sign, 123, 102, 62)
   B(oak_wall_hanging_sign, 123, 102, 62)
   B(piglin_head, 79, 79, 79)
-  B(piglin_wall_head, 79, 79, 79)
+  // unexpected block: expected=minecraft:piglin_wall_head, actual=minecraft:piglin_head, r=79, g=79, b=79, x=74, z=94
   B(spruce_hanging_sign, 111, 74, 42)
   B(spruce_wall_hanging_sign, 111, 74, 42)
   B(stripped_bamboo_block, 197, 197, 44)
@@ -3342,7 +3497,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(pale_hanging_moss, 132, 132, 132)
   B(pale_moss_block, 132, 132, 132)
   B(pale_moss_carpet, 132, 132, 132)
-  B(pale_oak_leaves, 65, 70, 36)
+  B(pale_oak_leaves, 144, 144, 144)
   B(pale_oak_log, 220, 217, 211)
   B(pale_oak_wood, 96, 96, 96)
   B(stripped_pale_oak_log, 220, 217, 211)
@@ -3360,7 +3515,7 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(pale_oak_wall_sign, 220, 217, 211)
   B(pale_oak_hanging_sign, 220, 217, 211)
   B(pale_oak_wall_hanging_sign, 220, 217, 211)
-  B(pale_oak_sapling, 220, 217, 211)
+  B(pale_oak_sapling, 144, 144, 144)
   B(potted_pale_oak_sapling, 79, 79, 79)
   B(resin_clump, 137, 70, 31)
   B(resin_block, 137, 70, 31)
@@ -3369,6 +3524,78 @@ static std::unordered_map<mcfile::blocks::BlockId, juce::Colour> const *CreateBe
   B(resin_brick_slab, 137, 70, 31)
   B(resin_brick_wall, 137, 70, 31)
   B(chiseled_resin_bricks, 137, 70, 31)
+  B(wildflowers, 0, 106, 0)
+  B(leaf_litter, 88, 65, 44)
+  B(bush, 0, 106, 0)
+  B(firefly_bush, 0, 106, 0)
+  B(short_dry_grass, 220, 220, 0)
+  B(tall_dry_grass, 220, 220, 0)
+  B(cactus_flower, 208, 109, 142)
+  // unexpected block: expected=minecraft:test_block, actual=minecraft:air, r=79, g=79, b=79, x=92, z=98
+  // unexpected block: expected=minecraft:test_instance_block, actual=minecraft:air, r=79, g=79, b=79, x=94, z=98
+  B(dried_ghast, 65, 65, 65)
+  B(oak_shelf, 123, 102, 62)
+  B(spruce_shelf, 111, 74, 42)
+  B(birch_shelf, 213, 201, 140)
+  B(jungle_shelf, 130, 94, 66)
+  B(acacia_shelf, 186, 109, 44)
+  B(dark_oak_shelf, 88, 65, 44)
+  B(mangrove_shelf, 111, 74, 42)
+  B(cherry_shelf, 180, 152, 138)
+  B(pale_oak_shelf, 220, 217, 211)
+  B(bamboo_shelf, 197, 197, 44)
+  B(crimson_shelf, 127, 54, 83)
+  B(warped_shelf, 50, 122, 120)
+  B(copper_bars, 79, 79, 79)
+  B(exposed_copper_bars, 79, 79, 79)
+  B(weathered_copper_bars, 79, 79, 79)
+  B(oxidized_copper_bars, 79, 79, 79)
+  B(waxed_copper_bars, 79, 79, 79)
+  B(waxed_exposed_copper_bars, 79, 79, 79)
+  B(waxed_weathered_copper_bars, 79, 79, 79)
+  B(waxed_oxidized_copper_bars, 79, 79, 79)
+  B(copper_chest, 186, 109, 44)
+  B(exposed_copper_chest, 116, 92, 84)
+  B(weathered_copper_chest, 50, 122, 120)
+  B(oxidized_copper_chest, 18, 108, 115)
+  B(waxed_copper_chest, 186, 109, 44)
+  B(waxed_exposed_copper_chest, 116, 92, 84)
+  B(waxed_weathered_copper_chest, 50, 122, 120)
+  B(waxed_oxidized_copper_chest, 18, 108, 115)
+  B(copper_golem_statue, 186, 109, 44)
+  B(exposed_copper_golem_statue, 116, 92, 84)
+  B(weathered_copper_golem_statue, 50, 122, 120)
+  B(oxidized_copper_golem_statue, 18, 108, 115)
+  B(waxed_copper_golem_statue, 186, 109, 44)
+  B(waxed_exposed_copper_golem_statue, 116, 92, 84)
+  B(waxed_weathered_copper_golem_statue, 50, 122, 120)
+  B(waxed_oxidized_copper_golem_statue, 18, 108, 115)
+  B(exposed_lightning_rod, 186, 109, 44)
+  B(weathered_lightning_rod, 186, 109, 44)
+  B(oxidized_lightning_rod, 186, 109, 44)
+  B(waxed_lightning_rod, 186, 109, 44)
+  B(waxed_exposed_lightning_rod, 186, 109, 44)
+  B(waxed_weathered_lightning_rod, 186, 109, 44)
+  B(waxed_oxidized_lightning_rod, 186, 109, 44)
+  B(copper_torch, 79, 79, 79)
+  B(copper_wall_torch, 79, 79, 79)
+  B(copper_lantern, 186, 109, 44)
+  B(exposed_copper_lantern, 116, 92, 84)
+  B(weathered_copper_lantern, 50, 122, 120)
+  B(oxidized_copper_lantern, 18, 108, 115)
+  B(waxed_copper_lantern, 186, 109, 44)
+  B(waxed_exposed_copper_lantern, 116, 92, 84)
+  B(waxed_weathered_copper_lantern, 50, 122, 120)
+  B(waxed_oxidized_copper_lantern, 18, 108, 115)
+  B(iron_chain, 79, 79, 79)
+  B(copper_chain, 79, 79, 79)
+  B(exposed_copper_chain, 79, 79, 79)
+  B(weathered_copper_chain, 79, 79, 79)
+  B(oxidized_copper_chain, 79, 79, 79)
+  B(waxed_copper_chain, 79, 79, 79)
+  B(waxed_exposed_copper_chain, 79, 79, 79)
+  B(waxed_weathered_copper_chain, 79, 79, 79)
+  B(waxed_oxidized_copper_chain, 79, 79, 79)
 #undef B
 
 #if MCVIEW_ENABLE_PALETTE_PREP
@@ -3573,7 +3800,7 @@ void Palette::ResearchBedrock(std::string const &name, int64_t mapId) {
     defer {
       if (color) {
         ostringstream oss;
-        oss << "C(" << shortName << ", " << (int)color->getRed() << ", " << (int)color->getGreen() << ", " << (int)color->getBlue() << ")";
+        oss << "B(" << shortName << ", " << (int)color->getRed() << ", " << (int)color->getGreen() << ", " << (int)color->getBlue() << ")";
         juce::Logger::outputDebugString(juce::String(oss.str()));
       }
     };

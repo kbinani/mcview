@@ -129,7 +129,6 @@ std::set<mcfile::blocks::BlockId> const RegionToTexture::kTransparentBlocks = {
     red_candle,
     black_candle,
     light,
-    lightning_rod,
     tinted_glass,
 
     frogspawn,

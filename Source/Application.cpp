@@ -109,6 +109,7 @@ public:
     // 7. Check the value of map_uuid by executing "./dump.exe ./mcview-missing-block/db block entity at 63 -60 63 of overworld"
     // 8. Execute the line below.
     // Palette::ResearchBedrock("mcview-missing-block", 5277290464);
+    // 9. Copy stdout to CreateBedrockTable at Palette.cpp
 #endif
 
     fCleanup.reset(new DirectoryCleanupThread);
