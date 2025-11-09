@@ -68,7 +68,7 @@ static juce::File DefaultBedrockSaveDirectory() {
       .getChildFile("com.mojang")
       .getChildFile("minecraftWorlds");
 #else
-  return File();
+  return juce::File();
 #endif
 }
 
